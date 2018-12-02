@@ -4,7 +4,7 @@ Implements a custom sampler for the CEM controller
 - This class allows for a custom sampling distrubtion to be used in CEM instead
 """
 
-class Sampler:
+class Sampler(object):
     def __init__(self, sigma, mean, hp, repeat, adim):
         pass
 

@@ -1,4 +1,4 @@
-from python_visual_mpc.video_prediction.setup_predictor_towers import setup_predictor
+from visual_mpc.video_prediction.setup_predictor import setup_predictor
 from visual_mpc.video_prediction.vpred_model_interface import VPred_Model_Interface
 from video_prediction.models.indep_multi_savp_model import IndepMultiSAVPVideoPredictionModel
 import video_prediction

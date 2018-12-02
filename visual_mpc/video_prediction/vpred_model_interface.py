@@ -11,7 +11,9 @@ class VPred_Model_Interface:
                  actions=None,
                  states=None,
                  pix_distrib= None,
-                 mode='test'
+                 mode='test',
+                 build_loss = False,
+                 load_data = True
                  ):
 
         self.iter_num = tf.placeholder(tf.float32, [])

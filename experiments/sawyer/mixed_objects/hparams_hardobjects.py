@@ -18,7 +18,7 @@ env_params = {
     'rand_drop_reset': False,
     'start_box': [1, 1, 0.7],
     'reset_before_eval': False,
-    'video_save_dir':  '/home/sudeep/Desktop/exp_rec/',   # doesn't matter what you put here (should make this more elegant)
+    'video_save_dir':  '',   # doesn't matter what you put here (should make this more elegant)
     'zthresh': 0.15   # gripper only closes very close to ground
 }
 
