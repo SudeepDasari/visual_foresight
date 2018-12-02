@@ -1,3 +1,7 @@
 *.pyc
 *.gif
 .idea
+*.data
+*.index
+*.out
+*.meta
