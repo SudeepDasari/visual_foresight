@@ -4,6 +4,16 @@ from funcsigs import signature, Parameter
 from tensorflow.contrib.training import HParams
 
 def get_policy_args(policy, obs, t, i_tr, step_data=None):
+    """
+    Generalized way to get data from agent and pass to policy
+    :param policy: Subclass of Policy
+    :param obs: obs_dict from agent
+    :param t: current timestep
+    :param i_tr: current traj number
+    :param step_data: dict of step specific data passed in by agent
+    :return: dictionary mapping keys that the policy requests (by way of argument in policy.act) to their value
+    """
+
     policy_args = {}
     policy_signature = signature(policy.act)  # Gets arguments required by policy
     for arg in policy_signature.parameters:  # Fills out arguments according to their keyword

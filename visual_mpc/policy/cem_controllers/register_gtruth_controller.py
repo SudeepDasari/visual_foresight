@@ -4,8 +4,8 @@ import numpy as np
 from .visualizer.render_utils import resize_image
 from .visualizer.make_cem_visuals import CEM_Visual_Preparation_Registration
 import imp
+from visual_mpc.registration_network.setup_registration import setup_gdn
 
-from python_visual_mpc.goaldistancenet.setup_gdn import setup_gdn
 
 class Register_Gtruth_Controller(CEM_Controller_Vidpred):
     def __init__(self, ag_params, policyparams, gpu_id, ngpu):
@@ -25,7 +25,6 @@ class Register_Gtruth_Controller(CEM_Controller_Vidpred):
         self.ntask = self.ndesig // num_reg_images
 
         self.visualizer = CEM_Visual_Preparation_Registration()
-
 
     def _default_hparams(self):
         default_dict = {
@@ -172,7 +171,6 @@ class Register_Gtruth_Controller(CEM_Controller_Vidpred):
 
         desig = desig * self.img_height/ self.agentparams['image_height']
         return warperrs, desig
-
 
     def act(self,goal_image=None, t=None, i_tr=None, desig_pix=None, goal_pix=None, images=None, state=None):
 
