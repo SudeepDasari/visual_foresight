@@ -1,8 +1,8 @@
-import visual_mpc
+import visual_mpc.registration_network as reg_base
 import os
 from visual_mpc.registration_network.multiview_testgdn import MulltiviewTestGDN
-base_dir = visual_mpc.__file__
-base_dir = '/'.join(str.split(base_dir, '/')[:-2])
+base_dir = reg_base.__file__
+base_dir = '/'.join(str.split(base_dir, '/')[:-1]) + '/pretrained_models/multiview_new_env_96x128_len8/'
 
 # tf record data location:
 current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -12,8 +12,8 @@ OUT_DIR = current_dir + '/modeldata'
 configuration = {
 'experiment_name': 'correction',
 'pred_model':MulltiviewTestGDN,
-'pretrained_model': [base_dir + '/tensorflow_data/gdn/weiss/multiview_new_env_96x128_len8/view0/modeldata/model56002',
-                     base_dir + '/tensorflow_data/gdn/weiss/multiview_new_env_96x128_len8/view1/modeldata/model56002'],
+'pretrained_model': [base_dir + 'view0/modeldata/model56002',
+                     base_dir + 'view1/modeldata/model56002'],
 'output_dir': OUT_DIR,      #'directory for model checkpoints.' ,
 'current_dir': base_dir,   #'directory for writing summary.' ,
 'num_iterations':100000,
@@ -41,5 +41,3 @@ configuration = {
 'view':0,
 'new_loader': True
 }
-
-
