@@ -1,6 +1,6 @@
-from .policy import Policy
+from visual_mpc.policy.policy import Policy
 import numpy as np
-from .utils.controller_utils import truncate_movement
+from visual_mpc.policy.utils.controller_utils import truncate_movement
 import copy
 
 

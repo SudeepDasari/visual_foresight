@@ -1,7 +1,7 @@
 """ Hyperparameters for Large Scale Data Collection (LSDC) """
 
 import os.path
-from visual_mpc.policy.random_policy import Randompolicy
+from visual_mpc.policy.random.gaussian import GaussianPolicy
 from visual_mpc.agent.general_agent import GeneralAgent
 from envs.sawyer_robot.autograsp_sawyer_env import AutograspSawyerEnv
 
@@ -25,7 +25,7 @@ agent = {
 
 
 policy = {
-    'type': Randompolicy,
+    'type': GaussianPolicy,
     'nactions': 10,
     'initial_std': 0.035,   #std dev. in xy
     'initial_std_lift': 0.08,   #std dev. in z

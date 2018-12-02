@@ -1,10 +1,10 @@
 """ This file defines the linear Gaussian policy class. """
 import numpy as np
-from .policy import Policy
-from .utils.controller_utils import construct_initial_sigma, truncate_movement
+from visual_mpc.policy.policy import Policy
+from visual_mpc.policy.utils.controller_utils import construct_initial_sigma, truncate_movement
 
 
-class Randompolicy(Policy):
+class GaussianPolicy(Policy):
     """
     Random Policy
     """
@@ -30,7 +30,7 @@ class Randompolicy(Policy):
             'discrete_gripper': None
         }
 
-        parent_params = super(Randompolicy, self)._default_hparams()
+        parent_params = super(GaussianPolicy, self)._default_hparams()
         for k in default_dict.keys():
             parent_params.add_hparam(k, default_dict[k])
         return parent_params
