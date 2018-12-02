@@ -3,7 +3,6 @@ import copy
 from envs.util.action_util import autograsp_dynamics
 import numpy as np
 
-
 class AutograspSawyerEnv(BaseSawyerEnv):
     def __init__(self, env_params, _=None):
         assert 'mode_rel' not in env_params, "Autograsp sets mode_rel"
@@ -19,7 +18,7 @@ class AutograspSawyerEnv(BaseSawyerEnv):
 
     def _default_hparams(self):
         default_dict = {'zthresh': 0.15,
-                        'gripper_joint_thresh': 10.,   # anything >=1 deactivates this check
+                        'gripper_joint_thresh': -1.,   # anything <0 deactivates this check
                         'reopen': True}
 
         parent_params = BaseSawyerEnv._default_hparams(self)

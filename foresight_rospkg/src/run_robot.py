@@ -52,7 +52,7 @@ class RobotEnvironment:
                 with open(self._ck_path, 'rb') as f:
                     self._ck_dict = pkl.load(f)
             else:
-                self._ck_dict['ntraj'] = resume
+                self._ck_dict['ntraj'] = max(resume, 0)
 
         self._hyperparams['start_index'] = self._ck_dict['ntraj']
 
