@@ -12,7 +12,7 @@ from envs.util.interpolation import QuinticSpline
 import copy
 import rospy
 import os
-from visual_mpc.agent.utils.im_utils import npy_to_mp4
+from visual_mpc.utils.im_utils import npy_to_mp4
 from .util.user_interface import select_points
 
 

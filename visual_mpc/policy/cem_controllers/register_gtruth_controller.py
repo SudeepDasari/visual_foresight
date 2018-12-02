@@ -1,11 +1,9 @@
-from python_visual_mpc.visual_mpc_core.algorithm.cem_controller_vidpred import CEM_Controller_Vidpred
+from .cem_controller_vidpred import CEM_Controller_Vidpred
 import copy
 import numpy as np
-from python_visual_mpc.video_prediction.utils_vpred.animate_tkinter import resize_image
-from python_visual_mpc.visual_mpc_core.algorithm.utils.make_cem_visuals import CEM_Visual_Preparation_Registration
+from .visualizer.render_utils import resize_image
+from .visualizer.make_cem_visuals import CEM_Visual_Preparation_Registration
 import imp
-import pdb
-from python_visual_mpc.visual_mpc_core.algorithm.cem_controller_base import CEM_Controller_Base
 
 from python_visual_mpc.goaldistancenet.setup_gdn import setup_gdn
 

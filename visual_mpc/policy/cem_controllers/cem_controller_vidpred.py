@@ -1,6 +1,6 @@
 import numpy as np
 import imp
-from python_visual_mpc.visual_mpc_core.algorithm.utils.make_cem_visuals import CEM_Visual_Preparation
+from .visualizer.make_cem_visuals import CEM_Visual_Preparation
 import matplotlib; matplotlib.use('Agg'); import matplotlib.pyplot as plt
 import copy
 

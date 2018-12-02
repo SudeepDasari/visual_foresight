@@ -1,5 +1,5 @@
 from .general_agent import GeneralAgent
-from .utils.im_utils import resize_store
+from visual_mpc.utils.im_utils import resize_store
 import pickle as pkl
 import numpy as np
 import cv2

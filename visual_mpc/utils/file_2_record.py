@@ -1,6 +1,6 @@
 import argparse
 from multiprocessing import Pool, Process, Manager
-from visual_mpc.agent.utils.traj_saver import record_worker
+from visual_mpc.agent.utils import record_worker
 import cv2
 import cPickle as pkl
 import numpy as np

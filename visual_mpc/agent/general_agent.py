@@ -3,7 +3,7 @@ import copy
 import numpy as np
 import cv2
 from visual_mpc.policy.policy import get_policy_args
-from .utils.im_utils import resize_store, npy_to_gif
+from visual_mpc.utils.im_utils import resize_store, npy_to_gif
 
 class Image_Exception(Exception):
     def __init__(self):
