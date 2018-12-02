@@ -4,7 +4,7 @@ import random
 from geometry_msgs.msg import Quaternion as Quaternion_msg
 from pyquaternion import Quaternion
 from visual_mpc.agent.general_agent import Image_Exception
-from python_visual_mpc.visual_mpc_core.envs.sawyer_robot.util.limb_recorder import LimbWSGRecorder
+from .util.limb_recorder import LimbWSGRecorder
 from .util.camera_recorder import CameraRecorder
 from .util.impedance_wsg_controller import ImpedanceWSGController, NEUTRAL_JOINT_CMD
 from foresight_rospkg.src.utils import inverse_kinematics

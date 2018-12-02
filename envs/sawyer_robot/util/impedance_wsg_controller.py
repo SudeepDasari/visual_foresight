@@ -1,12 +1,12 @@
 import rospy
+import foresight_rospkg
 from foresight_rospkg.src.utils.robot_controller import RobotController
 from wsg_50_common.msg import Cmd, Status
 from threading import Semaphore, Lock
 import numpy as np
-from python_visual_mpc.visual_mpc_core.envs.util.interpolation import CSpline
-import python_visual_mpc.visual_mpc_core.envs.sawyer_robot.visual_mpc_rospkg as visual_mpc_rospkg
+from envs.util.interpolation import CSpline
 from intera_core_msgs.msg import JointCommand
-import cPickle as pickle
+import cPickle as pkl
 import intera_interface
 import os
 
@@ -212,10 +212,11 @@ class ImpedanceWSGController(RobotController):
     def redistribute_objects(self):
         self._debug_print('redistribute...')
 
-        file = '/'.join(str.split(visual_mpc_rospkg.__file__, "/")[
+        file = '/'.join(str.split(foresight_rospkg.__file__, "/")[
                         :-1]) + '/src/utils/pushback_traj_{}.pkl'.format(self.robot_name)
-
-        self.joint_pos = pickle.load(open(file, "rb"))
+        import pdb
+        pdb.set_trace()
+        self.joint_pos = pkl.load(open(file, "rb"))
 
         for t in range(0, len(self.joint_pos), RESET_SKIP):
             # print(self.joint_pos[t])
