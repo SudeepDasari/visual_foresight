@@ -1,0 +1,2 @@
+dependent_joints:
+  base_joint_gripper_left: {parent: base_joint_gripper_right, factor: -1 }
