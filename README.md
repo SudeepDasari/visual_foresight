@@ -3,11 +3,11 @@ Code for reproducing experiments in [Visual Foresight: Model-Based Deep Reinforc
 
 On a high level, Visual Model Predictive Control (visual-MPC) leverages an action-conditioned video prediction modelto enable robots to perform various tasks with only raw-pixel input. This codebase provides an implmentation of the core algorithm and planning cost, as well as the data collection and experiment framework. Additionally, we provide Dockerfiles for our simulator environments, and instructions to reproduce our experiments on your own Sawyer robot.
 
-Crucially, our codebase does NOT implement video prediction model training. If you're only interested in training models, please refer to [Stochastic Adversarial Video Prediction](https://github.com/alexlee-gk/video_prediction).
+Crucially, this codebase does NOT implement video prediction model training. If you're only interested in training models, please refer to [Stochastic Adversarial Video Prediction](https://github.com/alexlee-gk/video_prediction).
 
 # Installation
 ## General Dependencies
-Since this project is deployed in sim (w/ mujoco_py 1.5, and the robot (ROS kinetic), all code is written to be compatible with Python 2.7 and Python 3.5. 
+Since this project is deployed in sim (w/ mujoco_py 1.5) and the robot (ROS kinetic), all code is written to be compatible with Python 2.7 and Python 3.5. 
 <>
 
 ## Sim
