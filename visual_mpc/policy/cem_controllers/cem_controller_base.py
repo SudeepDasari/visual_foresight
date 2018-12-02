@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib; matplotlib.use('Agg')
 import collections
-from .logger import Logger
+from visual_mpc.utils.logger import Logger
 
 from collections import OrderedDict
 

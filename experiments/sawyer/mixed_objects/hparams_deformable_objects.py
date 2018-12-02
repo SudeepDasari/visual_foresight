@@ -1,9 +1,9 @@
 import numpy as np
 import os
-from python_visual_mpc.visual_mpc_core.agent.benchmarking_agent import BenchmarkAgent
-from python_visual_mpc.visual_mpc_core.envs.sawyer_robot.autograsp_sawyer_env import AutograspSawyerEnv
-from python_visual_mpc.visual_mpc_core.algorithm.custom_samplers.folding_sampler import FoldingSampler
-from python_visual_mpc.visual_mpc_core.algorithm.cem_controller_vidpred import CEM_Controller_Vidpred
+from visual_mpc.agent.benchmarking_agent import BenchmarkAgent
+from envs.sawyer_robot.autograsp_sawyer_env import AutograspSawyerEnv
+from visual_mpc.policy.cem_controllers.samplers.folding_sampler import FoldingSampler
+from visual_mpc.policy.cem_controllers.cem_controller_vidpred import CEM_Controller_Vidpred
 BASE_DIR = '/'.join(str.split(__file__, '/')[:-1])
 current_dir = os.path.dirname(os.path.realpath(__file__))
 

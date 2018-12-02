@@ -1,14 +1,5 @@
-import os
 from python_visual_mpc.video_prediction.setup_predictor_towers import setup_predictor
-current_dir = os.path.dirname(os.path.realpath(__file__))
-
-import python_visual_mpc
-# tf record data location:
-
-# local output directory
-OUT_DIR = current_dir + '/modeldata'
-
-from python_visual_mpc.video_prediction.dynamic_rnn_model.alex_model_interface import Alex_Interface_Model
+from visual_mpc.video_prediction.vpred_model_interface import VPred_Model_Interface
 from video_prediction.models.indep_multi_savp_model import IndepMultiSAVPVideoPredictionModel
 import video_prediction
 
@@ -16,8 +7,9 @@ import video_prediction
 base_dir = video_prediction.__file__
 base_dir = '/'.join(str.split(base_dir, '/')[:-2])
 modeldir = base_dir + '/pretrained_models/mixed_datasets/towel_hard_objects/'
+
 configuration = {
-'pred_model': Alex_Interface_Model,
+'pred_model': VPred_Model_Interface,
 'pred_model_class':IndepMultiSAVPVideoPredictionModel,
 'setup_predictor':setup_predictor,
 'json_dir':  modeldir + '/view0/model.savp.None/',
