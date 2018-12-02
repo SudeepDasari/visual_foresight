@@ -1,7 +1,7 @@
 # Visual Foresight
 Code for reproducing experiments in [Visual Foresight: Model-Based Deep Reinforcement Learning for Vision-Based Robotic Control](https://sites.google.com/view/visualforesight)
 
-On a high level, Visual Model Predictive Control (visual-MPC) leverages an action-conditioned video prediction model (trained from unsupervised interaction) to enable robots to perform various tasks with only raw-pixel input. This codebase provides an implmentation of: the core algorithm, planning cost, unsupervised data collection, and - of course - the visual-MPC controller! Additionally, we provide: instructions to reproduce our experiments, Dockerfiles for our simulator environments, and documentation on our Sawyer robot setup.
+On a high level, Visual Model Predictive Control (visual-MPC) leverages an action-conditioned video prediction model (trained from unsupervised interaction) to enable robots to perform various tasks with only raw-pixel input. This codebase provides an implmentation of: unsupervised data collection, our benchmarking framework, the various planning costs, and - of course - the visual-MPC controller! Additionally, we provide: instructions to reproduce our experiments, Dockerfiles for our simulator environments, and documentation on our Sawyer robot setup.
 
 Crucially, this codebase does NOT implement video prediction model training, or meta-classifier model training. If you're only interested in training models, please refer to [Stochastic Adversarial Video Prediction](https://github.com/alexlee-gk/video_prediction) and/or [Few-Shot Goal Inference for Visuomotor Learning and Planning](https://github.com/anxie/meta_classifier).
 
