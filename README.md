@@ -8,10 +8,9 @@ Crucially, this codebase does NOT implement video prediction model training, or 
 # Installation
 ## General Dependencies
 Since this project is deployed in sim (w/ mujoco_py 1.5) and the robot (ROS kinetic), all code is written to be compatible with Python 2.7 and Python 3.5. 
-<>
 
 ## Sim
-<>
+**Coming soon**
 
 ## Robot
 ### Hardware Setup
@@ -30,13 +29,45 @@ Once you've installed the dependencies:
 ```
 export PYTHONPATH='$PYTHONPATH:<PATH TO workspace src>/visual_foresight:<PATH TO video_prediction-1>'
 ```
+4. Start up required ROS nodes:
+```
+# in a new intera terminal
+roslaunch foresight_rospkg start_cameras.launch   # run cameras
+
+# in a new intera terminal
+roslaunch foresight_rospkg start_gripper.launch   # start gripper node
+
+# in a new intera terminal
+roscd foresight_rospkg/launch
+rosrun foresight_rospkg send_urdf_fragment.py     # (optional) stop after Sawyer recognizes the gripper
+./start_impedance 
+```
+
 # Experiment Reproduction
+In sim, data collection and benchmarks are started by running `sim/run.py`. The correct configuration file must be supplied, for each experiment/data collection run. Similarly, `foresight_rospkg/src/run_robot.py` is the primary entry point for the robot experiments/data-collection.
+
 ## Data Collection
-<>
+By default data is saved in the same directory as the corresponding python config file. Rollouts are saved as a series of pickled dictionaries and JPEG images, or as compressed TFRecords. 
+### Robot
+Use `run_robot` to start random data collection on the Sawyer.
+* For hard object collection: `rosrun foresight_rospkg run_robot.py <robot name/id> data_collection/sawyer/hard_object_data/hparams.py -r`
+* For deformable object collection: `rosrun foresight_rospkg run_robot.py <robot name/id> data_collection/sawyer/towel_data/hparams.py -r`
+### Sim
+**coming soon**
+### Convert to TFRecords
+While the raw (pkl/jpeg file) data format is convenient to work with, it is far less efficient for model training. Thus, we offer a utility in `visual_mpc/utils/file_2_record.py` which converts data from our raw format to compressed TFRecords.
+
 ## Running Benchmarks
-<>
+Again pass in the python config file to the corresponding entry point. This time add a `--benchmark` flag!
+### Robot
+* For Registration Experiments: `rosrun foresight_rospkg run_robot.py <robot name/id> experiments/sawyer/registration_experiments/hparams.py --benchmark`
+* For Mixed Object Experiments (one model which handles both deformable and rigid objects)
+** Rigid: `rosrun foresight_rospkg run_robot.py <robot name/id> experiments/sawyer/mixed_objects/hparams_deformable_objects.py --benchmark`
+** Deformable `rosrun foresight_rospkg run_robot.py <robot name/id> experiments/sawyer/mixed_objects/hparams_hardobjects.py --benchmark`
+### Sim
+**Coming soon!**
 # Pretrained Models
-<>
+*Coming soon*
 # Citation
 If you find this useful, consider citing:
 ```
