@@ -10,9 +10,17 @@ class CartgripperRotGraspEnv(BaseCartgripperEnv):
     def __init__(self, env_params, reset_state):
         self._hyper = copy.deepcopy(env_params)
         super().__init__(env_params, reset_state)
-        self.low_bound = np.array([-0.5, -0.5, -0.08, -np.pi*2, -1])
-        self.high_bound = np.array([0.5, 0.5, 0.15, np.pi*2, 1])
+        self.low_bound = np.array([-0.5, -0.5, -0.08, -np.pi*2, 0.])
+        self.high_bound = np.array([0.5, 0.5, 0.15, np.pi*2, 0.1])
         self._base_adim, self._base_sdim = 5, 6
+        self._n_joints = 6
+        self._gripper_dim = 4
+        self._adim, self._sdim = 5, 5
+
+    def _default_hparams(self):
+        parent_params = super()._default_hparams()
+        parent_params.set_hparam('filename', 'cartgripper_grasp.xml')
+        return parent_params
 
     def reset(self, reset_state=None):
         obs, write_reset_state = super().reset(reset_state)
@@ -24,12 +32,3 @@ class CartgripperRotGraspEnv(BaseCartgripperEnv):
         xpos0[4:6] = [0.05, -0.05]
 
         return xpos0
-
-    def _get_obs(self, finger_sensors):
-        obs = super()._get_obs(finger_sensors)
-        obs['state'][-1] = self._previous_target_qpos[-1]
-        return obs
-
-
-
-

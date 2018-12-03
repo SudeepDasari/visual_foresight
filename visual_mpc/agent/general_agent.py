@@ -220,8 +220,8 @@ class GeneralAgent(object):
                     center = tuple([int(np.round(pnts[i, j])) for j in (1, 0)])
                     cv2.circle(img, center, 4, colors[i], -1)
 
-        file_path = self._hyperparams['record']
-        npy_to_gif(self.large_images_traj, file_path + '/video{}'.format(itr))
+        file_path = self._hyperparams['data_save_dir']
+        npy_to_gif(self.large_images_traj, file_path + '/record/video{}'.format(itr))
 
     def _init(self):
         """

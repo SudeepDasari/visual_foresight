@@ -1,4 +1,4 @@
-from .sim import Sim
+from .simulator import Sim
 import os
 import numpy as np
 import pickle

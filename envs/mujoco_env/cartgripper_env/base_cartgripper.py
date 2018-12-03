@@ -4,12 +4,14 @@ import envs
 from envs.mujoco_env.util.create_xml import create_object_xml, create_root_xml, clean_xml
 import copy
 from pyquaternion import Quaternion
-
+from visual_mpc.policy.cem_controllers.visualizer.render_utils import draw_text_onimage
 
 BASE_DIR = '/'.join(str.split(envs.__file__, '/')[:-1])
 asset_base_path = BASE_DIR + '/mjc_models/cartgripper_assets/'
-low_bound = np.array([-0.5, -0.5, -0.08, -np.pi*2, -1])
-high_bound = np.array([0.5, 0.5, 0.15, np.pi*2, 1])
+low_bound = np.array([-0.5, -0.5, -0.08, -np.pi*2, 0.])
+high_bound = np.array([0.5, 0.5, 0.15, np.pi*2, 0.1])
+is_open_thresh = 0.5 * (low_bound[-1] + high_bound[-1])
+from visual_mpc.utils.im_utils import npy_to_mp4
 
 
 def zangle_to_quat(zangle):
@@ -69,12 +71,13 @@ class BaseCartgripperEnv(BaseMujocoEnv):
         self.arm_obj_initdist = _hp.arm_obj_initdist
         self.arm_start_lifted = _hp.arm_start_lifted
         self.finger_sensors, self.object_sensors = _hp.finger_sensors, object_meshes is not None
-        self._previous_target_qpos, self._n_joints = None, 6
+        self._previous_target_qpos, self._n_joints = None, 3
         self._hp = _hp
 
         self._read_reset_state = reset_state
         self.low_bound = np.array([-0.5, -0.5, -0.08])
         self.high_bound = np.array([0.5, 0.5, 0.15])
+        self._gripper_dim = None
 
     def _default_hparams(self):
         default_dict = {
@@ -119,10 +122,10 @@ class BaseCartgripperEnv(BaseMujocoEnv):
                 finger_force += copy.deepcopy(self.sim.data.sensordata[:2].squeeze())
 
             alpha = st / (float(self.substeps) - 1)
-            self.sim.data.ctrl[:] = alpha * target_qpos + (1 - alpha) * self._previous_target_qpos
+            self.sim.data.ctrl[:] = alpha * target_qpos + (1. - alpha) * self._previous_target_qpos
             self.sim.step()
-        finger_force /= self.substeps
 
+        finger_force /= self.substeps
         self._previous_target_qpos = target_qpos
         obs = self._get_obs(finger_force)
         self._post_step()
@@ -193,6 +196,8 @@ class BaseCartgripperEnv(BaseMujocoEnv):
         for t in range(self.skip_first):
             for _ in range(self.substeps):
                 self.sim.data.ctrl[:] = qpos[:self._base_adim]
+                if self._gripper_dim:
+                    self.sim.data.ctrl[self._gripper_dim] = 0.
                 self.sim.step()
                 if self.finger_sensors:
                     finger_force += copy.deepcopy(self.sim.data.sensordata[:2].squeeze())
@@ -236,27 +241,31 @@ class BaseCartgripperEnv(BaseMujocoEnv):
         obs['qvel'] = copy.deepcopy(self.sim.data.qvel[:self._n_joints].squeeze())
         obs['qvel_full'] = copy.deepcopy(self.sim.data.qvel.squeeze())
 
-        #control state
-        obs['state'] = np.zeros(self._base_sdim)
-
         if self._hp.use_vel:
-            obs['state'] = np.concatenate([self.sim.data.qpos[:self._base_sdim].squeeze(), self.sim.data.qvel[:self._base_sdim].squeeze()])
+            obs['state'] = np.concatenate([copy.deepcopy(self.sim.data.qpos[:self._sdim].squeeze()),
+                                           copy.deepcopy(self.sim.data.qvel[:self._sdim].squeeze())])
         else:
-            obs['state'] = self.sim.data.qpos[:self._base_sdim].squeeze()
+            obs['state'] = copy.deepcopy(self.sim.data.qpos[:self._sdim].squeeze())
+
+        if self._gripper_dim and self._previous_target_qpos[-1] < is_open_thresh:
+            obs['state'][self._gripper_dim] = -1
+        else:
+            obs['state'][self._gripper_dim] = 1
 
         #report object poses
         obs['object_poses_full'] = np.zeros((self.num_objects, 7))
         obs['object_qpos'] = np.zeros((self.num_objects, 7))
         obs['object_poses'] = np.zeros((self.num_objects, 3))
+
         for i in range(self.num_objects):
-            pos_sen = self.sim.data.sensordata[touch_offset + i * 3:touch_offset + (i + 1) * 3]
-            fullpose = self.sim.data.qpos[i * 7 + self._n_joints:(i + 1) * 7 + self._n_joints].squeeze().copy()
+            pos_sen = copy.deepcopy(self.sim.data.sensordata[touch_offset + i * 3:touch_offset + (i + 1) * 3])
+            fullpose = copy.deepcopy(self.sim.data.qpos[i * 7 + self._n_joints:(i + 1) * 7 + self._n_joints].squeeze())
             fullpose[:3] = pos_sen
             obs['object_poses_full'][i] = fullpose
 
             obs['object_poses'][i, :2] = pos_sen[:2]
             obs['object_poses'][i, 2] = Quaternion(fullpose[3:]).angle
-            obs['object_qpos'][i] = self.sim.data.qpos[self._n_joints + i * 7: self._n_joints + (i+1)*7]
+            obs['object_qpos'][i] = copy.deepcopy(self.sim.data.qpos[self._n_joints + i * 7: self._n_joints + (i+1)*7])
 
         #copy non-image data for environment's use (if needed)
         self._last_obs = copy.deepcopy(obs)

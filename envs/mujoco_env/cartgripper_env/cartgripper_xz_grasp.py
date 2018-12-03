@@ -9,6 +9,7 @@ class CartgripperXZGrasp(BaseCartgripperEnv):
         self.high_bound = np.array([0.4, 0.15, 1])
         self._base_adim, self._base_sdim = 3, 6
         self._adim, self._sdim = 3, 3      # x z grasp
+        self._gripper_dim = 2
 
     def _default_hparams(self):
         default_dict = {

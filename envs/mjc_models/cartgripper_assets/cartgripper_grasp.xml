@@ -106,7 +106,7 @@
 
         <position joint="hinge_z" ctrllimited="false" kp="300"/>
 
-        <position joint="j_finger1" ctrllimited="true" ctrlrange = "0 0.1" kp="300"/>
+        <position joint="j_finger1" ctrllimited="true" ctrlrange = "0 0.1" kp="1000"/>
     </actuator>
 
 
