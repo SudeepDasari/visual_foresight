@@ -4,7 +4,6 @@ import os
 import ray
 
 
-
 @ray.remote
 def sync(agentparams):
     master_datadir = agentparams['master_datadir']
