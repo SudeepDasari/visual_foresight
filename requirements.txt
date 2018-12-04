@@ -19,3 +19,4 @@ tensorboard==1.6.0
 tensorflow-gpu==1.6.0
 mujoco_py==1.50.1.56
 requests==2.19.1
+h5py
