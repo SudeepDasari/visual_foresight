@@ -53,7 +53,9 @@ class AutograspCartgripperEnv(CartgripperRotGraspEnv):
         finger_sensors_thresh = np.max(self._last_obs['finger_sensors']) > self._hp.touchthresh
         z_thresholds = np.amax(self._last_obs['object_poses_full'][:, 2]) > self._hp.lift_height \
                        and self._last_obs['state'][2] > self._hp.lift_height
-        self._goal_reached = self._goal_reached or (z_thresholds and finger_sensors_thresh)
+
+        if z_thresholds and finger_sensors_thresh:
+            self._goal_reached = True
 
     def has_goal(self):
         return True
