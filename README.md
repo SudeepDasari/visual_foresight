@@ -100,5 +100,10 @@ Again pass in the python config file to the corresponding entry point. This time
 # Citation
 If you find this useful, consider citing:
 ```
-BIBTEX GOES HERE
+@article{visualforesight,
+  title={Visual Foresight: Model-Based Deep Reinforcement Learning for Vision-Based Robotic Control},
+  author={Ebert, Frederik and Finn, Chelsea and Dasari, Sudeep and Xie, Annie and Lee, Alex and Levine, Sergey},
+  journal={arXiv preprint arXiv:1812.00568},
+  year={2018}
+}
 ```
