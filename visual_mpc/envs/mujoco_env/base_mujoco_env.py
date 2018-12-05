@@ -1,6 +1,6 @@
 from mujoco_py import load_model_from_path, MjSim
 import numpy as np
-from envs.base_env import BaseEnv
+from visual_mpc.envs.base_env import BaseEnv
 import pdb
 
 

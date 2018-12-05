@@ -6,7 +6,7 @@ from intera_interface import CHECK_VERSION
 
 import intera_interface
 import argparse
-import python_visual_mpc.visual_mpc_core.envs.sawyer_robot.visual_mpc_rospkg as visual_mpc_rospkg
+import visual_mpc.foresight_rospkg as foresight_rospkg
 
 
 class Pushback_Recorder(object):
@@ -26,7 +26,7 @@ class Pushback_Recorder(object):
         args = parser.parse_args()
         self.robotname = args.robot
 
-        self.file = '/'.join(str.split(visual_mpc_rospkg.__file__, "/")[
+        self.file = '/'.join(str.split(foresight_rospkg.__file__, "/")[
                         :-1]) + '/src/utils/pushback_traj_{}.pkl'.format(self.robotname)
 
         self.rs = intera_interface.RobotEnable(CHECK_VERSION)

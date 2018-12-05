@@ -1,17 +1,16 @@
-from envs.mujoco_env.base_mujoco_env import BaseMujocoEnv
+from visual_mpc.envs.mujoco_env.base_mujoco_env import BaseMujocoEnv
 import numpy as np
-import envs
-from envs.mujoco_env.util.create_xml import create_object_xml, create_root_xml, clean_xml
+import visual_mpc.envs as envs
+from visual_mpc.envs.mujoco_env.util.create_xml import create_object_xml, create_root_xml, clean_xml
 import copy
 from pyquaternion import Quaternion
-from visual_mpc.policy.cem_controllers.visualizer.render_utils import draw_text_onimage
+
 
 BASE_DIR = '/'.join(str.split(envs.__file__, '/')[:-1])
 asset_base_path = BASE_DIR + '/mjc_models/cartgripper_assets/'
 low_bound = np.array([-0.5, -0.5, -0.08, -np.pi*2, 0.])
 high_bound = np.array([0.5, 0.5, 0.15, np.pi*2, 0.1])
 is_open_thresh = 0.5 * (low_bound[-1] + high_bound[-1])
-from visual_mpc.utils.im_utils import npy_to_mp4
 
 
 def zangle_to_quat(zangle):

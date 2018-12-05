@@ -1,4 +1,4 @@
-from envs.base_env import BaseEnv
+from visual_mpc.envs.base_env import BaseEnv
 import numpy as np
 import random
 from geometry_msgs.msg import Quaternion as Quaternion_msg
@@ -7,8 +7,8 @@ from visual_mpc.agent.general_agent import Image_Exception
 from .util.limb_recorder import LimbWSGRecorder
 from .util.camera_recorder import CameraRecorder
 from .util.impedance_wsg_controller import ImpedanceWSGController, NEUTRAL_JOINT_CMD
-from foresight_rospkg.src.utils import inverse_kinematics
-from envs.util.interpolation import QuinticSpline
+from visual_mpc.foresight_rospkg.src.utils import inverse_kinematics
+from visual_mpc.envs.util.interpolation import QuinticSpline
 import copy
 import rospy
 import os

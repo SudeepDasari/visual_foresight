@@ -8,7 +8,7 @@ import random
 import numpy as np
 import stl
 from stl import mesh
-import envs
+import visual_mpc.envs as envs
 
 def find_mins_maxs(obj):
     minx = maxx = miny = maxy = minz = maxz = None

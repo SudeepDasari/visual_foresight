@@ -1,6 +1,6 @@
-from envs.sawyer_robot.base_sawyer_env import BaseSawyerEnv
+from visual_mpc.envs.sawyer_robot.base_sawyer_env import BaseSawyerEnv
 import copy
-from envs.util.action_util import autograsp_dynamics
+from visual_mpc.envs.util.action_util import autograsp_dynamics
 import numpy as np
 
 class AutograspSawyerEnv(BaseSawyerEnv):

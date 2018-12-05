@@ -1,18 +1,18 @@
-from sim.util.synchronize_tfrecs import sync
+from visual_mpc.sim.util.synchronize_tfrecs import sync
 from multiprocessing import Pool, Process, Manager
 import sys
 import argparse
 import importlib.machinery
 import importlib.util
-from sim.simulator import Sim
-from sim.benchmarks import perform_benchmark
+from visual_mpc.sim.simulator import Sim
+from visual_mpc.sim.benchmarks import perform_benchmark
 import copy
 import random
 import numpy as np
 from visual_mpc.agent.utils.traj_saver import record_worker
 import re
 import os
-from sim.util.combine_score import combine_scores
+from visual_mpc.sim.util.combine_score import combine_scores
 import ray
 import pdb
 

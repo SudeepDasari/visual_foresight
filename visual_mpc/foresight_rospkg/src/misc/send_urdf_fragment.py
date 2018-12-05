@@ -98,7 +98,7 @@ def main():
 
 
 def comp_gripper():
-    import foresight_rospkg
+    import visual_mpc.foresight_rospkg as foresight_rospkg
     urdf_frag = '/'.join(
         str.split(foresight_rospkg.__file__, '/')[:-1]) + '/src/utils/wsg50/wsg_50_mod.urdf'
     rospy.init_node('rsdk_configure_urdf', anonymous=True)

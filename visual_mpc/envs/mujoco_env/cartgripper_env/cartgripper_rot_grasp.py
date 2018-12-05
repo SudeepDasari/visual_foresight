@@ -1,4 +1,4 @@
-from envs.mujoco_env.cartgripper_env.base_cartgripper import BaseCartgripperEnv
+from visual_mpc.envs.mujoco_env.cartgripper_env.base_cartgripper import BaseCartgripperEnv
 import copy
 import numpy as np
 

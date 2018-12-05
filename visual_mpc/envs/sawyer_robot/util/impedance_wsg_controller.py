@@ -1,10 +1,10 @@
 import rospy
-import foresight_rospkg
-from foresight_rospkg.src.utils.robot_controller import RobotController
+import visual_mpc.foresight_rospkg as foresight_rospkg
+from visual_mpc.foresight_rospkg.src.utils.robot_controller import RobotController
 from wsg_50_common.msg import Cmd, Status
 from threading import Semaphore, Lock
 import numpy as np
-from envs.util.interpolation import CSpline
+from visual_mpc.envs.util.interpolation import CSpline
 from intera_core_msgs.msg import JointCommand
 import cPickle as pkl
 import intera_interface

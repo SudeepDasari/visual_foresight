@@ -10,7 +10,7 @@ from std_msgs.msg import Float32, Int64
 from sensor_msgs.msg import JointState
 import numpy as np
 
-import python_visual_mpc.visual_mpc_core.envs.sawyer_robot.visual_mpc_rospkg as visual_mpc_rospkg
+import visual_mpc.foresight_rospkg as foresight_rospkg
 
 import cPickle as pickle
 import intera_interface
@@ -190,7 +190,7 @@ class WSGRobotController(RobotController):
         self.reset_with_impedance(duration=1.5)
         print('redistribute...')
 
-        file = '/'.join(str.split(visual_mpc_rospkg.__file__, "/")[
+        file = '/'.join(str.split(foresight_rospkg.__file__, "/")[
                         :-1]) + '/src/utils/pushback_traj_{}.pkl'.format(self.robot_name)
 
         self.joint_pos = pickle.load(open(file, "rb"))
