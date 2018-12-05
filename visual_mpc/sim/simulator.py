@@ -65,10 +65,7 @@ class Sim(object):
             raise ValueError('Saving neither raw data nor records')
 
     def _save_raw_data(self, itr, agent_data, obs_dict, policy_outputs):
-        if 'RESULT_DIR' in os.environ:
-            exp_name = self.agentparams['data_save_dir'].split('/')[-1]
-            data_save_dir='{}/{}'.format(os.environ['RESULT_DIR'], exp_name)
-        else: data_save_dir = self.agentparams['data_save_dir']
+        data_save_dir = self.agentparams['data_save_dir']
 
         ngroup = self._hyperparams.get('ngroup', 1000)
         igrp = itr // ngroup
