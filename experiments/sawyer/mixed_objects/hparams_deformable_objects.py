@@ -1,7 +1,7 @@
 import numpy as np
 import os
 from visual_mpc.agent.benchmarking_agent import BenchmarkAgent
-from envs.sawyer_robot.autograsp_sawyer_env import AutograspSawyerEnv
+from visual_mpc.envs.sawyer_robot.autograsp_sawyer_env import AutograspSawyerEnv
 from visual_mpc.policy.cem_controllers.samplers.folding_sampler import FoldingSampler
 from visual_mpc.policy.cem_controllers.cem_controller_vidpred import CEM_Controller_Vidpred
 BASE_DIR = '/'.join(str.split(__file__, '/')[:-1])

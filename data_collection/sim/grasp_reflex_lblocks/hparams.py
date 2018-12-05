@@ -1,9 +1,8 @@
 """ Hyperparameters for Large Scale Data Collection (LSDC) """
 import os.path
-import numpy as np
 from visual_mpc.policy.random.gaussian import GaussianPolicy
 from visual_mpc.agent.general_agent import GeneralAgent
-from envs.mujoco_env.cartgripper_env.autograsp_env import AutograspCartgripperEnv
+from visual_mpc.envs.mujoco_env.cartgripper_env.autograsp_env import AutograspCartgripperEnv
 
 
 BASE_DIR = '/'.join(str.split(__file__, '/')[:-1])
@@ -15,6 +14,8 @@ env_params = {
     'object_mass': 0.5,
     'friction': 1.0,
     'finger_sensors': True,
+    'minlen': 0.03,
+    'maxlen': 0.08,
     'autograsp': {'zthresh': -0.06, 'touchthresh': 0.0, 'reopen': True}
 }
 
@@ -26,6 +27,7 @@ agent = {
     'image_height' : 48,
     'image_width' : 64,
     'gen_xml': 400,   #generate xml every nth trajecotry
+    'make_final_gif': ''
 }
 
 policy = {

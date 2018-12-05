@@ -3,7 +3,7 @@
 import os.path
 from visual_mpc.policy.random.gaussian import GaussianPolicy
 from visual_mpc.agent.general_agent import GeneralAgent
-from envs.sawyer_robot.autograsp_sawyer_env import AutograspSawyerEnv
+from visual_mpc.envs.sawyer_robot.autograsp_sawyer_env import AutograspSawyerEnv
 
 
 if 'VMPC_DATA_DIR' in os.environ:

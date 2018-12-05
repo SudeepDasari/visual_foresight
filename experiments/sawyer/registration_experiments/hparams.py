@@ -1,6 +1,6 @@
 import os
 from visual_mpc.agent.benchmarking_agent import BenchmarkAgent
-from envs.sawyer_robot.autograsp_sawyer_env import AutograspSawyerEnv
+from visual_mpc.envs.sawyer_robot.autograsp_sawyer_env import AutograspSawyerEnv
 from visual_mpc.policy.cem_controllers.register_gtruth_controller import Register_Gtruth_Controller
 
 

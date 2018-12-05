@@ -4,7 +4,7 @@ import os.path
 import numpy as np
 from visual_mpc.policy.random.random_fold_policy import RandomFoldPolicy
 from visual_mpc.agent.general_agent import GeneralAgent
-from envs.sawyer_robot.autograsp_sawyer_env import AutograspSawyerEnv
+from visual_mpc.envs.sawyer_robot.autograsp_sawyer_env import AutograspSawyerEnv
 
 
 if 'VMPC_DATA_DIR' in os.environ:
