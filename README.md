@@ -7,10 +7,35 @@ Crucially, this codebase does NOT implement video prediction model training, or 
 
 # Installation
 ## General Dependencies
-Since this project is deployed in sim (w/ mujoco_py 1.5) and the robot (ROS kinetic), all code is written to be compatible with Python 2.7 and Python 3.5. 
+Since this project is deployed in sim and on a robot, all code is written to be compatible with Python 2.7 and Python 3.5. 
 
 ## Sim
-**Coming soon**
+### Manual Installation
+Our simulator requires **Python 3.5.2** and [MuJoCo 1.5](https://www.roboti.us/index.html) to run successfully. We strongly recommend using a virtual environment (such as Anaconda) for this project. After you setup Python and MuJoCo, installation directions are as follows:
+```
+# install video prediction code
+git clone https://github.com/febert/video_prediction-1.git && cd video_prediction-1 && git checkout dev && cd ..
+# install meta-classifier code
+git clone https://github.com/anxie/meta_classifier.git
+#install visual-MPC
+git clone https://github.com/SudeepDasari/visual_foresight.git
+pip install -r requirements.txt
+```
+### Docker Installation
+Docker allows a cleaner way to get started with our code. Since we heavily use the GPU, you will have to install [nvidia-docker](https://github.com/NVIDIA/nvidia-docker) and all related dependencies. After that run:
+```
+git clone https://github.com/SudeepDasari/visual_foresight.git && cd docker && cp ~/.mujoco/mjkey.txt ./
+nvidia-docker build -t foresight/sim:latest .
+```
+Now to create a new bash in this environment run: `nvidia-docker run -it foresight/sim: bash`
+### Python Path
+You will have to configure your python path each time you open a new shell (in both docker and virtual env). One way to do so is:
+```
+# configure python path (you will have to run this for each new shell)
+export WORKDIR=<PATH TO dir containing repos (in docker just /)>
+export PYTHONPATH='$WORKDIR/visual_foresight:$WORKDIR/video_prediction-1/:$WORKDIR/meta_classifier:'
+```
+We are planning to make this software setup process cleaner over time, so keep checking back!
 
 ## Robot
 ### Hardware Setup
@@ -24,9 +49,11 @@ Robot code heavily uses ROS. Assuming you use our same hardware, you will need t
 
 Once you've installed the dependencies:
 1. Clone our repository into your ROS workspace's src folder. Then run `catkin_make` to rebuild your workspace.
-2. Clone and install the [video_prediction](INSERT LINK) code-base.
-3. (optional) Add the following lines right after the EOF in your `intera.sh`. While hacky, modifying your Python path is a quick and dirty way to get this code running while allowing you to modify it.
+2. Clone and install the [video_prediction](https://github.com/febert/visual_mpc/tree/dev) code-base.
+3. Clone and install the [meta-classifier](https://github.com/anxie/meta_classifier) code-base
+4. (optional) Add the following lines right after the EOF in your `intera.sh`. While hacky, modifying your Python path is a quick and dirty way to get this code running while allowing you to modify it.
 ```
+
 export PYTHONPATH='$PYTHONPATH:<PATH TO workspace src>/visual_foresight:<PATH TO video_prediction-1>'
 ```
 4. Start up required ROS nodes:
@@ -44,7 +71,7 @@ rosrun foresight_rospkg send_urdf_fragment.py     # (optional) stop after Sawyer
 ```
 
 # Experiment Reproduction
-In sim, data collection and benchmarks are started by running `sim/run.py`. The correct configuration file must be supplied, for each experiment/data collection run. Similarly, `foresight_rospkg/src/run_robot.py` is the primary entry point for the robot experiments/data-collection.
+In sim, data collection and benchmarks are started by running `python sim/run.py`. The correct configuration file must be supplied, for each experiment/data collection run. Similarly, `rosrun foresight_rospkg run_robot.py` is the primary entry point for the robot experiments/data-collection.
 
 ## Data Collection
 By default data is saved in the same directory as the corresponding python config file. Rollouts are saved as a series of pickled dictionaries and JPEG images, or as compressed TFRecords. 
@@ -53,7 +80,8 @@ Use `run_robot` to start random data collection on the Sawyer.
 * For hard object collection: `rosrun foresight_rospkg run_robot.py <robot name/id> data_collection/sawyer/hard_object_data/hparams.py -r`
 * For deformable object collection: `rosrun foresight_rospkg run_robot.py <robot name/id> data_collection/sawyer/towel_data/hparams.py -r`
 ### Sim
-**coming soon**
+Use `sim/run.py` to start random data collection in our custom MuJoCo cartgripper environment
+* To collect data with l-block objects and autograsp (x, y, z, wrist rotation, grasp reflex) action space run: `python sim/run.py data_collection/sim/grasp_reflex_lblocks/hparams.py --nworkers <num_threads>`
 ### Convert to TFRecords
 While the raw (pkl/jpeg file) data format is convenient to work with, it is far less efficient for model training. Thus, we offer a utility in `visual_mpc/utils/file_2_record.py` which converts data from our raw format to compressed TFRecords.
 
@@ -63,14 +91,19 @@ Again pass in the python config file to the corresponding entry point. This time
 * For Registration Experiments: `rosrun foresight_rospkg run_robot.py <robot name/id> experiments/sawyer/registration_experiments/hparams.py --benchmark`
 * For Mixed Object Experiments (one model which handles both deformable and rigid objects)
   - Rigid: `rosrun foresight_rospkg run_robot.py <robot name/id> experiments/sawyer/mixed_objects/hparams_deformable_objects.py --benchmark`
-  - Deformable `rosrun foresight_rospkg run_robot.py <robot name/id> experiments/sawyer/mixed_objects/hparams_hardobjects.py --benchmark`
+  - Deformable: `rosrun foresight_rospkg run_robot.py <robot name/id> experiments/sawyer/mixed_objects/hparams_hardobjects.py --benchmark`
 * **Meta-classifier experiments are coming soon**
 ### Sim
 **Coming soon!**
 # Pretrained Models
-*Coming soon*
+**Coming soon**
 # Citation
 If you find this useful, consider citing:
 ```
-BIBTEX GOES HERE
+@article{visualforesight,
+  title={Visual Foresight: Model-Based Deep Reinforcement Learning for Vision-Based Robotic Control},
+  author={Ebert, Frederik and Finn, Chelsea and Dasari, Sudeep and Xie, Annie and Lee, Alex and Levine, Sergey},
+  journal={arXiv preprint arXiv:1812.00568},
+  year={2018}
+}
 ```
