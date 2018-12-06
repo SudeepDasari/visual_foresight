@@ -71,7 +71,7 @@ rosrun foresight_rospkg send_urdf_fragment.py     # (optional) stop after Sawyer
 ```
 
 # Experiment Reproduction
-In sim, data collection and benchmarks are started by running `python sim/run.py`. The correct configuration file must be supplied, for each experiment/data collection run. Similarly, `rosrun foresight_rospkg run_robot.py` is the primary entry point for the robot experiments/data-collection.
+In sim, data collection and benchmarks are started by running `python visual_mpc/sim/run.py`. The correct configuration file must be supplied, for each experiment/data collection run. Similarly, `rosrun foresight_rospkg run_robot.py` is the primary entry point for the robot experiments/data-collection.
 
 ## Data Collection
 By default data is saved in the same directory as the corresponding python config file. Rollouts are saved as a series of pickled dictionaries and JPEG images, or as compressed TFRecords. 
@@ -80,8 +80,8 @@ Use `run_robot` to start random data collection on the Sawyer.
 * For hard object collection: `rosrun foresight_rospkg run_robot.py <robot name/id> data_collection/sawyer/hard_object_data/hparams.py -r`
 * For deformable object collection: `rosrun foresight_rospkg run_robot.py <robot name/id> data_collection/sawyer/towel_data/hparams.py -r`
 ### Sim
-Use `sim/run.py` to start random data collection in our custom MuJoCo cartgripper environment
-* To collect data with l-block objects and autograsp (x, y, z, wrist rotation, grasp reflex) action space run: `python sim/run.py data_collection/sim/grasp_reflex_lblocks/hparams.py --nworkers <num_threads>`
+Use `visual_mpc/sim/run.py` to start random data collection in our custom MuJoCo cartgripper environment
+* To collect data with l-block objects and autograsp (x, y, z, wrist rotation, grasp reflex) action space run: `python visual_mpc/sim/run.py data_collection/sim/grasp_reflex_lblocks/hparams.py --nworkers <num_threads>`
 ### Convert to TFRecords
 While the raw (pkl/jpeg file) data format is convenient to work with, it is far less efficient for model training. Thus, we offer a utility in `visual_mpc/utils/file_2_record.py` which converts data from our raw format to compressed TFRecords.
 
