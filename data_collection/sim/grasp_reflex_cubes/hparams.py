@@ -10,13 +10,14 @@ current_dir = os.path.dirname(os.path.realpath(__file__))
 
 
 env_params = {
-    'num_objects': 10,
+    'num_objects': 12,
     'object_mass': 0.5,
     'friction': 1.0,
     'finger_sensors': True,
     'minlen': 0.03,
-    'maxlen': 0.1,
-    'object_object_mindist': 0.18,
+    'maxlen': 0.06,
+    'object_object_mindist': 0.15,
+    'cube_objects': True,
     'autograsp': {'zthresh': -0.06, 'touchthresh': 0.0, 'reopen': True}
 }
 
@@ -28,8 +29,7 @@ agent = {
     'image_height' : 48,
     'image_width' : 64,
     'gen_xml': 400,   #generate xml every nth trajecotry
-    'make_final_gif': '',
-    'rejection_sample': 1
+    'rejection_sample': 5
 }
 
 policy = {
@@ -44,7 +44,7 @@ config = {
     'traj_per_file':128,
     'current_dir' : current_dir,
     'save_data': True,
-    'save_raw_images' : False,
+    'save_raw_images' : True,
     'start_index':0,
     'end_index': 60000,
     'agent': agent,

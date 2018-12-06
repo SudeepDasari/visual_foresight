@@ -4,6 +4,7 @@ import visual_mpc.envs as envs
 from visual_mpc.envs.mujoco_env.util.create_xml import create_object_xml, create_root_xml, clean_xml
 import copy
 from pyquaternion import Quaternion
+from visual_mpc.utils.im_utils import npy_to_mp4
 
 
 BASE_DIR = '/'.join(str.split(envs.__file__, '/')[:-1])
@@ -56,7 +57,8 @@ class BaseCartgripperEnv(BaseMujocoEnv):
         self._reset_xml = create_object_xml(base_filename, _hp.num_objects, _hp.object_mass,
                                             friction_params, object_meshes, _hp.finger_sensors,
                                             _hp.maxlen, _hp.minlen, reset_xml,
-                                            _hp.obj_classname, cube_objs=_hp.cube_objects)
+                                            _hp.obj_classname, cube_objs=_hp.cube_objects,
+                                            block_height=_hp.block_height)
         gen_xml = create_root_xml(base_filename)
         super().__init__(gen_xml, _hp)
         if _hp.clean_xml:
@@ -92,7 +94,7 @@ class BaseCartgripperEnv(BaseMujocoEnv):
                           'minlen': 0.01,
                           'preload_obj_dict': None,
                           'sample_objectpos':True,
-                          'object_object_mindist':None,
+                          'object_object_mindist':0.,
                           'randomize_initial_pos': True,
                           'arm_obj_initdist': None,
                           'xpos0': None,
@@ -100,9 +102,10 @@ class BaseCartgripperEnv(BaseMujocoEnv):
                           'arm_start_lifted': True,
                           'skip_first': 40,
                           'obj_classname':None,
-                          'substeps': 200,
+                          'substeps': 500,
                           'clean_xml': True,
                           'cube_objects': False,
+                          'block_height': 0.03,
                           'valid_rollout_floor': -2e-2,
                           'use_vel':False,}
 
@@ -125,6 +128,7 @@ class BaseCartgripperEnv(BaseMujocoEnv):
             self.sim.step()
 
         finger_force /= self.substeps
+
         self._previous_target_qpos = target_qpos
         obs = self._get_obs(finger_force)
         self._post_step()
@@ -147,12 +151,32 @@ class BaseCartgripperEnv(BaseMujocoEnv):
         return self.reset(self._read_reset_state)
 
     def _create_pos(self):
-        poses = []
-        for i in range(self.num_objects):
-            pos = np.random.uniform(-.35, .35, 2)
-            alpha = np.random.uniform(0, np.pi * 2)
-            ori = zangle_to_quat(alpha)
-            poses.append(np.concatenate((pos, np.array([0]), ori), axis=0))
+        if self.object_object_mindist > 0:
+            min_dist = self.object_object_mindist
+        else:
+            min_dist = 0.                         # practically inf distance
+
+        # randomly sample initial configurations, if min_dist set find one where objects are at least min_dist apart
+        attempts, poses, max_attempts = 0, [], 3000000
+        while attempts < max_attempts:
+            poses = []
+
+            for i in range(self.num_objects):
+                pos = np.random.uniform(-.35, .35, 2)
+
+                if attempts < (max_attempts - 1) and i > 0:
+                    if min([np.linalg.norm(pos - p[:2]) for p in poses]) < min_dist:
+                        break
+
+                ori = zangle_to_quat(np.random.uniform(0, np.pi * 2))
+                poses.append(np.concatenate((pos, np.array([0]), ori), axis=0))
+
+            if len(poses) == self.num_objects:
+                break
+            attempts += 1
+
+        if attempts == max_attempts - 1:
+            print("WARNING COULDN'T SPACE OBJECTS: MIN_DIST MAY BE SET TOO HIGH")
         return poses
 
     def reset(self, reset_state=None):
@@ -161,22 +185,14 @@ class BaseCartgripperEnv(BaseMujocoEnv):
 
         write_reset_state = {}
         write_reset_state['reset_xml'] = copy.deepcopy(self._reset_xml)
+
+        #clear our observations from last rollout
+        self._last_obs = None
+
         if self._read_reset_state is None:
-
-            #clear our observations from last rollout
-            self._last_obs = None
             # create random starting poses for objects
-
-            if self.object_object_mindist:
-                assert self.num_objects == 2
-                ob_ob_dist = 0.
-                while ob_ob_dist < self.object_object_mindist:
-                    object_pos_l = self._create_pos()
-                    ob_ob_dist = np.linalg.norm(object_pos_l[0][:3] - object_pos_l[1][:3])
-                object_pos = np.concatenate(object_pos_l)
-            else:
-                object_pos_l = self._create_pos()
-                object_pos = np.concatenate(object_pos_l)
+            object_pos_l = self._create_pos()
+            object_pos = np.concatenate(object_pos_l)
 
             # determine arm position
             xpos0 = self.get_armpos(object_pos)

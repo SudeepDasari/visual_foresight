@@ -2,7 +2,7 @@
 
     <compiler inertiafromgeom="auto" angle="radian" coordinate="local" eulerseq="XYZ"/>
     <size njmax="6000" nconmax="6000"/>
-    <option timestep="0.005" gravity="0 0 -9.81" iterations="50" integrator="Euler" />
+    <option timestep="0.005" gravity="0 0 -9.81" iterations="50" integrator="Euler" noslip_iterations="2"/>
     <default>
         <joint limited="false" damping="1" />
         <geom contype="1" conaffinity="1" condim="3" friction=".5 .1 .1" density="1000" margin="0.002" />
@@ -106,7 +106,7 @@
 
         <position joint="hinge_z" ctrllimited="false" kp="300"/>
 
-        <position joint="j_finger1" ctrllimited="true" ctrlrange = "0 0.1" kp="1000"/>
+        <position joint="j_finger1" ctrllimited="true" ctrlrange = "0 0.1" kp="10000"/>
     </actuator>
 
 

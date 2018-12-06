@@ -17,7 +17,7 @@ class AutograspCartgripperEnv(CartgripperRotGraspEnv):
 
         super().__init__(params, reset_state)
         self._adim = 4
-        self._goal_reached = False
+        self._goal_reached, self._ground_zs = False, None
 
     def _default_hparams(self):
         ag_params = {
@@ -38,23 +38,21 @@ class AutograspCartgripperEnv(CartgripperRotGraspEnv):
     def _init_dynamics(self):
         self._goal_reached = False
         self._gripper_closed = False
+        self._ground_zs = self._last_obs['object_poses_full'][:, 2].copy()
 
     def _next_qpos(self, action):
         assert action.shape[0] == self._adim
         gripper_z = self._previous_target_qpos[2]
         z_thresh = self._hp.zthresh
+        delta_z_cond = np.amax(self._last_obs['object_poses_full'][:, 2] - self._ground_zs) > 0.01
 
         target, self._gripper_closed = autograsp_dynamics(self._previous_target_qpos, action,
                                                           self._gripper_closed, gripper_z, z_thresh, self._hp.reopen,
-                                                          is_touching(self._last_obs['finger_sensors']))
+                                                          delta_z_cond)
         return target
 
     def _post_step(self):
-        finger_sensors_thresh = np.max(self._last_obs['finger_sensors']) > self._hp.touchthresh
-        z_thresholds = np.amax(self._last_obs['object_poses_full'][:, 2]) > self._hp.lift_height \
-                       and self._last_obs['state'][2] > self._hp.lift_height
-
-        if z_thresholds and finger_sensors_thresh:
+        if np.amax(self._last_obs['object_poses_full'][:, 2] - self._ground_zs) > 0.05:
             self._goal_reached = True
 
     def has_goal(self):
