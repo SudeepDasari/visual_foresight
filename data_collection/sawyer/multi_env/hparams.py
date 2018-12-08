@@ -1,21 +1,25 @@
 """ Hyperparameters for Large Scale Data Collection (LSDC) """
-
 import os.path
 from visual_mpc.policy.random.gaussian import GaussianPolicy
 from visual_mpc.agent.general_agent import GeneralAgent
 from visual_mpc.envs.sawyer_robot.autograsp_sawyer_env import AutograspSawyerEnv
+from visual_mpc.envs.sawyer_robot.util.topic_utils import IMTopic
 
-
-if 'VMPC_DATA_DIR' in os.environ:
-    BASE_DIR = os.path.join(os.environ['VMPC_DATA_DIR'], 'towel_pick/')
-else:
-    BASE_DIR = '/'.join(str.split(__file__, '/')[:-1])
+BASE_DIR = '/'.join(str.split(__file__, '/')[:-1])
 current_dir = os.path.dirname(os.path.realpath(__file__))
+
+
+conditional_override_nordri = {
+    'env_params': {
+        'camera_topics': [IMTopic('/camera0/image_raw'), IMTopic('/camera1/image_raw')],
+        'gripper_attached': False
+    }
+}
 
 
 agent = {
     'type': GeneralAgent,
-    'env': (AutograspSawyerEnv, {'upper_bound_delta': [0.07, 0., 0., 0., 0.]}),
+    'env': (AutograspSawyerEnv, {}),
     'data_save_dir': BASE_DIR,
     'T': 30,
     'image_height' : 240,
@@ -35,6 +39,7 @@ policy = {
 config = {
     'traj_per_file':128,
     'current_dir' : current_dir,
+    'override_nordri': conditional_override_nordri,
     'save_data': True,
     'save_raw_images': True,
     'start_index':0,

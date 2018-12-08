@@ -14,6 +14,7 @@ import rospy
 import os
 from visual_mpc.utils.im_utils import npy_to_mp4
 from .util.user_interface import select_points
+from .util.topic_utils import IMTopic
 
 
 CONTROL_RATE = 800
@@ -129,24 +130,29 @@ class BaseSawyerEnv(BaseEnv):
         else:
             self._obs_tol = self._hp.OFFSET_TOL
 
-        self._controller = ImpedanceWSGController(CONTROL_RATE, self._robot_name, self._hp.print_debug)
+        self._controller = ImpedanceWSGController(CONTROL_RATE, self._robot_name,
+                                                  self._hp.print_debug, self._hp.gripper_attached)
         self._limb_recorder = LimbWSGRecorder(self._controller)
         self._save_video = self._hp.video_save_dir is not None
-        if self._hp.kinect_camera:
-            # hack around to make dual cam env easily work with monocam kinect (say left = main and only render main)
-            self._main_cam = CameraRecorder('/kinect2/hd/image_color_rect', self._hp.opencv_tracking, self._save_video)
-            self._left_cam = CameraRecorder('/kinect2/hd/image_color_rect', self._hp.opencv_tracking, self._save_video)
-        else:
-            self._main_cam = CameraRecorder('/camera0/image_raw', self._hp.opencv_tracking, self._save_video)
-            self._left_cam = CameraRecorder('/camera1/image_raw', self._hp.opencv_tracking, self._save_video)
+        self._cameras = [CameraRecorder(t, self._hp.opencv_tracking, self._save_video) for t in self._hp.camera_topics]
+
         self._controller.open_gripper(True)
         self._controller.close_gripper(True)
         self._controller.open_gripper(True)
 
-        img_dim_check = (self._main_cam.img_height, self._main_cam.img_width) == \
-                        (self._left_cam.img_height, self._left_cam.img_width)
-        assert img_dim_check, 'Camera image streams do not match)'
-        self._height, self._width = self._main_cam.img_height, self._main_cam.img_width
+        if len(self._cameras) > 1:
+            first_cam_dim = (self._cameras[0].img_height, self._cameras[1].img_width)
+            assert all([(c.img_height, c.img_width) == first_cam_dim for c in self._cameras[1:]]), \
+                'Camera image streams do not match)'
+
+        if len(self._cameras) == 1:
+            self._cam_names = ['front']
+        elif len(self._cameras) == 2:
+            self._cam_names = ['front', 'left']
+        else:
+            self._cam_names = ['cam{}'.format(i) for i in range(len(self._cameras))]
+
+        self._height, self._width = self._cameras[0].img_height, self._cameras[0].img_width
 
         self._base_adim, self._base_sdim = 5, 5
         self._adim, self._sdim, self.mode_rel = None, None, np.array(self._hp.mode_rel)
@@ -158,7 +164,8 @@ class BaseSawyerEnv(BaseEnv):
 
     def _default_hparams(self):
         default_dict = {'robot_name': None,
-                        'kinect_camera': False,
+                        'gripper_attached': True,
+                        'camera_topics': [IMTopic('/camera0/image_raw', flip=True), IMTopic('/camera1/image_raw')],
                         'opencv_tracking': False,
                         'video_save_dir': None,
                         'start_at_neutral': False,
@@ -182,12 +189,12 @@ class BaseSawyerEnv(BaseEnv):
     def _setup_robot(self):
         low_angle = np.pi / 2                  # chosen to maximize wrist rotation given start rotation
         high_angle = 265 * np.pi / 180
-        if self._robot_name == 'vestri':
+        if self._robot_name == 'vestri':                                      # pull the cage a bit backward on vestri
             self._low_bound = np.array([0.47, -0.2, 0.176, low_angle, -1])
-            self._high_bound = np.array([0.88, 0.2, 0.292, high_angle, 1])
+            self._high_bound = np.array([0.81, 0.2, 0.292, high_angle, 1])
         elif self._robot_name == 'sudri':
-            self._low_bound = np.array([0.44, -0.18, 0.176, low_angle, -1])
-            self._high_bound = np.array([0.85, 0.22, 0.292, high_angle, 1])
+            self._low_bound = np.array([0.45, -0.18, 0.176, low_angle, -1])
+            self._high_bound = np.array([0.79, 0.22, 0.292, high_angle, 1])
         else:
             raise ValueError("Supported robots are vestri/sudri")
 
@@ -215,7 +222,7 @@ class BaseSawyerEnv(BaseEnv):
         wait_change = (target_qpos[-1] > 0) != (self._previous_target_qpos[-1] > 0)
 
         if self._save_video:
-            self._main_cam.start_recording(), self._left_cam.start_recording()
+            [c.start_recording() for c in self._cameras]
 
         if target_qpos[-1] > 0:
             self._controller.close_gripper(wait_change)
@@ -225,7 +232,7 @@ class BaseSawyerEnv(BaseEnv):
         self._move_to_state(target_qpos[:3], target_qpos[3])
 
         if self._save_video:
-            self._main_cam.stop_recording(), self._left_cam.stop_recording()
+            [c.stop_recording() for c in self._cameras]
 
         self._previous_target_qpos = target_qpos
         return self._get_obs()
@@ -278,10 +285,9 @@ class BaseSawyerEnv(BaseEnv):
         obs['high_bound'],obs['low_bound'] = copy.deepcopy(self._high_bound), copy.deepcopy(self._low_bound)
 
         if self._hp.opencv_tracking:
-            track_desig = np.zeros((2, 1, 2), dtype=np.int64)
-            track_desig[0] = self._main_cam.get_track()
-            track_desig[0] = np.array([[self._height, self._width]]) - track_desig[0]
-            track_desig[1] = self._left_cam.get_track()
+            track_desig = np.zeros((self.ncam, 1, 2), dtype=np.int64)
+            for i, c in enumerate(self._cameras):
+                track_desig[i] = c.get_track()
             self._desig_pix = track_desig
 
         if self._desig_pix is not None:
@@ -328,28 +334,23 @@ class BaseSawyerEnv(BaseEnv):
 
     def _save_videos(self):
         if self._save_video:
-            front_buffer, left_buffer = self._main_cam.reset_recording(), self._left_cam.reset_recording()
-            if len(front_buffer) == 0 and len(left_buffer) == 0:
+            buffers = [c.reset_recording() for c in self._cameras]
+            if max([len(b) for b in buffers]) == 0:
                 return
-            front_buffer = [f[::-1, ::-1].copy() for f in front_buffer]
 
             clip_base_name = '{}/recording{}/'.format(self._hp.video_save_dir, self._reset_counter)
             if not os.path.exists:
                 os.makedirs(clip_base_name)
 
-            if len(front_buffer) > 0:
-                npy_to_mp4(front_buffer, '{}/front_clip'.format(clip_base_name), 30)
-            if len(left_buffer) > 0:
-                npy_to_mp4(left_buffer, '{}/left_clip'.format(clip_base_name), 30)
+            for name, b in zip(self._cam_names, buffers):
+                if len(b) > 0:
+                    npy_to_mp4(b, '{}/{}_clip'.format(clip_base_name, name), 30)
 
     def _end_reset(self):
         if self._hp.opencv_tracking:
             assert self._desig_pix is not None, "Designated pixels must be set (call get_obj_desig_goal)"
             track_desig = copy.deepcopy(self._desig_pix)
-            track_desig[0] = np.array([[self._height, self._width]]) - track_desig[0]
-
-            self._main_cam.start_tracking(track_desig[0])
-            self._left_cam.start_tracking(track_desig[1])
+            [c.start_tracking(track_desig[i]) for i, c in enumerate(self._cameras)]
 
         self._reset_previous_qpos()
         self._init_dynamics()
@@ -429,7 +430,7 @@ class BaseSawyerEnv(BaseEnv):
         """
         return False
 
-    def render(self, mode='dual'):
+    def render(self):
         """ Grabs images form cameras.
         If returning multiple images asserts timestamps are w/in OBS_TOLERANCE, and raises Image_Exception otherwise
 
@@ -439,22 +440,17 @@ class BaseSawyerEnv(BaseEnv):
         :param mode: Mode to render with (dual by default)
         :return: uint8 numpy array with rendering from sim
         """
-
-        cameras = [self._main_cam, self._left_cam]
-        if mode == 'left':
-            cameras = [self._left_cam]
-        elif mode == 'main' or self._hp.kinect_camera:
-            cameras = [self._main_cam]
-
         time_stamps = []
         cam_imgs = []
-        for c, recorder in enumerate(cameras):
+        cur_time = rospy.get_time()
+
+        for recorder in self._cameras:
             stamp, image = recorder.get_image()
+            if abs(stamp - cur_time) > 10 * self._obs_tol:    # no camera ping in half second => camera failure
+                print("DeSYNC!")
+                raise Image_Exception
             time_stamps.append(stamp)
-            if recorder is self._main_cam:
-                cam_imgs.append(image[::-1, ::-1].copy())
-            else:
-                cam_imgs.append(image)
+            cam_imgs.append(image)
 
         for index, i in enumerate(time_stamps[:-1]):
             for j in time_stamps[index + 1:]:
@@ -462,7 +458,7 @@ class BaseSawyerEnv(BaseEnv):
                     print('DeSYNC!')
                     raise Image_Exception
 
-        images = np.zeros((len(cameras), self._height, self._width, 3), dtype=np.uint8)
+        images = np.zeros((self.ncam, self._height, self._width, 3), dtype=np.uint8)
         for c, img in enumerate(cam_imgs):
             images[c] = img[:, :, ::-1]
 
@@ -487,7 +483,7 @@ class BaseSawyerEnv(BaseEnv):
         """
         Sawyer environment has ncam cameras
         """
-        return 2
+        return len(self._cameras)
 
     @property
     def num_objects(self):
@@ -523,8 +519,7 @@ class BaseSawyerEnv(BaseEnv):
         print 'improvement: {}'.format(improvement)
 
         if self._hp.opencv_tracking:
-            self._main_cam.end_tracking()
-            self._left_cam.end_tracking()
+            [c.end_tracking() for c in self._cameras]
 
         return {'final_dist': final_dist, 'start_dist': start_dist, 'improvement': improvement}
 

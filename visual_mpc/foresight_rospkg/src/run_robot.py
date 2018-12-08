@@ -6,22 +6,33 @@ import cPickle as pkl
 import numpy as np
 import shutil
 import cv2
-
-
-supported_robots = {'sudri', 'vestri'}
+from visual_mpc.envs.base_env import supported_robots
 
 
 class RobotEnvironment:
-    def __init__(self, robot_name, conf, resume = False, ngpu = 1, gpu_id = 0, is_bench=False):
-        self._hyperparams = conf
-        self.agentparams, self.policyparams, self.envparams = conf['agent'], conf['policy'], conf['agent']['env'][1]
-
+    def __init__(self, robot_name, conf, resume=False, ngpu=1, gpu_id=0, is_bench=False):
         if robot_name not in supported_robots:
             msg = "ROBOT {} IS NOT A SUPPORTED ROBOT (".format(robot_name)
             for k in supported_robots:
                 msg = msg + "{} ".format(k)
             msg = msg + ")"
             raise NotImplementedError(msg)
+
+        if 'override_{}'.format(robot_name) in conf:
+            override_params = conf['override_{}'.format(robot_name)]
+            conf['agent'].update(override_params.get('agent', {}))
+            conf['agent']['env'][1].update(override_params.get('env_params', {}))
+            conf['policy'].update(override_params.get('policy', {}))
+
+        if 'imax' not in conf['agent']:
+            conf['agent']['imax'] = 5
+
+        if 'RESULT_DIR' in os.environ:
+            exp_name = conf['agent']['data_save_dir'].split('/')[-1]
+            conf['agent']['data_save_dir'] = '{}/{}'.format(os.environ['RESULT_DIR'], exp_name)
+
+        self._hyperparams = conf
+        self.agentparams, self.policyparams, self.envparams = conf['agent'], conf['policy'], conf['agent']['env'][1]
 
         self.envparams['robot_name'] = self.agentparams['robot_name'] = robot_name
         self._is_bench = is_bench
@@ -74,11 +85,7 @@ class RobotEnvironment:
         return name
 
     def take_sample(self, sample_index):
-        if 'RESULT_DIR' in os.environ and self._is_bench:
-            exp_name = self.agentparams['data_save_dir'].split('/')[-1]
-            data_save_dir = '{}/{}'.format(os.environ['RESULT_DIR'], exp_name)
-        else: data_save_dir = self.agentparams['data_save_dir']
-        data_save_dir += '/' + self.task_mode
+        data_save_dir = self.agentparams['data_save_dir'] + '/' + self.task_mode
 
         if self._is_bench:
             bench_name = self._get_bench_name()

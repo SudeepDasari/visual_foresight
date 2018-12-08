@@ -3,6 +3,9 @@ import random
 from tensorflow.contrib.training import HParams
 
 
+supported_robots = {'sudri', 'vestri'}
+
+
 class BaseEnv:
     def step(self, action):
         """

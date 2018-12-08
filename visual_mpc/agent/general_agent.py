@@ -5,6 +5,12 @@ import cv2
 from visual_mpc.policy.policy import get_policy_args
 from visual_mpc.utils.im_utils import resize_store, npy_to_gif
 
+
+class Bad_Traj_Exception(Exception):
+    def __init__(self):
+        pass
+
+
 class Image_Exception(Exception):
     def __init__(self):
         pass
@@ -54,15 +60,17 @@ class GeneralAgent(object):
 
         traj_ok, obs_dict, policy_outs, agent_data = False, None, None, None
         i_trial = 0
-        imax = 100
 
-        while not traj_ok and i_trial < imax:
+        while not traj_ok and i_trial < self._hyperparams.get('imax', 100):
             i_trial += 1
             try:
                 agent_data, obs_dict, policy_outs = self.rollout(policy, i_trial, i_traj)
                 traj_ok = agent_data['traj_ok']
             except Image_Exception:
                 traj_ok = False
+
+        if not traj_ok:
+            raise Bad_Traj_Exception
 
         print('needed {} trials'.format(i_trial))
 

@@ -25,7 +25,7 @@ RESET_SKIP = 800
 
 
 class ImpedanceWSGController(RobotController):
-    def __init__(self, control_rate, robot_name, print_debug):
+    def __init__(self, control_rate, robot_name, print_debug, gripper_attached=True):
         self.max_release = 0
         self._print_debug = print_debug
         RobotController.__init__(self)
@@ -41,17 +41,19 @@ class ImpedanceWSGController(RobotController):
         self.num_timeouts = 0
 
         self._cmd_publisher = rospy.Publisher('/robot/limb/right/joint_command', JointCommand, queue_size=100)
-        self.gripper_pub = rospy.Publisher('/wsg_50_driver/goal_position', Cmd, queue_size=10)
-        rospy.Subscriber("/wsg_50_driver/status", Status, self._gripper_callback)
 
-        print("waiting for first status")
-        self.sem_list[0].acquire()
-        print('gripper initialized!')
+        self._gripper_attached = gripper_attached
+        if gripper_attached:
+            self.gripper_pub = rospy.Publisher('/wsg_50_driver/goal_position', Cmd, queue_size=10)
+            rospy.Subscriber("/wsg_50_driver/status", Status, self._gripper_callback)
+            print("waiting for first status")
+            self.sem_list[0].acquire()
+            print('gripper initialized!')
+
+            self._navigator = intera_interface.Navigator()
+            self._navigator.register_callback(self._close_gripper_handler, 'right_button_ok')
 
         self.control_rate = rospy.Rate(control_rate)
-
-        self._navigator = intera_interface.Navigator()
-        self._navigator.register_callback(self._close_gripper_handler, 'right_button_ok')
 
     def _close_gripper_handler(self, value):
         if value:
@@ -65,6 +67,9 @@ class ImpedanceWSGController(RobotController):
         self.gripper_speed = new_speed
 
     def get_gripper_status(self, integrate_force=False):
+        if not self._gripper_attached:
+            return 0, 0
+
         self._status_mutex.acquire()
         cum_force, cntr = self._integrate_gripper_force, self._force_counter
         width, force = self._gripper_width, self._gripper_force
@@ -89,12 +94,12 @@ class ImpedanceWSGController(RobotController):
         return GRIPPER_CLOSE, GRIPPER_OPEN
 
     def open_gripper(self, wait = False):
-        self.set_gripper(GRIPPER_OPEN, wait = wait)
+        self.set_gripper(GRIPPER_OPEN, wait=wait)
 
     def close_gripper(self, wait = False):
-        self.set_gripper(GRIPPER_CLOSE, wait = wait)
+        self.set_gripper(GRIPPER_CLOSE, wait=wait)
 
-    def _set_gripper(self, command_pos, wait = False):
+    def _set_gripper(self, command_pos, wait=False):
         self._desired_gpos = command_pos
         if wait:
             if self.num_timeouts > MAX_TIMEOUT:
@@ -112,6 +117,9 @@ class ImpedanceWSGController(RobotController):
             self._debug_print("waited on gripper for {} seconds".format(rospy.get_time() - start))
 
     def set_gripper(self, command_pos, wait = False):
+        if not self._gripper_attached:
+            return
+
         assert command_pos >= GRIPPER_CLOSE and command_pos <= GRIPPER_OPEN, "Command pos must be in range [GRIPPER_CLOSE, GRIPPER_OPEN]"
         self._set_gripper(command_pos, wait = wait)
 

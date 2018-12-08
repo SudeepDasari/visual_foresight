@@ -30,7 +30,7 @@ class LatestObservation(object):
 class CameraRecorder:
     TRACK_SKIP = 2        # the camera publisher works at 60 FPS but camera itself only goes at 30
 
-    def __init__(self, topic_name, opencv_tracking=False, save_videos=False, topic_img_dtype="bgra8"):
+    def __init__(self, topic_data, opencv_tracking=False, save_videos=False):
         self._tracking_enabled, self._save_vides = opencv_tracking, save_videos
 
         self._latest_image = LatestObservation(self._tracking_enabled, self._save_vides)
@@ -46,9 +46,10 @@ class CameraRecorder:
             self._buffers = []
             self._saving = False
 
-        self._image_dtype = topic_img_dtype
-        rospy.Subscriber(topic_name, Image_msg, self.store_latest_im)
-        print('downing sema on topic: {}'.format(topic_name))
+        self._topic_data = topic_data
+        self._image_dtype = topic_data.dtype
+        rospy.Subscriber(topic_data.name, Image_msg, self.store_latest_im)
+        print('downing sema on topic: {}'.format(topic_data.name))
         self._status_sem.acquire()
         print("Cameras subscribed: stream is {}x{}".format(self._cam_width, self._cam_height))
 
@@ -135,7 +136,7 @@ class CameraRecorder:
         latest_obsv.tstamp_img = rospy.get_time()
 
         cv_image = self.bridge.imgmsg_to_cv2(data, self._image_dtype)[:, :, :3]
-        latest_obsv.img_cv2 = copy.deepcopy(cv_image)
+        latest_obsv.img_cv2 = copy.deepcopy(self._topic_data.process_image(cv_image))
 
         if self._tracking_enabled and self._is_tracking:
             if latest_obsv.track_itr % self.TRACK_SKIP == 0:

@@ -5,3 +5,4 @@
 *.index
 *.out
 *.meta
+*.egg-info/
