@@ -397,7 +397,7 @@ class BaseSawyerEnv(BaseEnv):
             self._controller.open_gripper(True)
             self._controller.neutral_with_impedance()
 
-        if self._cleanup_rate > 0 and self._reset_counter % self._cleanup_rate == 0:
+        if self._cleanup_rate > 0 and self._reset_counter % self._cleanup_rate == 0 and self._reset_counter > 0:
             self._controller.redistribute_objects()
 
         self._controller.neutral_with_impedance()
