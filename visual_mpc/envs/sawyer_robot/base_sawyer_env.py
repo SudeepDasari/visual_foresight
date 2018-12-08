@@ -119,7 +119,10 @@ class BaseSawyerEnv(BaseEnv):
         self._hp = self._default_hparams()
         for name, value in env_params.items():
             print('setting param {} to value {}'.format(name, value))
-            self._hp.set_hparam(name, value)
+            if name == 'camera_topics':
+                self._hp.camera_topics = value
+            else:
+                self._hp.set_hparam(name, value)
 
         print('initializing environment for {}'.format(self._hp.robot_name))
         self._robot_name = self._hp.robot_name
@@ -195,6 +198,9 @@ class BaseSawyerEnv(BaseEnv):
         elif self._robot_name == 'sudri':
             self._low_bound = np.array([0.45, -0.18, 0.176, low_angle, -1])
             self._high_bound = np.array([0.79, 0.22, 0.292, high_angle, 1])
+        elif self._robot_name == 'nordri':
+            self._low_bound = np.array([0.42, -0.3, 0.16, low_angle, -1])
+            self._high_bound = np.array([0.75, 0.1, 0.276, high_angle, 1])
         else:
             raise ValueError("Supported robots are vestri/sudri")
 

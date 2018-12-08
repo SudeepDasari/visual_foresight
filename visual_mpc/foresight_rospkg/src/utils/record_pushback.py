@@ -19,7 +19,7 @@ class Pushback_Recorder(object):
         print("Initializing node... ")
         rospy.init_node("pushback_recorder")
 
-        parser = argparse.ArgumentParser(description='select whehter to record or replay')
+        parser = argparse.ArgumentParser()
         parser.add_argument('robot', type=str, help='robot name')
 
 
@@ -38,7 +38,7 @@ class Pushback_Recorder(object):
         self._navigator = intera_interface.Navigator()
         self.start_callid = self._navigator.register_callback(self.start_recording, 'right_button_ok')
         # Navigator Rethink button press
-        self.stop_callid = self._navigator.register_callback(self.stop_recording, 'right_button_show')
+        self.stop_callid = self._navigator.register_callback(self.stop_recording, 'right_button_square')
 
         self.control_rate = rospy.Rate(800)
 

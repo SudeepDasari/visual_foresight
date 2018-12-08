@@ -11,7 +11,8 @@ current_dir = os.path.dirname(os.path.realpath(__file__))
 
 conditional_override_nordri = {
     'env_params': {
-        'camera_topics': [IMTopic('/camera0/image_raw'), IMTopic('/camera1/image_raw')],
+        'camera_topics': [IMTopic('/kinect2/qhd/image_color', flip=True),
+                          IMTopic('/camera/image_raw')],
         'gripper_attached': False
     }
 }

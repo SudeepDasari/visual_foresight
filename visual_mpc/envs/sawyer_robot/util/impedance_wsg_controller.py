@@ -222,8 +222,7 @@ class ImpedanceWSGController(RobotController):
 
         file = '/'.join(str.split(foresight_rospkg.__file__, "/")[
                         :-1]) + '/src/utils/pushback_traj_{}.pkl'.format(self.robot_name)
-        import pdb
-        pdb.set_trace()
+
         self.joint_pos = pkl.load(open(file, "rb"))
 
         for t in range(0, len(self.joint_pos), RESET_SKIP):

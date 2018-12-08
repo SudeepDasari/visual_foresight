@@ -1,5 +1,8 @@
+import cv2
+
+
 class IMTopic:
-    def __init__(self, name, height=640, width=480, top=0, bot=0, right=0, left=0, dtype="bgr8", flip=False):
+    def __init__(self, name, height=480, width=640, top=0, bot=0, right=0, left=0, dtype="bgr8", flip=False):
         self._name = name
         self._width = width
         self._top = top
@@ -24,6 +27,8 @@ class IMTopic:
         if self.flip:
             img = img[::-1, ::-1]
 
+        if (self.height, self.width) != img.shape[:2]:
+            return cv2.resize(img, (self.width, self.height), interpolation=cv2.INTER_AREA)
         return img
 
     @property
