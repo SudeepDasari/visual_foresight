@@ -17,13 +17,13 @@ class IMTopic:
         assert self._bot + self._top < img.shape[0], "Overcrop! bot + top crop >= image height!"
         assert self._right + self._left < img.shape[1], "Overcrop! right + left crop >= image width!"
 
-        bot, left = self._bot, self._left
+        bot, right = self._bot, self._right
         if self._bot <= 0:
-            bot = img.shape[0] + 10
-        if self._left <= 0:
-            left = img.shape[1] + 10
+            bot = -(img.shape[0] + 10)
+        if self._right <= 0:
+            right = -(img.shape[1] + 10)
+        img = img[self._top:-bot, self._left:-right]
 
-        img = img[self._top:bot, self._right:left]
         if self.flip:
             img = img[::-1, ::-1]
 
