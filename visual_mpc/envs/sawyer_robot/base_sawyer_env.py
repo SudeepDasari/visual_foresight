@@ -3,7 +3,7 @@ import numpy as np
 import random
 from geometry_msgs.msg import Quaternion as Quaternion_msg
 from pyquaternion import Quaternion
-from visual_mpc.agent.general_agent import Image_Exception
+from visual_mpc.agent.general_agent import Image_Exception, Bad_Traj_Exception
 from .util.limb_recorder import LimbWSGRecorder
 from .util.camera_recorder import CameraRecorder
 from .util.impedance_wsg_controller import ImpedanceWSGController, NEUTRAL_JOINT_CMD
@@ -199,8 +199,8 @@ class BaseSawyerEnv(BaseEnv):
             self._low_bound = np.array([0.45, -0.18, 0.176, low_angle, -1])
             self._high_bound = np.array([0.79, 0.22, 0.292, high_angle, 1])
         elif self._robot_name == 'nordri':
-            self._low_bound = np.array([0.42, -0.3, 0.214, low_angle, -1])
-            self._high_bound = np.array([0.75, 0.1, 0.33, high_angle, 1])
+            self._low_bound = np.array([0.45, -0.3, 0.214, low_angle, -1])
+            self._high_bound = np.array([0.75, 0.24, 0.33, high_angle, 1])
         else:
             raise ValueError("Supported robots are vestri/sudri")
 
