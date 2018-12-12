@@ -33,7 +33,7 @@ def perform_benchmark(conf=None, iex=-1, gpu_id=None, ngpu=1):
 
     # sample intial conditions and goalpoints
 
-    sim = Sim(conf, gpu_id=gpu_id, ngpu=ngpu)
+    sim = Sim(conf, gpu_id=gpu_id, ngpu=ngpu, task_mode='bench')
 
     if iex == -1:
         i_traj = conf['start_index']

@@ -114,8 +114,7 @@ class BaseCartgripperEnv(BaseMujocoEnv):
             parent_params.add_hparam(k, default_dict[k])
         return parent_params
 
-    def step(self, action):
-        target_qpos = np.clip(self._next_qpos(action), self.low_bound, self.high_bound)
+    def _step(self, target_qpos):
         assert target_qpos.shape[0] == self._base_adim
         finger_force = np.zeros(2)
 
@@ -134,6 +133,10 @@ class BaseCartgripperEnv(BaseMujocoEnv):
         self._post_step()
 
         return obs
+
+    def step(self, action):
+        target_qpos = np.clip(self._next_qpos(action), self.low_bound, self.high_bound)
+        return self._step(target_qpos)
 
     def _post_step(self):
         return
