@@ -48,8 +48,9 @@ class BaseMujocoEnv(BaseEnv):
         self._model_path = model_path
         self.sim = MjSim(load_model_from_path(self._model_path))
 
-    def reset(self):
-        self._goaldistances = []
+    def _reset_eval(self):
+        if self._goal_obj_pose is not None:
+            self._goaldistances = [self.get_distance_score()]
 
     def render(self):
         """ Renders the enviornment.

@@ -223,7 +223,9 @@ class BaseCartgripperEnv(BaseMujocoEnv):
         self._previous_target_qpos = copy.deepcopy(self.sim.data.qpos[:self._base_adim].squeeze())
         self._previous_target_qpos[-1] = self.low_bound[-1]
         reset_obs = self._get_obs(finger_force / self.skip_first / self.substeps)
+
         self._init_dynamics()
+        self._reset_eval()
 
         return reset_obs, write_reset_state
 

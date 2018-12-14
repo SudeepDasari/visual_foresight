@@ -26,7 +26,7 @@ env_params = {
 agent = {
     'type': BenchmarkAgent,
     'env': (AutograspCartgripperEnv, env_params),
-    'T': 45,
+    'T': 30,
     'image_height' : 48,
     'image_width' : 64,
     'data_save_dir': BASE_DIR,
