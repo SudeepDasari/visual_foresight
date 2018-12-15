@@ -40,7 +40,7 @@ class RobotEnvironment:
             self.task_mode = '{}/exp'.format(robot_name)
             self.agentparams['env'][1]['start_at_neutral'] = True     # robot should start at neutral during benchmarks
         else:
-            self.task_mode = '{}/train'.format(robot_name)
+            self.task_mode = '{}/{}'.format(robot_name, conf.get('mode', 'train'))
 
         if 'register_gtruth' in self.policyparams:
             assert 'register_gtruth' not in self.agentparams, "SHOULD BE IN POLICY PARAMS"

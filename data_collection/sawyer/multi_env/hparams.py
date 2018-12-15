@@ -17,6 +17,13 @@ conditional_override_nordri = {
     }
 }
 
+conditional_override_vestri = {
+    'env_params': {
+        'upper_bound_delta': [0., 0., 0.047, 0., 0.],
+        'lower_bound_delta': [0., 0., 0.047, 0., 0.],
+        'gripper_attached': False
+    }
+}
 
 agent = {
     'type': GeneralAgent,
@@ -41,11 +48,13 @@ config = {
     'traj_per_file':128,
     'current_dir' : current_dir,
     'override_nordri': conditional_override_nordri,
+    'override_vestri': conditional_override_vestri,
     'save_data': True,
     'save_raw_images': True,
     'start_index':0,
     'end_index': 120000,
     'agent': agent,
     'policy': policy,
-    'ngroup': 1000
+    'ngroup': 1000,
+    'mode': 'test'
 }
