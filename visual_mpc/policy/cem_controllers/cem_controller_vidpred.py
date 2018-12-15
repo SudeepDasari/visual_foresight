@@ -61,6 +61,7 @@ class CEM_Controller_Vidpred(CEM_Controller_Base):
         if ngpu > 1 and self._hp.extra_score_functions is not None:
             vpred_ngpu = ngpu - 1
         else: vpred_ngpu = ngpu
+
         self.predictor = self.netconf['setup_predictor'](ag_params, self.netconf, gpu_id, vpred_ngpu, self.logger)
 
         self.bsize = self.netconf['batch_size']
@@ -159,17 +160,21 @@ class CEM_Controller_Vidpred(CEM_Controller_Base):
 
         return one_hot_images
 
-    def get_rollouts(self, actions, cem_itr, itr_times):
+    def get_rollouts(self, actions, cem_itr, itr_times, n_samps=None):
+        if n_samps is None:
+            n_samps = self.M
+
+
         actions, last_frames, last_states, t_0 = self.prep_vidpred_inp(actions, cem_itr)
         input_distrib = self.make_input_distrib(cem_itr)
 
         t_startpred = time.time()
-        if self.M > self.bsize:
-            nruns = self.M//self.bsize
-            assert self.bsize*nruns == self.M, "bsize: {}, nruns {}, but M is {}".format(self.bsize, nruns, self.M)
+        if n_samps > self.bsize:
+            nruns = n_samps//self.bsize
+            assert self.bsize*nruns == n_samps, "bsize: {}, nruns {}, but n_samps is {}".format(self.bsize, nruns, n_samps)
         else:
             nruns = 1
-            assert self.M == self.bsize
+            assert n_samps == self.bsize
         gen_images_l, gen_distrib_l, gen_states_l = [], [], []
         itr_times['pre_run'] = time.time() - t_0
         for run in range(nruns):

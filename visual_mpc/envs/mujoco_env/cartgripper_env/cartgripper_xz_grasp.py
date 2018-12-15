@@ -92,7 +92,7 @@ class CartgripperXZGrasp(BaseCartgripperEnv):
     def goal_reached(self):
         return self._goal_reached
 
-    def move_arm(self):
+    def _move_arm(self):
         """
         Moves arm to random position
         :return: None
@@ -101,7 +101,7 @@ class CartgripperXZGrasp(BaseCartgripperEnv):
         target_dy = np.random.uniform(0.12, self.high_bound[2]) - self._previous_target_qpos[1]
         self.step(np.array([target_dx, target_dy, -1]))
 
-    def move_objects(self):
+    def _move_objects(self):
         """
         Creates a lifting task by randomly placing block in gripper until it grasps
             - Randomness needed since there is no "expert" to correctly place object into hand
@@ -134,6 +134,10 @@ class CartgripperXZGrasp(BaseCartgripperEnv):
                 for _ in range(self.substeps):
                     self.sim.data.ctrl[:] = target_cmd
                     self.sim.step()
+
+    def generate_task(self):
+        self._move_arm()
+        self._move_objects()
 
     @staticmethod
     def default_ncam():

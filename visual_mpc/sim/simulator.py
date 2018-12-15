@@ -11,7 +11,7 @@ sys.path.append('/'.join(str.split(__file__, '/')[:-2]))
 class Sim(object):
     """ Main class to run algorithms and experiments. """
 
-    def __init__(self, config, gpu_id=0, ngpu=1, logger=None):
+    def __init__(self, config, gpu_id=0, ngpu=1, logger=None, task_mode='train'):
         self._hyperparams = config
         self.agent = config['agent']['type'](config['agent'])
         self.agentparams = config['agent']
@@ -33,7 +33,7 @@ class Sim(object):
             os.remove(self._hyperparams['agent']['image_dir'])
         except:
             pass
-        self.task_mode = 'train'
+        self.task_mode = task_mode
 
     def run(self):
         if self._counter is None:

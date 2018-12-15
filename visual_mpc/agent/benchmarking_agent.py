@@ -97,6 +97,7 @@ class BenchmarkAgent(GeneralAgent):
                 if not os.path.isfile(image_file):
                     raise ValueError("Can't find goal image: {}".format(image_file))
                 goal_images[t, i] = cv2.imread(image_file)[...,::-1]
+
         self._goal_image = goal_images.astype(np.float32)/255.
 
         with open('{}/agent_data.pkl'.format(traj_folder), 'rb') as file:

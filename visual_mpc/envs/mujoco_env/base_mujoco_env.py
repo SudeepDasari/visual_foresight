@@ -48,8 +48,9 @@ class BaseMujocoEnv(BaseEnv):
         self._model_path = model_path
         self.sim = MjSim(load_model_from_path(self._model_path))
 
-    def reset(self):
-        self._goaldistances = []
+    def _reset_eval(self):
+        if self._goal_obj_pose is not None:
+            self._goaldistances = [self.get_distance_score()]
 
     def render(self):
         """ Renders the enviornment.
@@ -141,9 +142,6 @@ class BaseMujocoEnv(BaseEnv):
             abs_distances.append(np.linalg.norm(goal_pos - curr_pos))
         return np.mean(np.array(abs_distances))
 
-    def snapshot_noarm(self):
-        raise NotImplementedError
-
     @property
     def adim(self):
         return self._adim
@@ -155,3 +153,6 @@ class BaseMujocoEnv(BaseEnv):
     @property
     def ncam(self):
         return self._ncam
+
+    def generate_task(self):
+        raise NotImplementedError

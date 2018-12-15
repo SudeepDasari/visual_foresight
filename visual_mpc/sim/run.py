@@ -51,6 +51,7 @@ def bench_worker(conf, iex=-1, ngpu=1):
     print('started process with PID:', os.getpid())
     random.seed(None)
     np.random.seed(None)
+
     perform_benchmark(conf, iex, gpu_id=conf['gpu_id'], ngpu=ngpu)
 
 
