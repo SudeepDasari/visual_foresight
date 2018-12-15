@@ -17,6 +17,15 @@ conditional_override_nordri = {
     }
 }
 
+conditional_override_nordri_swap = {
+    'env_params': {
+        'camera_topics': [IMTopic('/kinect2/hd/image_color', left=150, right=200, bot=250, flip=True),
+                          IMTopic('/camera/image_raw')],
+        'upper_bound_delta': [0., 0., -0.036, 0., 0.],
+        'lower_bound_delta': [0., 0., -0.036, 0., 0.],
+    }
+}
+
 conditional_override_vestri = {
     'env_params': {
         'upper_bound_delta': [0., 0., 0.047, 0., 0.],
@@ -47,7 +56,7 @@ policy = {
 config = {
     'traj_per_file':128,
     'current_dir' : current_dir,
-    'override_nordri': conditional_override_nordri,
+    'override_nordri': conditional_override_nordri_swap,
     'override_vestri': conditional_override_vestri,
     'save_data': True,
     'save_raw_images': True,
