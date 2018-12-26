@@ -185,7 +185,11 @@ def setup_predictor(hyperparams, conf, gpu_id=0, ngpu=1, logger=None):
                 feed_dict[actions_pl] = input_actions
 
                 if input_one_hot_images is None:
-                    gen_images, gen_states = sess.run([comb_gen_img,
+                    if comb_gen_states is None:
+                        gen_images = sess.run(comb_gen_img, feed_dict)
+                        gen_states = None
+                    else:
+                        gen_images, gen_states = sess.run([comb_gen_img,
                                                        comb_gen_states],
                                                       feed_dict)
                     gen_distrib = None
