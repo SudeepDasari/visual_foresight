@@ -30,3 +30,11 @@ class CartgripperPusherEnv(BaseCartgripperEnv):
         xpos0 = super().get_armpos(object_pos)
         xpos0[3] = np.random.uniform(-np.pi, np.pi)
         return xpos0
+
+    def _init_dynamics(self):
+        return
+
+    def _next_qpos(self, action):
+        assert action.shape[0] == self._adim
+        return self._previous_target_qpos + action
+

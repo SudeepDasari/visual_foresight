@@ -13,12 +13,11 @@ env_params = {
     'num_objects': 12,
     'object_mass': 0.5,
     'friction': 1.0,
-    'finger_sensors': True,
     'minlen': 0.03,
     'maxlen': 0.06,
     'object_object_mindist': 0.15,
     'cube_objects': True,
-    'autograsp': {'zthresh': -0.06, 'touchthresh': 0.0, 'reopen': True}
+    'ncam': 2
 }
 
 agent = {
@@ -29,7 +28,8 @@ agent = {
     'image_height' : 48,
     'image_width' : 64,
     'gen_xml': 400,   #generate xml every nth trajecotry
-    'rejection_sample': 5
+#    'rejection_sample': 1,
+    'make_final_gif': ''
 }
 
 policy = {
@@ -45,8 +45,8 @@ config = {
     'current_dir' : current_dir,
     'save_data': True,
     'seperate_good': True,
-    'save_raw_images' : False,
-    'start_index':30000,
+    'save_raw_images' : True,
+    'start_index':0,
     'end_index': 60000,
     'agent': agent,
     'policy': policy,
