@@ -18,12 +18,7 @@ class BaseMujocoEnv(BaseEnv):
         self._goaldistances = []
 
         self._ncam = _hp.ncam
-        if self._ncam == 2:
-            self.cameras = ['maincam', 'leftcam']
-        elif self._ncam == 1:
-            self.cameras = ['maincam']
-        else:
-            raise ValueError
+        self.cameras = ['cam{}'.format(i) for i in range(self._ncam)]
 
         self._last_obs = None
         self._hp = _hp
