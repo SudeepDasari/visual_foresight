@@ -210,7 +210,7 @@ class SawyerMultiObjEnv(SawyerEnv):
         if self.use_camera_obs:
             if self.camera_depth:
                 raise NotImplementedError
-
+            print(self.camera_height, self.camera_width)
             camera_obs = np.zeros((len(self.camera_name),
                                    self.camera_height,
                                    self.camera_width,

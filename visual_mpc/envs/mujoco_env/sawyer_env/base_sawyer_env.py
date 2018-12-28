@@ -14,3 +14,20 @@ class SawyerEnv(BaseEnv):
 
     def step(self, action):
         return None
+
+    @property
+    def adim(self):
+        return self._adim
+
+    @property
+    def sdim(self):
+        return self._sdim
+
+    @property
+    def ncam(self):
+        return 2
+
+    @property
+    def num_objects(self):
+        return 1
+
