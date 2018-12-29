@@ -41,7 +41,7 @@ class SawyerMultiObjEnv(SawyerEnv):
         control_freq=10,
         horizon=1000,
         ignore_done=False,
-        camera_name=("frontview", "birdview"),
+        camera_name=("frontview", "leftview"),
         camera_height=192,
         camera_width=256,
         camera_depth=False,
@@ -223,7 +223,7 @@ class SawyerMultiObjEnv(SawyerEnv):
                     width=self.camera_width,
                     height=self.camera_height,
                     depth=self.camera_depth,
-                )
+                )[::-1]
             di["images"] = camera_obs
 
         # low-level object information
