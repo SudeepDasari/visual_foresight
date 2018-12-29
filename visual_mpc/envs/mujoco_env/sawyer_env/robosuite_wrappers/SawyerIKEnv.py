@@ -122,6 +122,7 @@ class SawyerMultiObjEnv(SawyerEnv):
             camera_width=camera_width,
             camera_depth=camera_depth,
         )
+        self.camera_width = camera_width
 
     def _load_model(self):
         """

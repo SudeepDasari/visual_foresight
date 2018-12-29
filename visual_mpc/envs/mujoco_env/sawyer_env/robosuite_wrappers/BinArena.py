@@ -1,4 +1,5 @@
 import numpy as np
+import os
 try:
     from robosuite.models.arenas import Arena
     from robosuite.utils.mjcf_utils import xml_path_completion
@@ -19,7 +20,8 @@ class BinArena(Arena):
             table_full_size: full dimensions of the table
             friction: friction parameters of the table
         """
-        super().__init__(xml_path_completion("arenas/table_arena.xml"))
+        assets_root = os.path.dirname(__file__)
+        super().__init__(xml_path_completion("{}/bin_arena.xml".format(assets_root)))
 
         self.table_full_size = np.array(table_full_size)
         self.table_half_size = self.table_full_size / 2
