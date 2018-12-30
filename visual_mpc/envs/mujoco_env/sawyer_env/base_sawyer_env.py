@@ -3,14 +3,17 @@ from .robosuite_wrappers.SawyerIKEnv import make_sawyer_env
 import numpy as np
 from robosuite.utils.transform_utils import mat2quat, rotation_matrix
 
-low_bound = np.array([0.35, -0.2, 0.83, -np.pi/ 2, -1])
-high_bound = np.array([0.75, 0.2, 1, np.pi / 2, 1])
+low_bound = np.array([0.35, -0.2, 0.83, 0, -1])
+high_bound = np.array([0.75, 0.2, 0.95, np.pi, 1])
 start_rot = np.array([[-1., 0., 0.], [0., 1., 0.], [0., 0., -1.]])
 
 
 class SawyerEnv(BaseEnv):
     def __init__(self, env_params_dict, reset_state=None):
-        self._hp = self._default_hparams().override_from_dict(env_params_dict)
+        self._hp = self._default_hparams()
+        for name, value in env_params_dict.items():
+            print('setting param {} to value {}'.format(name, value))
+            self._hp.set_hparam(name, value)
         self._env = make_sawyer_env({})
         self._adim, self._sdim = 5, 5
 
@@ -18,12 +21,18 @@ class SawyerEnv(BaseEnv):
         parent_params = super()._default_hparams()
         parent_params.add_hparam('substeps', 10)
         parent_params.add_hparam('num_objects', 1)
+        return parent_params
 
     def _init_dynamics(self):
         self._previous_target_qpos = np.random.uniform(low_bound, high_bound)
         self._previous_target_qpos[-1] = low_bound[-1]    # gripper starts open
 
     def _next_qpos(self, action):
+        if action[-1] > 0:
+            action[-1] = 1
+        else:
+            action[-1] = -1
+   
         return self._previous_target_qpos * [1., 1., 1., 1., 0.] + action
 
     def _step(self, target_qpos):
@@ -41,7 +50,7 @@ class SawyerEnv(BaseEnv):
             dquat = mat2quat(drotation)
 
             o = self._env.step(np.concatenate((delta_xyz, dquat, [target_qpos[-1]])))[0]
-
+        self._previous_target_qpos = target_qpos
         return self._proc_obs(o)
 
     def _proc_obs(self, env_obs):
@@ -56,6 +65,9 @@ class SawyerEnv(BaseEnv):
         self._proc_obs(self._env.reset())
         self._init_dynamics()
         return self._step(self._previous_target_qpos), None
+
+    def valid_rollout(self):
+        return True
 
     @property
     def adim(self):

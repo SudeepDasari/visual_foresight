@@ -20,7 +20,7 @@ agent = {
     'image_height' : 48,
     'image_width' : 64,
     'gen_xml': 400,   #generate xml every nth trajecotry
-    'rejection_sample': 5
+    'make_final_gif': ''
 }
 
 policy = {
@@ -28,7 +28,7 @@ policy = {
     'nactions' : 10,
     'initial_std': 0.04,   #std dev. in xy
     'initial_std_lift': 0.6,   #std dev. in xy
-    'initial_std_rot': np.pi / 32,
+#    'initial_std_rot': np.pi / 8,
 }
 
 config = {
@@ -36,7 +36,7 @@ config = {
     'current_dir' : current_dir,
     'save_data': True,
     'seperate_good': True,
-    'save_raw_images' : False,
+    'save_raw_images' : True,
     'start_index':30000,
     'end_index': 60000,
     'agent': agent,
