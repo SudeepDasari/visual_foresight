@@ -223,7 +223,7 @@ class SawyerMultiObjEnv(SawyerEnv):
                     width=self.camera_width,
                     height=self.camera_height,
                     depth=self.camera_depth,
-                )[::-1]
+                )[::-1, ::-1]
             di["images"] = camera_obs
 
         # low-level object information
