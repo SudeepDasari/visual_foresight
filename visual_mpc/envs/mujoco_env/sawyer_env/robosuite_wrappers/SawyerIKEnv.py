@@ -40,7 +40,7 @@ class SawyerMultiObjEnv(SawyerEnv):
         render_visual_mesh=True,
         control_freq=10,
         horizon=1000,
-        ignore_done=False,
+        ignore_done=True,
         camera_name=("frontview", "leftview"),
         camera_height=192,
         camera_width=256,
