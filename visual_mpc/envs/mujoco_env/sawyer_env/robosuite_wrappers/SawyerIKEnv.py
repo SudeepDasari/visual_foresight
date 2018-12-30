@@ -167,7 +167,7 @@ class SawyerMultiObjEnv(SawyerEnv):
         in a flatten array, which is how MuJoCo stores physical simulation data.
         """
         super()._get_reference()
-        self.cube_body_id = self.sim.model.body_name2id("cube")
+        self.body_ids = [self.sim.model.body_name2id("obj{}".format(i)) for i in range(self._num_objects)]
         self.l_finger_geom_ids = [
             self.sim.model.geom_name2id(x) for x in self.gripper.left_finger_geoms
         ]
@@ -231,19 +231,13 @@ class SawyerMultiObjEnv(SawyerEnv):
         # low-level object information
         if self.use_object_obs:
             # position and rotation of object
-            cube_pos = np.array(self.sim.data.body_xpos[self.cube_body_id])
-            cube_quat = convert_quat(
-                np.array(self.sim.data.body_xquat[self.cube_body_id]), to="xyzw"
-            )
-            di["cube_pos"] = cube_pos
-            di["cube_quat"] = cube_quat
-
-            gripper_site_pos = np.array(self.sim.data.site_xpos[self.eef_site_id])
-            di["gripper_to_cube"] = gripper_site_pos - cube_pos
-
-            di["object-state"] = np.concatenate(
-                [cube_pos, cube_quat, di["gripper_to_cube"]]
-            )
+            for i, id in enumerate(self.body_ids):
+                obj_pos = np.array(self.sim.data.body_xpos[id])
+                obj_quat = convert_quat(
+                    np.array(self.sim.data.body_xquat[id]), to="xyzw"
+                )
+                di["obj{}_pos".format(i)] = obj_pos
+                di["obj{}_quat".format(i)] = obj_quat
 
         return di
 
