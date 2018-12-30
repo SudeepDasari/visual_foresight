@@ -10,6 +10,7 @@ current_dir = os.path.dirname(os.path.realpath(__file__))
 
 
 env_params = {
+    'num_objects': 3
 }
 
 agent = {

@@ -14,7 +14,7 @@ class SawyerEnv(BaseEnv):
         for name, value in env_params_dict.items():
             print('setting param {} to value {}'.format(name, value))
             self._hp.set_hparam(name, value)
-        self._env = make_sawyer_env({})
+        self._env = make_sawyer_env({'num_objects': self._hp.num_objects})
         self._adim, self._sdim = 5, 5
 
     def _default_hparams(self):

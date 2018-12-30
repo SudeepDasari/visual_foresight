@@ -1,11 +1,12 @@
 from collections import OrderedDict
+import random
 import numpy as np
 try:
     from robosuite.utils.transform_utils import convert_quat
     from robosuite.environments.sawyer import SawyerEnv
 
     from .BinArena import BinArena
-    from robosuite.models.objects import BoxObject
+    from robosuite.models.objects import BreadObject, MilkObject, LemonObject, CanObject, BottleObject, CerealObject
     from robosuite.models.robots import Sawyer
     from robosuite.models.tasks import TableTopTask, UniformRandomSampler
     from robosuite.wrappers import IKWrapper
@@ -16,6 +17,9 @@ except ImportError:
 
 def make_sawyer_env(hparams_dict):
     return IKWrapper(SawyerMultiObjEnv(**hparams_dict))
+
+
+OBJECTS = [BreadObject, MilkObject, LemonObject, CanObject, BottleObject, CerealObject]
 
 
 class SawyerMultiObjEnv(SawyerEnv):
@@ -45,6 +49,7 @@ class SawyerMultiObjEnv(SawyerEnv):
         camera_height=192,
         camera_width=256,
         camera_depth=False,
+        num_objects=1
     ):
         """
         Args:
@@ -123,7 +128,7 @@ class SawyerMultiObjEnv(SawyerEnv):
             camera_depth=camera_depth,
         )
         self.camera_width = camera_width
-
+        self._num_objects = num_objects
     def _load_model(self):
         """
         Loads an xml model, puts it in self.model
@@ -142,12 +147,9 @@ class SawyerMultiObjEnv(SawyerEnv):
         self.mujoco_arena.set_origin([0.16 + self.table_full_size[0] / 2, 0, 0])
 
         # initialize objects of interest
-        cube = BoxObject(
-            size_min=[0.020, 0.020, 0.020],  # [0.015, 0.015, 0.015],
-            size_max=[0.022, 0.022, 0.022],  # [0.018, 0.018, 0.018])
-            rgba=[1, 0, 0, 1],
-        )
-        self.mujoco_objects = OrderedDict([("cube", cube)])
+        self.mujoco_objects = OrderedDict()
+        for i in range(self._num_objects):
+            self.mujoco_objects['obj{}'.format(i)] = random.choice(OBJECTS)()
 
         # task includes arena, robot, and objects of interest
         self.model = TableTopTask(
