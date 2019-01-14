@@ -29,7 +29,7 @@ agent = {
     'image_width' : 64,
     'gen_xml': 400,   #generate xml every nth trajecotry
 #    'rejection_sample': 1,
-    'make_final_gif': ''
+#    'make_final_gif': ''
 }
 
 policy = {
@@ -41,11 +41,11 @@ policy = {
 }
 
 config = {
-    'traj_per_file':128,
+    'traj_per_file':64,
     'current_dir' : current_dir,
     'save_data': True,
-    'seperate_good': True,
-    'save_raw_images' : True,
+    'seperate_good': False,
+    'save_raw_images' : False,
     'start_index':0,
     'end_index': 60000,
     'agent': agent,
