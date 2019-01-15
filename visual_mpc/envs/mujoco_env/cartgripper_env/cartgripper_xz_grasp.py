@@ -10,6 +10,7 @@ class CartgripperXZGrasp(BaseCartgripperEnv):
         self._base_adim, self._base_sdim = 3, 6
         self._adim, self._sdim = 3, 3      # x z grasp
         self._gripper_dim = 2
+        self._n_joints = 6
 
     def _default_hparams(self):
         default_dict = {
