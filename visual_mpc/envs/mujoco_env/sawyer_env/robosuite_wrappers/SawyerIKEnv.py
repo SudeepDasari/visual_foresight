@@ -96,6 +96,9 @@ class SawyerMultiObjEnv(SawyerEnv):
         # whether to use ground-truth object states
         self.use_object_obs = use_object_obs
 
+        # number of objects to initialize on table
+        self._num_objects = num_objects
+
         # reward configuration
         self.reward_shaping = reward_shaping
 
@@ -104,8 +107,8 @@ class SawyerMultiObjEnv(SawyerEnv):
             self.placement_initializer = placement_initializer
         else:
             self.placement_initializer = UniformRandomSampler(
-                x_range=[-0.03, 0.03],
-                y_range=[-0.03, 0.03],
+                x_range=[-0.3, 0.3],
+                y_range=[-0.3, 0.3],
                 ensure_object_boundary_in_range=False,
                 z_rotation=True,
             )
@@ -128,7 +131,7 @@ class SawyerMultiObjEnv(SawyerEnv):
             camera_depth=camera_depth,
         )
         self.camera_width = camera_width
-        self._num_objects = num_objects
+
     def _load_model(self):
         """
         Loads an xml model, puts it in self.model
@@ -174,7 +177,6 @@ class SawyerMultiObjEnv(SawyerEnv):
         self.r_finger_geom_ids = [
             self.sim.model.geom_name2id(x) for x in self.gripper.right_finger_geoms
         ]
-        self.cube_geom_id = self.sim.model.geom_name2id("cube")
 
     def _reset_internal(self):
         """
