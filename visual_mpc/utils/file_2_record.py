@@ -1,6 +1,7 @@
 import argparse
 from multiprocessing import Pool, Process, Manager
-from visual_mpc.agent.utils import record_worker
+from visual_mpc.agent.utils.traj_saver import record_worker
+import os
 import cv2
 import cPickle as pkl
 import numpy as np
@@ -78,14 +79,21 @@ if __name__ == '__main__':
     assert sum(args.split) == 1 and not any([i < 0 or i > 1 for i in args.split]), "Split must be valid distrib"
 
     traj_files = []
-    for s in args.paths.split(':'):
-        if 'traj_group' in s:
-            traj_files = traj_files + glob.glob('{}/traj*'.format(s))
+    for path in args.paths.split(':'):
+        path = os.path.expanduser(path)
+        n_new_files = 0
+        if 'traj_group' in path:
+            new_files = glob.glob('{}/traj*'.format(path))
+            n_new_files = len(new_files)
+            traj_files = traj_files + new_files
         else:
-            for t_group in glob.glob('{}/traj_group*'.format(s)):
-                traj_files = traj_files + glob.glob('{}/traj*'.format(t_group))
-    random.shuffle(traj_files)
+            for t_group in glob.glob('{}/traj_group*'.format(path)):
+                t_group_files = glob.glob('{}/traj*'.format(t_group))
+                n_new_files += len(t_group_files)
+                traj_files = traj_files + t_group_files
+        print('for path {} got {} trajs'.format(path, n_new_files))
 
+    random.shuffle(traj_files)
     print('Saving {} trajectories...'.format(len(traj_files)))
 
     m = Manager()

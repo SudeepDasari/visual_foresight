@@ -2,7 +2,7 @@
 import os.path
 from visual_mpc.policy.random.gaussian import GaussianPolicy
 from visual_mpc.agent.general_agent import GeneralAgent
-from visual_mpc.envs.mujoco_env.cartgripper_env.cartgripper_pusher import CartgripperPusherEnv
+from visual_mpc.envs.mujoco_env.cartgripper_env.cartgripper_xz_grasp import CartgripperXZGrasp
 import numpy as np
 
 BASE_DIR = '/'.join(str.split(__file__, '/')[:-1])
@@ -10,42 +10,38 @@ current_dir = os.path.dirname(os.path.realpath(__file__))
 
 
 env_params = {
-    'num_objects': 12,
-    'object_mass': 0.5,
-    'friction': 1.0,
-    'minlen': 0.03,
-    'maxlen': 0.06,
-    'object_object_mindist': 0.15,
-    'cube_objects': True,
-    'ncam': 2
+    # resolution sufficient for 16x anti-aliasing
+    'viewer_image_height': 96,
+    'viewer_image_width': 128,
+    'cube_objects': True
 }
+
 
 agent = {
     'type': GeneralAgent,
-    'env': (CartgripperPusherEnv, env_params),
+    'env': (CartgripperXZGrasp, env_params),
     'data_save_dir': BASE_DIR,
     'T': 30,
     'image_height' : 48,
     'image_width' : 64,
-    'gen_xml': 400,   #generate xml every nth trajecotry
-#    'rejection_sample': 1,
-#    'make_final_gif': ''
+    'gen_xml': 1,   #generate xml every nth trajecotry
+    'rejection_sample': 5,
+    'make_final_gif': ''
 }
 
 policy = {
     'type' : GaussianPolicy,
-    'nactions' : 10,
-    'initial_std': 0.04,   #std dev. in xy
-    'initial_std_lift': 0.6,   #std dev. in xy
-    'initial_std_rot': np.pi / 32,
+    'nactions': 10,
+    'action_order': ['x', 'z', 'grasp'],
+    'initial_std_lift': 0.5,  # std dev. in xy
 }
 
 config = {
-    'traj_per_file':64,
+    'traj_per_file':128,
     'current_dir' : current_dir,
     'save_data': True,
     'seperate_good': False,
-    'save_raw_images' : False,
+    'save_raw_images' : True,
     'start_index':0,
     'end_index': 60000,
     'agent': agent,
