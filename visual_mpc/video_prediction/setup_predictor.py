@@ -78,13 +78,6 @@ def setup_predictor(hyperparams, conf, gpu_id=0, ngpu=1, logger=None):
     else:
         ncam = 1
 
-    # start_id = gpu_id
-    # indexlist = [str(i_gpu) for i_gpu in range(start_id, start_id + ngpu)]
-    # var = ','.join(indexlist)
-    # logger.log('using CUDA_VISIBLE_DEVICES=', var)
-    # os.environ["CUDA_VISIBLE_DEVICES"] = var
-    # from tensorflow.python.client import device_lib
-    # logger.log(device_lib.list_local_devices())
 
     logger.log('making graph')
     gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.7)
