@@ -57,6 +57,8 @@ class GeneralAgent(object):
         if "gen_xml" in self._hyperparams:
             if i_traj % self._hyperparams['gen_xml'] == 0 and i_traj > 0:
                 self._setup_world(i_traj)
+        elif i_traj > 0:
+            self._setup_world(i_traj)
 
         traj_ok, obs_dict, policy_outs, agent_data = False, None, None, None
         i_trial = 0

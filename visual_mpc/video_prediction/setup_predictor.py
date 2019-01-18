@@ -107,7 +107,7 @@ def setup_predictor(hyperparams, conf, gpu_id=0, ngpu=1, logger=None):
             states_pl = tf.placeholder(use_dtype, name='states',
                                        shape=(1, conf['context_frames'], sdim))
 
-            if 'use_goal_image' in conf:
+            if 'use_goal_image' in conf or 'no_pix_distrib' in conf:
                 pix_distrib = None
             else:
                 pix_distrib = tf.placeholder(use_dtype, shape=(

@@ -1,6 +1,6 @@
 import os.path
 from visual_mpc.policy.cem_controllers import CEM_NCE_Vidpred
-from visual_mpc.agent.general_agent import GeneralAgent
+from visual_mpc.agent.benchmarking_agent import BenchmarkAgent
 from visual_mpc.envs.mujoco_env.cartgripper_env.cartgripper_xz_grasp import CartgripperXZGrasp
 
 BASE_DIR = '/'.join(str.split(__file__, '/')[:-1])
@@ -16,7 +16,7 @@ env_params = {
 
 
 agent = {
-    'type': GeneralAgent,
+    'type': BenchmarkAgent,
     'env': (CartgripperXZGrasp, env_params),
     'data_save_dir': BASE_DIR,
     'T': 30,

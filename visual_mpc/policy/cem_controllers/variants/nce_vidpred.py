@@ -64,7 +64,7 @@ class CEM_NCE_Vidpred(CEM_Controller_Base):
         else: vpred_ngpu = ngpu
 
         self.predictor = self.netconf['setup_predictor'](ag_params, self.netconf, gpu_id, vpred_ngpu, self.logger)
-        self._scoring_func = control_embedding.deploy_model(self._hp.nce_conf_path,
+        self._scoring_func = control_embedding.deploy_model(self._hp.nce_conf_path, batch_size=self._hp.nce_batch_size,
                                                             restore_path=self._hp.nce_restore_path,
                                                             device_id=gpu_id + ngpu - 1)
 
@@ -91,6 +91,7 @@ class CEM_NCE_Vidpred(CEM_Controller_Base):
 
         self.images = None
         self.goal_image = None
+        self.start_image = None
 
         self.best_cost_perstep = np.zeros([self.ncam, 1, self.seqlen])
 
@@ -100,7 +101,9 @@ class CEM_NCE_Vidpred(CEM_Controller_Base):
     def _default_hparams(self):
         default_dict = {
             'nce_conf_path': '',
-            'nce_restore_path': ''
+            'nce_restore_path': '',
+            'nce_batch_size': 200,
+            'state_append': None
         }
         parent_params = super(CEM_NCE_Vidpred, self)._default_hparams()
 
@@ -158,15 +161,26 @@ class CEM_NCE_Vidpred(CEM_Controller_Base):
         self.vd.K = self.K
         self.vd.cem_itr = cem_itr
         self.vd.last_frames = last_frames
-        self.vd.goal_pix = self.goal_pix
         self.vd.ncam = self.ncam
         self.vd.image_height = self.img_height
 
         return scores
 
     def eval_planningcost(self, gen_images):
-        import pdb; pdb.set_trace()
-        raise NotImplementedError
+        b_size, n_pred, n_cam, height, width, channels = gen_images.shape
+        scores = np.zeros((n_cam, b_size, n_pred))
+
+        for c in range(n_cam):
+            goal, start = self.goal_image[c][None], self.start_image[c][None]
+            input_images = gen_images[:, :, c].reshape((b_size * n_pred, height, width, channels))
+            embed_dict = self._scoring_func(goal * 255, start * 255, input_images * 255)
+
+            gs_enc, in_enc = embed_dict['goal_enc'][0][None], embed_dict['input_enc'].reshape((b_size, n_pred, -1))
+            scores[c] = np.matmul(gs_enc[None], np.swapaxes(in_enc, 2, 1))[:, 0]
+
+        scores = np.sum(-scores, axis=0)
+        scores[:, -1] *= self._hp.finalweight
+        return np.sum(scores, axis=-1)
 
     def prep_vidpred_inp(self, actions, cem_itr):
         t_0 = time.time()
@@ -192,8 +206,8 @@ class CEM_NCE_Vidpred(CEM_Controller_Base):
             goal_pix: in coordinates of small image
             desig_pix: in coordinates of small image
         """
-
-        self.goal_image = goal_image
+        self.start_image = goal_image[0]
+        self.goal_image = goal_image[1]
         self.images = images
         self.state = state
 
