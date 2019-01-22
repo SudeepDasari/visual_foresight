@@ -45,6 +45,7 @@ class Sim(object):
                 print('taking sample {} of {}'.format(itr, self._hyperparams['ntraj']))
                 self.take_sample(itr)
                 itr = self._counter.ret_increment()
+        self.agent.cleanup()
 
     def take_sample(self, sample_index):
         self.policy.reset()

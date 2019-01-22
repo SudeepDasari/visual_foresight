@@ -12,7 +12,7 @@ class GaussianPolicy(Policy):
     def __init__(self, agentparams, policyparams, gpu_id, npgu):
 
         self._hp = self._default_hparams()
-        self.override_defaults(policyparams)
+        self._override_defaults(policyparams)
         self.agentparams = agentparams
         self.adim = agentparams['adim']
 

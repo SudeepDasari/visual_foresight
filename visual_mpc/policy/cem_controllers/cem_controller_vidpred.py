@@ -1,40 +1,9 @@
 import numpy as np
 import imp
-from .visualizer.make_cem_visuals import CEM_Visual_Preparation
-import matplotlib; matplotlib.use('Agg'); import matplotlib.pyplot as plt
-import copy
-
-from threading import Thread
-import sys
-if sys.version_info[0] == 2:
-    from Queue import Queue
-else:
-    from queue import Queue
-
-import time
-from visual_mpc.policy.utils.controller_utils import save_track_pkl
 from .cem_controller_base import CEM_Controller_Base
-
-
-verbose_queue = Queue()
-def verbose_worker():
-    req = 0
-    while True:
-        print('servicing req', req)
-        try:
-            plt.switch_backend('Agg')
-            visualizer, vd = verbose_queue.get(True)
-            visualizer.visualize(vd)
-        except RuntimeError:
-            print("TKINTER ERROR, SKIPPING")
-        req += 1
-
-class VisualzationData():
-    def __init__(self):
-        """
-        container for visualization data
-        """
-        pass
+from .visualizer.construct_html import save_gifs, save_html, fill_template
+import matplotlib.pyplot as plt
+from collections import OrderedDict
 
 
 class CEM_Controller_Vidpred(CEM_Controller_Base):
@@ -43,91 +12,42 @@ class CEM_Controller_Vidpred(CEM_Controller_Base):
     """
     def __init__(self, ag_params, policyparams, gpu_id, ngpu):
         """
-        :param ag_params:
-        :param policyparams:
-        :param predictor:
-        :param save_subdir:
-        :param gdnet: goal-distance network
+
+        :param ag_params: agent parameter dictionary
+        :param policyparams: policy parameter dict
+        :param gpu_id: gpu id
+        :param ngpu: number of gpus to use
         """
-
-        self._hp = self._default_hparams()
-        self.override_defaults(policyparams)
-
         CEM_Controller_Base.__init__(self, ag_params, policyparams)
 
         params = imp.load_source('params', ag_params['current_dir'] + '/conf.py')
-        self.netconf = params.configuration
+        netconf = params.configuration
+        self.predictor = netconf['setup_predictor'](ag_params, netconf, gpu_id, ngpu, self._logger)
 
-        if ngpu > 1 and self._hp.extra_score_functions is not None:
-            vpred_ngpu = ngpu - 1
-        else: vpred_ngpu = ngpu
+        self._net_bsize = netconf['batch_size']
+        self._net_seqlen = netconf['sequence_length']
 
-        self.predictor = self.netconf['setup_predictor'](ag_params, self.netconf, gpu_id, vpred_ngpu, self.logger)
+        self._net_context = netconf['context_frames']
+        self._hp.start_planning = self._net_context
 
-        self.bsize = self.netconf['batch_size']
+        self._n_desig = netconf.get('ndesig', None)
+        self._img_height, self._img_width = netconf['orig_size']
 
-        self.seqlen = self.netconf['sequence_length']
+        self._n_cam = netconf['ncam']
 
-        # override params here:
-        if 'num_samples' not in policyparams:
-            self.M = self.bsize
-
-        assert self.naction_steps * self.repeat == self.seqlen
-        assert self.len_pred == self.seqlen - self.ncontxt
-
-        self.ncontxt = self.netconf['context_frames']
-
-        if 'ndesig' in self.netconf:        # total number of
-            self.ndesig = self.netconf['ndesig']
-        else: self.ndesig = None
-
-        self.img_height, self.img_width = self.netconf['orig_size']
-
-        self.ncam = self.netconf['ncam']
-
-        self.desig_pix = None
-        self.goal_mask = None
-        self.goal_pix = None
+        self._desig_pix = None
+        self._goal_pix = None
 
         if self._hp.predictor_propagation:
-            self.rec_input_distrib = []  # record the input distributions
-
-        self.parallel_vis = True
-        if self.parallel_vis:
-            self._thread = Thread(target=verbose_worker)
-            self._thread.start()
-        self.goal_image = None
-
-        self.best_cost_perstep = np.zeros([self.ncam, self.ndesig, self.seqlen])
-
-        self.ntask = self.ndesig  # will be overwritten in derived classes
-        self.vd = VisualzationData()
-        self.visualizer = CEM_Visual_Preparation()
-
-        self.reg_tradeoff = np.ones([self.ncam, self.ndesig])/self.ncam/self.ndesig
-
-        if self._hp.extra_score_functions is not None:
-            funcs = []
-            for func, params in self._hp.extra_score_functions:
-                if 'device_id' in params:
-                    params['device_id'] = gpu_id + ngpu - 1
-                funcs.append(func(**params))
-            self._hp.extra_score_functions = funcs
-
-    def _setup_visualizer(self, default=CEM_Visual_Preparation):
-        run_freq = 1
-        if self._hp.verbose_every_itr:
-            run_freq = 3
-        self.visualizer = self.policyparams.get('visualizer', default)(run_freq)
+            self._rec_input_distrib = []  # record the input distributions
 
     def _default_hparams(self):
         default_dict = {
+            'verbose': True,
+            'verbose_every_iter': False,
+            "verbose_img_height": 128,
             'predictor_propagation':False,
-            'trade_off_reg':True,
             'only_take_first_view':False,
-            'extra_score_functions': None,   # None if no extra, else list of (class, params) tuples
-            'pixel_score_weight': 1.,
-            'extra_score_weight': 1.,
             'state_append': None
         }
         parent_params = super(CEM_Controller_Vidpred, self)._default_hparams()
@@ -139,116 +59,92 @@ class CEM_Controller_Vidpred(CEM_Controller_Base):
     def reset(self):
         super(CEM_Controller_Vidpred, self).reset()
         if self._hp.predictor_propagation:
-            self.rec_input_distrib = []  # record the input distributions
-
-    def calc_action_cost(self, actions):
-        actions_costs = np.zeros(self.M)
-        for smp in range(self.M):
-            force_magnitudes = np.array([np.linalg.norm(actions[smp, t]) for
-                                         t in range(self.naction_steps * self.repeat)])
-            actions_costs[smp]=np.sum(np.square(force_magnitudes)) * self._hp.action_cost_factor
-        return actions_costs
+            self._rec_input_distrib = []  # record the input distributions
 
     def switch_on_pix(self, desig):
-        one_hot_images = np.zeros((1, self.netconf['context_frames'], self.ncam, self.img_height, self.img_width, self.ndesig), dtype=np.float32)
-        desig = np.clip(desig, np.zeros(2).reshape((1, 2)), np.array([self.img_height, self.img_width]).reshape((1, 2)) - 1).astype(np.int)
+        one_hot_images = np.zeros((1, self._net_context, self._n_cam, self._img_height, self._img_width, self._n_desig), dtype=np.float32)
+        desig = np.clip(desig, np.zeros(2).reshape((1, 2)), np.array([self._img_height, self._img_width]).reshape((1, 2)) - 1).astype(np.int)
         # switch on pixels
-        for icam in range(self.ncam):
-            for p in range(self.ndesig):
+        for icam in range(self._n_cam):
+            for p in range(self._n_desig):
                 one_hot_images[:, :, icam, desig[icam, p, 0], desig[icam, p, 1], p] = 1.
-                self.logger.log('using desig pix',desig[icam, p, 0], desig[icam, p, 1])
+                self._logger.log('using desig pix', desig[icam, p, 0], desig[icam, p, 1])
 
         return one_hot_images
 
-    def get_rollouts(self, actions, cem_itr, itr_times, n_samps=None):
+    def evaluate_rollouts(self, actions, cem_itr, n_samps=None):
         if n_samps is None:
             n_samps = self.M
 
-
-        actions, last_frames, last_states, t_0 = self.prep_vidpred_inp(actions, cem_itr)
+        actions, last_frames, last_states = self._prep_vidpred_inp(actions, cem_itr)
         input_distrib = self.make_input_distrib(cem_itr)
 
-        t_startpred = time.time()
-        if n_samps > self.bsize:
-            nruns = n_samps//self.bsize
-            assert self.bsize*nruns == n_samps, "bsize: {}, nruns {}, but n_samps is {}".format(self.bsize, nruns, n_samps)
+        if n_samps > self._net_bsize:
+            nruns = n_samps//self._net_bsize
+            assert self._net_bsize * nruns == n_samps, "bsize: {}, nruns {}, but n_samps is {}".format(self._net_bsize, nruns, n_samps)
         else:
             nruns = 1
-            assert n_samps == self.bsize
-        gen_images_l, gen_distrib_l, gen_states_l = [], [], []
-        itr_times['pre_run'] = time.time() - t_0
+            assert n_samps == self._net_bsize
+        gen_images_l, gen_distrib_l = [], []
         for run in range(nruns):
-            self.logger.log('run{}'.format(run))
-            t_run_loop = time.time()
-            actions_ = actions[run*self.bsize:(run+1)*self.bsize]
+            self._logger.log('run{}'.format(run))
+            actions_ = actions[run*self._net_bsize:(run + 1) * self._net_bsize]
 
-            gen_images, gen_distrib, gen_states, _ = self.predictor(input_images=last_frames,
+            gen_images, gen_distrib, _, _ = self.predictor(input_images=last_frames,
                                                                     input_state=last_states,
                                                                     input_actions=actions_,
                                                                     input_one_hot_images=input_distrib)
             gen_images_l.append(gen_images)
             gen_distrib_l.append(gen_distrib)
-            gen_states_l.append(gen_states)
-            itr_times['run{}'.format(run)] = time.time() - t_run_loop
-        t_run_post = time.time()
+
         gen_images = np.concatenate(gen_images_l, 0)
         gen_distrib = np.concatenate(gen_distrib_l, 0)
-        if gen_states_l[0] is not None:
-            gen_states = np.concatenate(gen_states_l, 0)
-        itr_times['t_concat'] = time.time() - t_run_post
-        self.logger.log('time for videoprediction {}'.format(time.time() - t_startpred))
-        t_run_post = time.time()
 
         scores = self.eval_planningcost(cem_itr, gen_distrib, gen_images)
 
-        itr_times['run_post'] = time.time() - t_run_post
-        tstart_verbose = time.time()
+        if self._hp.verbose:
+            if self._hp.verbose_every_iter or cem_itr == self._n_iter - 1:
+                verbose_folder = "planning_{}_itr_{}".format(self._t, cem_itr)
+                content_dict = OrderedDict()
+                visualize_indices = scores.argsort()[:10]
 
-        self.vd.t = self.t
-        self.vd.scores = scores
-        self.vd.agentparams = self.agentparams
-        self.vd.hp = self._hp
-        self.vd.netconf = self.netconf
-        self.vd.ndesig = self.ndesig
-        self.vd.gen_distrib = gen_distrib
-        self.vd.gen_images = gen_images
-        self.vd.K = self.K
-        self.vd.cem_itr = cem_itr
-        self.vd.last_frames = last_frames
-        self.vd.goal_pix = self.goal_pix
-        self.vd.ncam = self.ncam
-        self.vd.image_height = self.img_height
+                # render distributions
+                for p in range(self._n_desig):
+                    dist_p = [gen_distrib[g_i, :, :, :, p] for g_i in visualize_indices]
+                    for v in range(len(dist_p)):
+                        rendered = []
+                        for t in range(gen_distrib.shape[1]):
+                            dist = dist_p[v][t] / (np.amax(dist_p[v][t]) + 1e-6)
+                            rendered.append((np.squeeze(plt.cm.viridis(dist)[:, :, :3]) * 255).astype(np.uint8))
+                        dist_p[v] = rendered
+                    desig_name = 'gen_dist_desig_{}'.format(p)
+                    content_dict[desig_name] = save_gifs(self._verbose_worker, verbose_folder,
+                                                        desig_name, dist_p)
 
-        if self.verbose and cem_itr == self._hp.iterations-1 and self.i_tr % self.verbose_freq ==0 or \
-                (self._hp.verbose_every_itr and self.i_tr % self.verbose_freq ==0):
-            if self.parallel_vis:
-                print('t{} cemitr {}'.format(self.t, cem_itr))
-                verbose_queue.put((self.visualizer, copy.deepcopy(self.vd)))
-            else:
-                self.visualizer.visualize(self.vd)
+                # render predicted images
+                verbose_images = [(gen_images[g_i] * 255).astype(np.uint8) for g_i in visualize_indices]
+                content_dict['gen_images'] = save_gifs(self._verbose_worker, verbose_folder,
+                                                       'gen_images', verbose_images)
 
-        if 'save_desig_pos' in self.agentparams:
-            save_track_pkl(self, self.t, cem_itr)
+                # save scores
+                content_dict['scores'] = scores[visualize_indices]
 
-        itr_times['verbose_time'] = time.time() - tstart_verbose
-        self.logger.log('verbose time', time.time() - tstart_verbose)
+                html_page = fill_template(cem_itr, self._t, content_dict, img_height=self._hp.verbose_img_height)
+                save_html(self._verbose_worker, "{}/plan.html".format(verbose_folder), html_page)
 
         return scores
 
     def eval_planningcost(self, cem_itr, gen_distrib, gen_images):
-
-        t_startcalcscores = time.time()
         scores_per_task = []
 
-        for icam in range(self.ncam):
-            for p in range(self.ndesig):
-                distance_grid = self.get_distancegrid(self.goal_pix[icam, p])
+        for icam in range(self._n_cam):
+            for p in range(self._n_desig):
+                distance_grid = self.get_distancegrid(self._goal_pix[icam, p])
                 score = self.calc_scores(icam, p, gen_distrib[:, :, icam, :, :, p], distance_grid,
                                          normalize=True)
-                if self._hp.trade_off_reg:
-                    score *= self.reg_tradeoff[icam, p]
+
                 scores_per_task.append(score)
-                self.logger.log(
+                self._logger.log(
                     'best flow score of task {} cam{}  :{}'.format(p, icam, np.min(scores_per_task[-1])))
 
         scores_per_task = np.stack(scores_per_task, axis=1)
@@ -258,64 +154,33 @@ class CEM_Controller_Vidpred(CEM_Controller_Base):
 
         scores = np.mean(scores_per_task, axis=1)
 
-        if self._hp.extra_score_functions is not None:
-            batches, T, ncams, height, width, channels = gen_images.shape
-            extra_costs = np.zeros((batches))
-            score_std, score_mean = np.std(scores), np.mean(scores)
-
-            for cost in self._hp.extra_score_functions:
-                c_score = np.zeros((batches, T))
-                for t in range(T):
-                    if self.goal_image is None:
-                        c_score[:, t] = cost.score(images=gen_images[:, t])
-                    else:
-                        goal_feed = self.goal_image[-1]
-                        if len(goal_feed.shape) == 4:
-                            goal_feed = goal_feed[None]
-
-                        c_score[:, t] = cost.score(images=gen_images[:, t], goal_images=goal_feed)
-                c_score[:, -1] *= self._hp.finalweight
-                c_score = np.sum(c_score, 1)
-                if score_std > 0 and score_mean > 0 and self._hp.pixel_score_weight > 0:
-                    old_std, old_mean = np.std(c_score), np.mean(c_score)
-                    c_score = score_std * ((c_score - old_mean) / old_std) + score_mean
-                extra_costs += c_score
-
-            print('best extra costs: {}'.format(np.amin(extra_costs)))
-            scores = self._hp.pixel_score_weight * scores + self._hp.extra_score_weight * extra_costs
-
         bestind = scores.argsort()[0]
-        for icam in range(self.ncam):
-            for p in range(self.ndesig):
-                self.logger.log('flow score of best traj for task{} cam{} :{}'.format(p, icam, scores_per_task[
-                    bestind, p + icam * self.ndesig]))
-
-        self.best_cost_perstep = self.cost_perstep[bestind]
+        for icam in range(self._n_cam):
+            for p in range(self._n_desig):
+                self._logger.log('flow score of best traj for task{} cam{} :{}'.format(p, icam, scores_per_task[
+                    bestind, p + icam * self._n_desig]))
 
         if self._hp.predictor_propagation:
             if cem_itr == (self._hp.iterations - 1):
                 # pick the prop distrib from the action actually chosen after the last iteration (i.e. self.indices[0])
                 bestind = scores.argsort()[0]
-                best_gen_distrib = gen_distrib[bestind, self.ncontxt].reshape(1, self.ncam, self.img_height,
-                                                                              self.img_width, self.ndesig)
-                self.rec_input_distrib.append(best_gen_distrib)
-        self.logger.log('time to calc scores {}'.format(time.time() - t_startcalcscores))
+                best_gen_distrib = gen_distrib[bestind, self._net_context].reshape(1, self._n_cam, self._img_height,
+                                                                                   self._img_width, self._n_desig)
+                self._rec_input_distrib.append(best_gen_distrib)
         return scores
 
-    def prep_vidpred_inp(self, actions, cem_itr):
-        t_0 = time.time()
-        ctxt = self.netconf['context_frames']
-        last_frames = self.images[self.t - ctxt + 1:self.t + 1]  # same as [t - 1:t + 1] for context 2
-        last_frames = last_frames.astype(np.float32, copy=False) / 255.
+    def _prep_vidpred_inp(self, actions, cem_itr):
+        ctxt = self._net_context
+        last_frames = self.images[self._t - ctxt + 1:self._t + 1]  # same as [t - 1:t + 1] for context 2
+        last_frames = last_frames.astype(np.float32) / 255.
         last_frames = last_frames[None]
-        last_states = self.state[self.t - ctxt + 1:self.t + 1]
+        last_states = self.state[self._t - ctxt + 1:self._t + 1]
         last_states = last_states[None]
         if self._hp.state_append:
             last_state_append = np.tile(np.array([[self._hp.state_append]]), (1, ctxt, 1))
             last_states = np.concatenate((last_states, last_state_append), -1)
 
-        self.logger.log('t0 ', time.time() - t_0)
-        return actions, last_frames, last_states, t_0
+        return actions, last_frames, last_states
 
     def calc_scores(self, icam, idesig, gen_distrib, distance_grid, normalize=True):
         """
@@ -324,7 +189,7 @@ class CEM_Controller_Vidpred(CEM_Controller_Base):
         :return:
         """
         assert len(gen_distrib.shape) == 4
-        t_mult = np.ones([self.seqlen - self.netconf['context_frames']])
+        t_mult = np.ones([self._net_seqlen - self._net_context])
         t_mult[-1] = self._hp.finalweight
 
         gen_distrib = gen_distrib.copy()
@@ -339,26 +204,24 @@ class CEM_Controller_Vidpred(CEM_Controller_Base):
         return scores
 
     def get_distancegrid(self, goal_pix):
-        distance_grid = np.empty((self.img_height, self.img_width))
-        for i in range(self.img_height):
-            for j in range(self.img_width):
+        distance_grid = np.empty((self._img_height, self._img_width))
+        for i in range(self._img_height):
+            for j in range(self._img_width):
                 pos = np.array([i, j])
                 distance_grid[i, j] = np.linalg.norm(goal_pix - pos)
 
-        self.logger.log('making distance grid with goal_pix', goal_pix)
-        # plt.imshow(distance_grid, zorder=0, cmap=plt.get_cmap('jet'), interpolation='none')
-        # plt.show()
+        self._logger.log('making distance grid with goal_pix', goal_pix)
         return distance_grid
 
     def make_input_distrib(self, itr):
         if self._hp.predictor_propagation:  # using the predictor's DNA to propagate, no correction
-            input_distrib = self.get_recinput(itr, self.rec_input_distrib, self.desig_pix)
+            input_distrib = self.get_recinput(itr, self._rec_input_distrib, self._desig_pix)
         else:
-            input_distrib = self.switch_on_pix(self.desig_pix)
+            input_distrib = self.switch_on_pix(self._desig_pix)
         return input_distrib
 
     def get_recinput(self, itr, rec_input_distrib, desig):
-        ctxt = self.netconf['context_frames']
+        ctxt = self._net_context
         if len(rec_input_distrib) < ctxt:
             input_distrib = self.switch_on_pix(desig)
             if itr == 0:
@@ -369,7 +232,7 @@ class CEM_Controller_Vidpred(CEM_Controller_Base):
         return input_distrib
 
 
-    def act(self, t=None, i_tr=None, desig_pix=None, goal_pix=None, images=None, state=None):
+    def act(self, t=None, i_tr=None, desig_pix=None, goal_pix=None, images=None, state=None, verbose_worker=None):
         """
         Return a random action for a state.
         Args:
@@ -378,10 +241,13 @@ class CEM_Controller_Vidpred(CEM_Controller_Base):
             goal_pix: in coordinates of small image
             desig_pix: in coordinates of small image
         """
-        self.desig_pix = np.array(desig_pix).reshape((self.ncam, self.ntask, 2))
-        self.goal_pix = np.array(goal_pix).reshape((self.ncam, self.ntask, 2))
-
+        self._desig_pix = np.array(desig_pix).reshape((self._n_cam, self._n_desig, 2))
+        self._goal_pix = np.array(goal_pix).reshape((self._n_cam, self._n_desig, 2))
 
         self.images = images
         self.state = state
-        return super(CEM_Controller_Vidpred, self).act(t, i_tr)
+
+        self._verbose_worker = verbose_worker
+
+        return super(CEM_Controller_Vidpred, self).act(t, i_tr, state)
+
