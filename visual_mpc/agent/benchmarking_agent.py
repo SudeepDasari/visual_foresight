@@ -5,6 +5,7 @@ import numpy as np
 import cv2
 import os
 import shutil
+from .utils.file_saver import start_file_worker
 
 
 class BenchmarkAgent(GeneralAgent):
@@ -16,6 +17,12 @@ class BenchmarkAgent(GeneralAgent):
         self._is_robot_bench = 'robot_name' in self._hyperparams['env'][1]
         if not self._is_robot_bench:
             self._hyperparams['gen_xml'] = 1
+        self._save_worker = start_file_worker()
+
+    def _post_process_obs(self, env_obs, agent_data, initial_obs=False):
+        obs = super(BenchmarkAgent, self)._post_process_obs(env_obs, agent_data, initial_obs)
+        agent_data['verbose_worker'] = self._save_worker
+        return obs
 
     def _setup_world(self, itr):
         old_ncam = self.ncam
@@ -48,6 +55,7 @@ class BenchmarkAgent(GeneralAgent):
                 if os.path.exists(self._hyperparams['_bench_save']):
                     shutil.rmtree(self._hyperparams['_bench_save'])
                 os.makedirs(self._hyperparams['_bench_save'])
+                self._save_worker.put(('path', self._hyperparams['_bench_save']))
 
                 ntasks = self._hyperparams.get('ntask', 1)
 
@@ -75,11 +83,10 @@ class BenchmarkAgent(GeneralAgent):
         :param itr:
         :return:
         """
-        if 'robot_name' in self._hyperparams['env'][1]:   # robot experiments don't have a reset state
+        if self._is_robot_bench:   # robot experiments don't have a reset state
             return None
 
-        if 'iex' in self._hyperparams:
-            itr = self._hyperparams['iex']
+        itr = self._hyperparams.get('iex', itr)
 
         ngroup = 1000
         igrp = itr // ngroup
@@ -108,4 +115,10 @@ class BenchmarkAgent(GeneralAgent):
 
         self._goal_obj_pose = obs_dict['object_qpos'][-1]
 
+        verbose_dir = '{}/verbose/traj_{}'.format(self._hyperparams['data_save_dir'], itr)
+        self._save_worker.put(('path', verbose_dir))
+
         return reset_state
+
+    def cleanup(self):
+        return self._save_worker.put(None)

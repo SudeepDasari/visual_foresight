@@ -237,6 +237,7 @@ class GeneralAgent(object):
         """
         Set the world to a given model
         """
-        self.large_images_traj, self.traj_points = [], None
+        self.large_images_traj, self.traj_points = [], None\
 
-
+    def cleanup(self):
+        return

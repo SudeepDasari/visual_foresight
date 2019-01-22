@@ -1,24 +1,6 @@
 import numpy as np
 import copy
-import os
 import sys
-if sys.version_info[0] == 2:
-    import cPickle as pkl
-else:
-    import pickle as pkl
-
-
-def save_track_pkl(ctrl, t, cem_itr):
-    pix_pos_dict = {}
-    pix_pos_dict['desig_pix_t0'] = ctrl.desig_pix_t0
-    pix_pos_dict['goal_pix'] = ctrl.goal_pix
-    pix_pos_dict['desig'] = ctrl.desig_pix
-    if ctrl.reg_tradeoff is not None:
-        pix_pos_dict['reg_tradeoff'] = ctrl.reg_tradeoff
-    dir = ctrl.agentparams['record'] + '/plan'
-    if not os.path.exists(dir):
-        os.makedirs(dir)
-    pkl.dump(pix_pos_dict, open(dir + 'pix_pos_dict{}iter{}.pkl'.format(ctrl.t, cem_itr), 'wb'))
 
 
 def truncate_movement(actions, hp):

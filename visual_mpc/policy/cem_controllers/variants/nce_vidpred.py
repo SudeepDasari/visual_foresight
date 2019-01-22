@@ -52,7 +52,7 @@ class CEM_NCE_Vidpred(CEM_Controller_Base):
         """
 
         self._hp = self._default_hparams()
-        self.override_defaults(policyparams)
+        self._override_defaults(policyparams)
 
         CEM_Controller_Base.__init__(self, ag_params, policyparams)
 
@@ -63,7 +63,7 @@ class CEM_NCE_Vidpred(CEM_Controller_Base):
             vpred_ngpu = ngpu - 1
         else: vpred_ngpu = ngpu
 
-        self.predictor = self.netconf['setup_predictor'](ag_params, self.netconf, gpu_id, vpred_ngpu, self.logger)
+        self.predictor = self.netconf['setup_predictor'](ag_params, self.netconf, gpu_id, vpred_ngpu, self._logger)
         self._scoring_func = control_embedding.deploy_model(self._hp.nce_conf_path, batch_size=self._hp.nce_batch_size,
                                                             restore_path=self._hp.nce_restore_path,
                                                             device_id=gpu_id + ngpu - 1)
@@ -111,7 +111,7 @@ class CEM_NCE_Vidpred(CEM_Controller_Base):
             parent_params.add_hparam(k, default_dict[k])
         return parent_params
 
-    def get_rollouts(self, actions, cem_itr, itr_times, n_samps=None):
+    def evaluate_rollouts(self, actions, cem_itr, itr_times, n_samps=None):
         if n_samps is None:
             n_samps = self.M
 
@@ -127,7 +127,7 @@ class CEM_NCE_Vidpred(CEM_Controller_Base):
         gen_images_l, gen_states_l = [], []
         itr_times['pre_run'] = time.time() - t_0
         for run in range(nruns):
-            self.logger.log('run{}'.format(run))
+            self._logger.log('run{}'.format(run))
             t_run_loop = time.time()
             actions_ = actions[run*self.bsize:(run+1)*self.bsize]
 
@@ -144,14 +144,14 @@ class CEM_NCE_Vidpred(CEM_Controller_Base):
             gen_states = np.concatenate(gen_states_l, 0)
 
         itr_times['t_concat'] = time.time() - t_run_post
-        self.logger.log('time for videoprediction {}'.format(time.time() - t_startpred))
+        self._logger.log('time for videoprediction {}'.format(time.time() - t_startpred))
         t_run_post = time.time()
 
         scores = self.eval_planningcost(gen_images)
 
         itr_times['run_post'] = time.time() - t_run_post
 
-        self.vd.t = self.t
+        self.vd.t = self._t
         self.vd.scores = scores
         self.vd.agentparams = self.agentparams
         self.vd.hp = self._hp
@@ -185,16 +185,16 @@ class CEM_NCE_Vidpred(CEM_Controller_Base):
     def prep_vidpred_inp(self, actions, cem_itr):
         t_0 = time.time()
         ctxt = self.netconf['context_frames']
-        last_frames = self.images[self.t - ctxt + 1:self.t + 1]  # same as [t - 1:t + 1] for context 2
+        last_frames = self.images[self._t - ctxt + 1:self._t + 1]  # same as [t - 1:t + 1] for context 2
         last_frames = last_frames.astype(np.float32, copy=False) / 255.
         last_frames = last_frames[None]
-        last_states = self.state[self.t - ctxt + 1:self.t + 1]
+        last_states = self.state[self._t - ctxt + 1:self._t + 1]
         last_states = last_states[None]
         if self._hp.state_append:
             last_state_append = np.tile(np.array([[self._hp.state_append]]), (1, ctxt, 1))
             last_states = np.concatenate((last_states, last_state_append), -1)
 
-        self.logger.log('t0 ', time.time() - t_0)
+        self._logger.log('t0 ', time.time() - t_0)
         return actions, last_frames, last_states, t_0
 
     def act(self, t=None, i_tr=None, goal_image=None, images=None, state=None):

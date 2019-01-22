@@ -2,6 +2,8 @@
 import abc, six
 from funcsigs import signature, Parameter
 from tensorflow.contrib.training import HParams
+import numpy as np
+
 
 def get_policy_args(policy, obs, t, i_tr, step_data=None):
     """
@@ -45,16 +47,7 @@ def get_policy_args(policy, obs, t, i_tr, step_data=None):
 
 @six.add_metaclass(abc.ABCMeta)
 class Policy(object):
-
-    def override_defaults(self, policyparams):
-        if 'custom_sampler' in policyparams:
-            for name, value in policyparams['custom_sampler'].get_default_hparams().items():
-                if name in self._hp:
-                    print('Warning default value for {} already set!'.format(name))
-                    self._hp.set_hparam(name, value)
-                else:
-                    self._hp.add_hparam(name, value)
-
+    def _override_defaults(self, policyparams):
         for name, value in policyparams.items():
             if name == 'type':
                 continue      # type corresponds to policy class

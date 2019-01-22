@@ -1,10 +1,10 @@
 import copy
 import numpy as np
-from .sampler import Sampler
+from .cemsampler import CEMSampler
 
-class FoldingSampler(Sampler):
+class FoldingCEMSampler(CEMSampler):
     def __init__(self, sigma, mean, hp, repeat, base_adim):
-        super(FoldingSampler, self).__init__(sigma, mean, hp, repeat, base_adim)
+        super(FoldingCEMSampler, self).__init__(sigma, mean, hp, repeat, base_adim)
         self._hp = hp
         naction_steps = hp.nactions
         assert base_adim == 4, "Requires base action dimension of 4"

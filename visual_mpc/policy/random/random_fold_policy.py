@@ -13,7 +13,7 @@ class RandomFoldPolicy(Policy):
         assert agent_params['adim'] == 4, "Action dimension should be 4 for this policy!"
         self._adim, self._T = agent_params['adim'], agent_params['T']
         self._hp = self._default_hparams()
-        self.override_defaults(policyparams)
+        self._override_defaults(policyparams)
         self.agent_params = agent_params
         self._swap_times, self._stage, self._ctr = [], 0, 0
         self._last_action = None
@@ -38,9 +38,9 @@ class RandomFoldPolicy(Policy):
             parent_params.add_hparam(k, default_dict[k])
         return parent_params
 
-    def override_defaults(self, policyparams):
+    def _override_defaults(self, policyparams):
         assert policyparams.get('repeat', 3) >= 1, "Repeat must be at least 1"
-        return super(RandomFoldPolicy, self).override_defaults(policyparams)
+        return super(RandomFoldPolicy, self)._override_defaults(policyparams)
 
     def _is_timer_set(self):
         return self._ctr > 0
