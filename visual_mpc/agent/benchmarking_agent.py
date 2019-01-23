@@ -121,4 +121,5 @@ class BenchmarkAgent(GeneralAgent):
         return reset_state
 
     def cleanup(self):
-        return self._save_worker.put(None)
+        self._save_worker.put(None)
+        self._save_worker.join()

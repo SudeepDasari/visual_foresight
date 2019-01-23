@@ -83,5 +83,10 @@ def save_gifs(save_worker, folder, name, gif_array):
     return html_paths
 
 
+def save_img(save_worker, folder, name, img):
+    html_path = '{}/assets/{}.jpg'.format(folder, name)
+    save_worker.put(('img', html_path, img))
+
+
 def save_html(save_worker, path, content):
     save_worker.put(('txt_file', path, content))

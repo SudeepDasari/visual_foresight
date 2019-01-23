@@ -1,7 +1,7 @@
 import numpy as np
 import imp
 from .cem_controller_base import CEM_Controller_Base
-from .visualizer.construct_html import save_gifs, save_html, fill_template
+from .visualizer.construct_html import save_gifs, save_html, save_img, fill_template
 import matplotlib.pyplot as plt
 from collections import OrderedDict
 import pdb
@@ -106,10 +106,15 @@ class PixelCostController(CEM_Controller_Base):
         
         if self._hp.verbose:
             if self._hp.verbose_every_iter or cem_itr == self._n_iter - 1:
-                pdb.set_trace()
                 verbose_folder = "planning_{}_itr_{}".format(self._t, cem_itr)
                 content_dict = OrderedDict()
                 visualize_indices = scores.argsort()[:10]
+
+                # start images
+                for c in range(self._n_cam):
+                    name = 'cam_{}_start'.format(c)
+                    save_path = save_img(self._verbose_worker, verbose_folder, name, self.images[-1, c])
+                    content_dict[name] = [save_path for _ in visualize_indices]
 
                 # render distributions
                 for c in range(self._n_cam):
