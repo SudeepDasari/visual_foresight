@@ -6,7 +6,6 @@ current_dir = os.path.dirname(os.path.realpath(__file__))
 OUT_DIR = current_dir + '/modeldata'
 
 from visual_mpc.video_prediction.vpred_model_interface import VPred_Model_Interface
-from video_prediction.models.savp_model import SAVPVideoPredictionModel
 import video_prediction
 
 

@@ -49,7 +49,8 @@ class CEM_Controller_Vidpred(CEM_Controller_Base):
             "verbose_img_height": 128,
             'predictor_propagation':False,
             'only_take_first_view':False,
-            'state_append': None
+            'state_append': None,
+            'finalweight': 10.
         }
         parent_params = super(CEM_Controller_Vidpred, self)._default_hparams()
 
@@ -142,8 +143,8 @@ class CEM_Controller_Vidpred(CEM_Controller_Base):
         for icam in range(self._n_cam):
             for p in range(self._n_desig):
                 distance_grid = self.get_distancegrid(self._goal_pix[icam, p])
-                score = self.calc_scores(icam, p, gen_distrib[:, :, icam, :, :, p], distance_grid,
-                                         normalize=True)
+                score = self._calc_pixel_scores(icam, p, gen_distrib[:, :, icam, :, :, p], distance_grid,
+                                                normalize=True)
 
                 scores_per_task.append(score)
                 self._logger.log(
@@ -184,12 +185,13 @@ class CEM_Controller_Vidpred(CEM_Controller_Base):
 
         return actions, last_frames, last_states
 
-    def calc_scores(self, icam, idesig, gen_distrib, distance_grid, normalize=True):
+    def _calc_pixel_scores(self, icam, idesig, gen_distrib, distance_grid, normalize=True):
         """
         :param gen_distrib: shape [batch, t, r, c]
         :param distance_grid: shape [r, c]
         :return:
         """
+        import pdb; pdb.set_trace()
         assert len(gen_distrib.shape) == 4
         t_mult = np.ones([self._net_seqlen - self._net_context])
         t_mult[-1] = self._hp.finalweight

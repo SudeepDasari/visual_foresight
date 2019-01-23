@@ -29,7 +29,7 @@ class CEM_Controller_Ensemble_Vidpred(CEM_Controller_Vidpred):
                                                                                          itr_times, self.M * self._hp.num_ensembles)
         return ensemble_scores
 
-    def calc_scores(self, icam, idesig, gen_distrib, distance_grid, normalize=True):
+    def _calc_pixel_scores(self, icam, idesig, gen_distrib, distance_grid, normalize=True):
         """
         :param gen_distrib: shape [batch, t, r, c]
         :param distance_grid: shape [r, c]

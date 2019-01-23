@@ -45,7 +45,6 @@ class CEM_Controller_Base(Policy):
             'iterations': 3,
             'num_samples': 200,
             'selection_frac': 0., # specifcy which fraction of best samples to use to compute mean and var for next CEM iteration
-            'finalweight':10,
             'start_planning': 0,
             'default_k': 10
         }
