@@ -4,6 +4,7 @@ from .cem_controller_base import CEM_Controller_Base
 from .visualizer.construct_html import save_gifs, save_html, fill_template
 import matplotlib.pyplot as plt
 from collections import OrderedDict
+import pdb
 
 
 class CEM_Controller_Vidpred(CEM_Controller_Base):
@@ -75,7 +76,7 @@ class CEM_Controller_Vidpred(CEM_Controller_Base):
     def evaluate_rollouts(self, actions, cem_itr, n_samps=None):
         if n_samps is None:
             n_samps = self.M
-
+        pdb.set_trace()
         actions, last_frames, last_states = self._prep_vidpred_inp(actions, cem_itr)
         input_distrib = self.make_input_distrib(cem_itr)
 
@@ -101,9 +102,10 @@ class CEM_Controller_Vidpred(CEM_Controller_Base):
         gen_distrib = np.concatenate(gen_distrib_l, 0)
 
         scores = self.eval_planningcost(cem_itr, gen_distrib, gen_images)
-
+        
         if self._hp.verbose:
             if self._hp.verbose_every_iter or cem_itr == self._n_iter - 1:
+                pdb.set_trace()
                 verbose_folder = "planning_{}_itr_{}".format(self._t, cem_itr)
                 content_dict = OrderedDict()
                 visualize_indices = scores.argsort()[:10]
@@ -241,6 +243,7 @@ class CEM_Controller_Vidpred(CEM_Controller_Base):
             goal_pix: in coordinates of small image
             desig_pix: in coordinates of small image
         """
+        pdb.set_trace()
         self._desig_pix = np.array(desig_pix).reshape((self._n_cam, self._n_desig, 2))
         self._goal_pix = np.array(goal_pix).reshape((self._n_cam, self._n_desig, 2))
 
