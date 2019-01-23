@@ -2,6 +2,7 @@ import numpy as np
 from visual_mpc.utils.logger import Logger
 from .samplers import GaussianCEMSampler
 from visual_mpc.policy.policy import Policy
+import pdb
 
 
 class CEM_Controller_Base(Policy):
@@ -114,6 +115,8 @@ class CEM_Controller_Base(Policy):
             else:
                 self.perform_CEM(state)
             action = self._best_actions[0, self._t_since_replan]
+
+        self._logger.log('time {}, action - {}'.format(t, action))
         self._sampler.log_best_action(action)
 
         return {'actions':action, 'plan_stat':self.plan_stat}

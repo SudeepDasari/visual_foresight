@@ -19,7 +19,7 @@ class GaussianCEMSampler(CEMSampler):
             self._sigma = reuse_cov(self._sigma, self._adim, self._hp)
 
         if not self._hp.reuse_mean or self._t < self._hp.repeat - 1 or self._mean is None:
-            self._mean = np.zeros(self._adim * self._hp.naction_steps)
+            self._mean = np.zeros(self._adim * self._hp.nactions)
         else:
             self._mean = reuse_action(self._chosen_actions[-1], self._hp)
 
@@ -63,9 +63,9 @@ class GaussianCEMSampler(CEMSampler):
 
     def _sample_actions(self, M):
         actions = np.random.multivariate_normal(self._mean, self._sigma, M)
-        actions = actions.reshape(M, self._hp.naction_steps, self._adim)
+        actions = actions.reshape(M, self._hp.nactions, self._adim)
         if self._hp.discrete_ind != None:
-            actions = discretize(actions, M, self._hp.naction_steps, self._hp.discrete_ind)
+            actions = discretize(actions, M, self._hp.nactions, self._hp.discrete_ind)
 
         if self._hp.action_bound:
             actions = truncate_movement(actions, self._hp)
@@ -77,13 +77,13 @@ class GaussianCEMSampler(CEMSampler):
         return actions
 
     def _fit_gaussians(self, actions):
-        actions = actions.reshape(-1, self._hp.naction_steps, self._hp.repeat, self._adim)
+        actions = actions.reshape(-1, self._hp.nactions, self._hp.repeat, self._adim)
         actions = actions[:, :, -1, :]  # taking only one of the repeated actions
-        actions_flat = actions.reshape(-1, self._hp.naction_steps * self._adim)
+        actions_flat = actions.reshape(-1, self._hp.nactions * self._adim)
 
         self._sigma = np.cov(actions_flat, rowvar=False, bias=False)
         if self._hp.cov_blockdiag:
-            self._sigma = make_blockdiagonal(self._sigma, self._hp.naction_steps, self._adim)
+            self._sigma = make_blockdiagonal(self._sigma, self._hp.nactions, self._adim)
         if self._hp.smooth_cov:
             self._sigma = 0.5 * self._sigma + 0.5 * self._sigma_prev
             self._sigma_prev = self._sigma
@@ -104,7 +104,7 @@ class GaussianCEMSampler(CEMSampler):
                 i +=1
                 action_seq = np.random.multivariate_normal(self._mean, self._sigma, 1)
 
-                action_seq = action_seq.reshape(self._hp.naction_steps, self._adim)
+                action_seq = action_seq.reshape(self._hp.nactions, self._adim)
                 xy_std = self._hp.initial_std
                 lift_std = self._hp.initial_std_lift
 
@@ -125,7 +125,7 @@ class GaussianCEMSampler(CEMSampler):
 
         print('rejection smp max trials', max(runs))
         if self._hp.discrete_ind != None:
-            actions = discretize(actions, M, self._hp.naction_steps, self._hp.discrete_ind)
+            actions = discretize(actions, M, self._hp.nactions, self._hp.discrete_ind)
         actions = np.repeat(actions, self._hp.repeat, axis=1)
 
         print('max action val xy', np.max(actions[:,:,:2]))

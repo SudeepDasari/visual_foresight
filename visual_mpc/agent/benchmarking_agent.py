@@ -12,12 +12,12 @@ class BenchmarkAgent(GeneralAgent):
     def __init__(self, hyperparams):
         self._start_goal_confs = hyperparams.get('start_goal_confs', None)
         self.ncam = hyperparams['env'][1].get('ncam', hyperparams['env'][0].default_ncam()) # check if experiment has ncam set, otherwise get env default
-
+        self._save_worker = start_file_worker()
+        self._is_robot_bench = 'robot_name' in hyperparams['env'][1]
         GeneralAgent.__init__(self, hyperparams)
-        self._is_robot_bench = 'robot_name' in self._hyperparams['env'][1]
+
         if not self._is_robot_bench:
             self._hyperparams['gen_xml'] = 1
-        self._save_worker = start_file_worker()
 
     def _post_process_obs(self, env_obs, agent_data, initial_obs=False):
         obs = super(BenchmarkAgent, self)._post_process_obs(env_obs, agent_data, initial_obs)

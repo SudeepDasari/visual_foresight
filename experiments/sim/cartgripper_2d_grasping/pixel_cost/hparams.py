@@ -32,10 +32,9 @@ policy = {
     'type': CEM_Controller_Vidpred,
     'action_order': ['x', 'z', 'grasp'],
     'initial_std_lift': 0.5,  # std dev. in xy
-    'verbose': True,
     'rejection_sampling': False,
     'replan_interval': 10,
-    'num_samples': [800, 400],
+    'num_samples': 800
 
 }
 

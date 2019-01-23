@@ -76,8 +76,8 @@ class CEM_Controller_Vidpred(CEM_Controller_Base):
 
     def evaluate_rollouts(self, actions, cem_itr, n_samps=None):
         if n_samps is None:
-            n_samps = self.M
-        pdb.set_trace()
+            n_samps = actions.shape[0]
+
         actions, last_frames, last_states = self._prep_vidpred_inp(actions, cem_itr)
         input_distrib = self.make_input_distrib(cem_itr)
 
@@ -145,7 +145,7 @@ class CEM_Controller_Vidpred(CEM_Controller_Base):
                 distance_grid = self.get_distancegrid(self._goal_pix[icam, p])
                 score = self._calc_pixel_scores(icam, p, gen_distrib[:, :, icam, :, :, p], distance_grid,
                                                 normalize=True)
-
+                
                 scores_per_task.append(score)
                 self._logger.log(
                     'best flow score of task {} cam{}  :{}'.format(p, icam, np.min(scores_per_task[-1])))
@@ -191,7 +191,6 @@ class CEM_Controller_Vidpred(CEM_Controller_Base):
         :param distance_grid: shape [r, c]
         :return:
         """
-        import pdb; pdb.set_trace()
         assert len(gen_distrib.shape) == 4
         t_mult = np.ones([self._net_seqlen - self._net_context])
         t_mult[-1] = self._hp.finalweight
@@ -202,7 +201,7 @@ class CEM_Controller_Vidpred(CEM_Controller_Base):
             gen_distrib /= np.sum(np.sum(gen_distrib, axis=2), 2)[:,:, None, None]
         gen_distrib *= distance_grid[None, None]
         scores = np.sum(np.sum(gen_distrib, axis=2),2)
-        self.cost_perstep[:,icam, idesig] = scores
+
         scores *= t_mult[None]
         scores = np.sum(scores, axis=1)/np.sum(t_mult)
         return scores
@@ -245,7 +244,6 @@ class CEM_Controller_Vidpred(CEM_Controller_Base):
             goal_pix: in coordinates of small image
             desig_pix: in coordinates of small image
         """
-        pdb.set_trace()
         self._desig_pix = np.array(desig_pix).reshape((self._n_cam, self._n_desig, 2))
         self._goal_pix = np.array(goal_pix).reshape((self._n_cam, self._n_desig, 2))
 

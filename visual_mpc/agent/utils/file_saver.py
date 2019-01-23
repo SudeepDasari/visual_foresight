@@ -4,10 +4,11 @@ import cv2
 import imageio as io
 import numpy as np
 
+
 def start_file_worker():
     m = Manager()
     file_queue = m.Queue()
-    saver_proc = Process(target=_file_worker, args=(file_queue))
+    saver_proc = Process(target=_file_worker, args=(file_queue,))
     saver_proc.start()
     return file_queue
 
