@@ -1,4 +1,4 @@
-from .cem_controller_vidpred import CEM_Controller_Vidpred
+from .pixel_cost_controller import PixelCostController
 import copy
 import numpy as np
 from .visualizer.render_utils import resize_image
@@ -7,7 +7,7 @@ import imp
 from visual_mpc.registration_network.setup_registration import setup_gdn
 
 
-class Register_Gtruth_Controller(CEM_Controller_Vidpred):
+class Register_Gtruth_Controller(PixelCostController):
     def __init__(self, ag_params, policyparams, gpu_id, ngpu):
         super(Register_Gtruth_Controller, self).__init__(ag_params, policyparams, gpu_id, ngpu)
         
@@ -192,4 +192,4 @@ class Register_Gtruth_Controller(CEM_Controller_Vidpred):
 
         self.images = images
         self.state = state
-        return super(CEM_Controller_Vidpred, self).act(t, i_tr)
+        return super(PixelCostController, self).act(t, i_tr)

@@ -1,1 +1,1 @@
-from .guassian_sampler import GaussianCEMSampler
+from .gaussian_sampler import GaussianCEMSampler

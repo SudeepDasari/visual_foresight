@@ -2,7 +2,6 @@ import numpy as np
 from visual_mpc.utils.logger import Logger
 from .samplers import GaussianCEMSampler
 from visual_mpc.policy.policy import Policy
-import pdb
 
 
 class CEM_Controller_Base(Policy):
@@ -76,7 +75,6 @@ class CEM_Controller_Base(Policy):
         K = self._hp.default_k
         if self._hp.selection_frac:
             K = max(int(self._hp.selection_frac * self._hp.num_samples), self._hp.default_k)
-        pdb.set_trace()
         actions = self._sampler.sample_initial_actions(self._hp.num_samples, state[-1])
         for itr in range(self._n_iter):
             self._logger.log('------------')
@@ -88,7 +86,6 @@ class CEM_Controller_Base(Policy):
 
             self.plan_stat['scores_itr{}'.format(itr)] = scores
             if itr < self._n_iter - 1:
-                pdb.set_trace()
                 actions = self._sampler.sample_next_actions(self._hp.num_samples, self._best_actions)
         self._t_since_replan = 0
 

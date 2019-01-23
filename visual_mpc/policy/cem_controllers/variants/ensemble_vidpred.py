@@ -1,9 +1,9 @@
-from ..cem_controller_vidpred import CEM_Controller_Vidpred
+from ..pixel_cost_controller import PixelCostController
 import numpy as np
 import pdb
 
 
-class CEM_Controller_Ensemble_Vidpred(CEM_Controller_Vidpred):
+class CEM_Controller_Ensemble_Vidpred(PixelCostController):
     def __init__(self, ag_params, policyparams, gpu_id, ngpu):
         super(CEM_Controller_Ensemble_Vidpred, self).__init__(ag_params, policyparams, gpu_id, ngpu)
         self._ens_block_len = self._net_bsize // self._hp.num_ensembles

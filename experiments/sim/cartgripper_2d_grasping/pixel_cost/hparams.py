@@ -1,5 +1,5 @@
 import os.path
-from visual_mpc.policy.cem_controllers import CEM_Controller_Vidpred
+from visual_mpc.policy.cem_controllers import PixelCostController
 from visual_mpc.agent.benchmarking_agent import BenchmarkAgent
 from visual_mpc.envs.mujoco_env.cartgripper_env.cartgripper_xz_grasp import CartgripperXZGrasp
 
@@ -29,7 +29,7 @@ agent = {
 }
 
 policy = {
-    'type': CEM_Controller_Vidpred,
+    'type': PixelCostController,
     'action_order': ['x', 'z', 'grasp'],
     'initial_std_lift': 0.5,  # std dev. in xy
     'rejection_sampling': False,

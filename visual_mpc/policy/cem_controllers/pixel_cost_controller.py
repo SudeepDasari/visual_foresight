@@ -7,7 +7,7 @@ from collections import OrderedDict
 import pdb
 
 
-class CEM_Controller_Vidpred(CEM_Controller_Base):
+class PixelCostController(CEM_Controller_Base):
     """
     Cross Entropy Method Stochastic Optimizer
     """
@@ -52,14 +52,14 @@ class CEM_Controller_Vidpred(CEM_Controller_Base):
             'state_append': None,
             'finalweight': 10.
         }
-        parent_params = super(CEM_Controller_Vidpred, self)._default_hparams()
+        parent_params = super(PixelCostController, self)._default_hparams()
 
         for k in default_dict.keys():
             parent_params.add_hparam(k, default_dict[k])
         return parent_params
 
     def reset(self):
-        super(CEM_Controller_Vidpred, self).reset()
+        super(PixelCostController, self).reset()
         if self._hp.predictor_propagation:
             self._rec_input_distrib = []  # record the input distributions
 
@@ -112,22 +112,25 @@ class CEM_Controller_Vidpred(CEM_Controller_Base):
                 visualize_indices = scores.argsort()[:10]
 
                 # render distributions
-                for p in range(self._n_desig):
-                    dist_p = [gen_distrib[g_i, :, :, :, p] for g_i in visualize_indices]
-                    for v in range(len(dist_p)):
-                        rendered = []
-                        for t in range(gen_distrib.shape[1]):
-                            dist = dist_p[v][t] / (np.amax(dist_p[v][t]) + 1e-6)
-                            rendered.append((np.squeeze(plt.cm.viridis(dist)[:, :, :3]) * 255).astype(np.uint8))
-                        dist_p[v] = rendered
-                    desig_name = 'gen_dist_desig_{}'.format(p)
-                    content_dict[desig_name] = save_gifs(self._verbose_worker, verbose_folder,
-                                                        desig_name, dist_p)
+                for c in range(self._n_cam):
+                    for p in range(self._n_desig):
+                        dist_p = [gen_distrib[g_i, :, c, :, :, p] for g_i in visualize_indices]
+                        for v in range(len(dist_p)):
+                            rendered = []
+                            for t in range(gen_distrib.shape[1]):
+                                dist = dist_p[v][t] / (np.amax(dist_p[v][t]) + 1e-6)
+                                rendered.append((np.squeeze(plt.cm.viridis(dist)[:, :, :3]) * 255).astype(np.uint8))
+                            dist_p[v] = rendered
+                        desig_name = 'cam_{}_desig_{}'.format(c, p)
+                        content_dict[desig_name] = save_gifs(self._verbose_worker, verbose_folder,
+                                                            desig_name, dist_p)
 
                 # render predicted images
-                verbose_images = [(gen_images[g_i] * 255).astype(np.uint8) for g_i in visualize_indices]
-                content_dict['gen_images'] = save_gifs(self._verbose_worker, verbose_folder,
-                                                       'gen_images', verbose_images)
+                for c in range(self._n_cam):
+                    verbose_images = [(gen_images[g_i, :, c] * 255).astype(np.uint8) for g_i in visualize_indices]
+                    row_name = 'cam_{}_pred_images'.format(c)
+                    content_dict[row_name] = save_gifs(self._verbose_worker, verbose_folder,
+                                                           row_name, verbose_images)
 
                 # save scores
                 content_dict['scores'] = scores[visualize_indices]
@@ -252,5 +255,5 @@ class CEM_Controller_Vidpred(CEM_Controller_Base):
 
         self._verbose_worker = verbose_worker
 
-        return super(CEM_Controller_Vidpred, self).act(t, i_tr, state)
+        return super(PixelCostController, self).act(t, i_tr, state)
 
