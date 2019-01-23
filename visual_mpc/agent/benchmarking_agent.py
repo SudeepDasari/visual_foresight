@@ -116,6 +116,7 @@ class BenchmarkAgent(GeneralAgent):
         self._goal_obj_pose = obs_dict['object_qpos'][-1]
 
         verbose_dir = '{}/verbose/traj_{}'.format(self._hyperparams['data_save_dir'], itr)
+        import pdb; pdb.set_trace()
         self._save_worker.put(('path', verbose_dir))
 
         return reset_state

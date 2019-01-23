@@ -3,17 +3,17 @@ template = """
 <html>
 <head>
 <style>
-table, th, td {
+table, th, td {{
   border: 1px solid black;
   border-collapse: collapse;
-}
-th, td {
+}}
+th, td {{
   padding: 5px;
-}
+}}
 
-td {
+td {{
   text-align: middle;
-}
+}}
 </style>
 </head>
 <body>
@@ -66,7 +66,7 @@ def fill_template(cem_itr, t, item_dict, column_title='traj', exp_name='Visual M
     rows = ""
     rows += _format_title_row(column_title, row_length)
     for k, i in item_dict.items():
-        if any([x in i[0] for x in ['gif', 'png', 'jpg']]):
+        if any([isinstance(i[0], str) and x in i[0] for x in ['gif', 'png', 'jpg']]):
             rows += _format_img_row(k, i, img_height)
         else:
             rows += _format_txt_row(k, i)
