@@ -4,7 +4,7 @@ from .cem_controller_base import CEM_Controller_Base
 from .visualizer.construct_html import save_gifs, save_html, fill_template
 import matplotlib.pyplot as plt
 from collections import OrderedDict
-import pdb
+
 
 
 class PixelCostController(CEM_Controller_Base):
@@ -106,7 +106,6 @@ class PixelCostController(CEM_Controller_Base):
         
         if self._hp.verbose:
             if self._hp.verbose_every_iter or cem_itr == self._n_iter - 1:
-                pdb.set_trace()
                 verbose_folder = "planning_{}_itr_{}".format(self._t, cem_itr)
                 content_dict = OrderedDict()
                 visualize_indices = scores.argsort()[:10]
@@ -134,7 +133,6 @@ class PixelCostController(CEM_Controller_Base):
 
                 # save scores
                 content_dict['scores'] = scores[visualize_indices]
-
                 html_page = fill_template(cem_itr, self._t, content_dict, img_height=self._hp.verbose_img_height)
                 save_html(self._verbose_worker, "{}/plan.html".format(verbose_folder), html_page)
 
