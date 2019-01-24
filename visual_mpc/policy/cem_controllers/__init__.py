@@ -1,4 +1,4 @@
-from .cem_controller_base import CEM_Controller_Base
+from .cemcontrollerbase import CEMControllerBase
 from .pixel_cost_controller import PixelCostController
 # from .register_gtruth_controller import Register_Gtruth_Controller
 # from .variants.nce_vidpred import CEM_NCE_Vidpred

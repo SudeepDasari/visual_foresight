@@ -1,13 +1,13 @@
 import numpy as np
 import imp
-from .cem_controller_base import CEM_Controller_Base
+from .cemcontrollerbase import CEMControllerBase
 from .visualizer.construct_html import save_gifs, save_html, save_img, fill_template
 import matplotlib.pyplot as plt
 from collections import OrderedDict
 
 
 
-class PixelCostController(CEM_Controller_Base):
+class PixelCostController(CEMControllerBase):
     """
     Cross Entropy Method Stochastic Optimizer
     """
@@ -19,7 +19,7 @@ class PixelCostController(CEM_Controller_Base):
         :param gpu_id: gpu id
         :param ngpu: number of gpus to use
         """
-        CEM_Controller_Base.__init__(self, ag_params, policyparams)
+        CEMControllerBase.__init__(self, ag_params, policyparams)
 
         params = imp.load_source('params', ag_params['current_dir'] + '/conf.py')
         netconf = params.configuration

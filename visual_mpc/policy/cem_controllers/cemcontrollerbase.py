@@ -4,7 +4,7 @@ from .samplers import GaussianCEMSampler
 from visual_mpc.policy.policy import Policy
 
 
-class CEM_Controller_Base(Policy):
+class CEMControllerBase(Policy):
     """
     Cross Entropy Method Stochastic Optimizer
     """
@@ -36,6 +36,8 @@ class CEM_Controller_Base(Policy):
         self._sampler = None
         self._best_indices, self._best_actions = None, None
 
+        self._state = None
+
     def _default_hparams(self):
         default_dict = {
             'logging_dir': '',
@@ -49,7 +51,7 @@ class CEM_Controller_Base(Policy):
             'default_k': 10
         }
 
-        parent_params = super(CEM_Controller_Base, self)._default_hparams()
+        parent_params = super(CEMControllerBase, self)._default_hparams()
         for k in default_dict.keys():
             parent_params.add_hparam(k, default_dict[k])
         return parent_params
@@ -62,7 +64,7 @@ class CEM_Controller_Base(Policy):
             else:
                 self._hp.add_hparam(name, value)
 
-        return super(CEM_Controller_Base, self)._override_defaults(policyparams)
+        return super(CEMControllerBase, self)._override_defaults(policyparams)
 
     def reset(self):
         self._sampler = self._hp.sampler(self._hp, self._adim, self._sdim)
@@ -98,6 +100,7 @@ class CEM_Controller_Base(Policy):
         Args:
             t: the current controller's Time step
         """
+        self._state = state
         self.i_tr = i_tr
         self._t = t
 
