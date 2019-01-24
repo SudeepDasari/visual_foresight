@@ -3,6 +3,8 @@ import imp
 import control_embedding
 import numpy as np
 from visual_mpc.video_prediction.pred_util import get_context, rollout_predictions
+from ..visualizer.construct_html import save_gifs, save_html, save_img, fill_template
+from collections import OrderedDict
 
 
 class NCECostController(CEMBaseController):
@@ -48,6 +50,7 @@ class NCECostController(CEMBaseController):
 
     def _default_hparams(self):
         default_dict = {
+            'score_fn': 'dot_prod',
             'finalweight': 10,
             'nce_conf_path': '',
             'nce_restore_path': '',
@@ -77,12 +80,23 @@ class NCECostController(CEMBaseController):
 
             gs_enc = embed_dict['goal_enc'][0][None]
             in_enc = embed_dict['input_enc'].reshape((actions.shape[0], self._n_pred, -1))
-            scores[c] = -np.matmul(gs_enc[None], np.swapaxes(in_enc, 2, 1))[:, 0]
+            scores[c] = self._eval_embedding_cost(gs_enc, in_enc)
 
         scores = np.sum(scores, axis=0)
         scores[:, -1] *= self._hp.finalweight
 
+        if self._verbose_condition(cem_itr):
+            verbose_folder = "planning_{}_itr_{}".format(self._t, cem_itr)
+            content_dict = OrderedDict()
+            visualize_indices = scores.argsort()[:10]
+        
         return scores
+
+    def _eval_embedding_cost(self, goal_embed, input_embed):
+        if self._hp.score_fn == 'dot_prod':
+            # - log prob ignoring constant term (denominator)
+            return -np.matmul(goal_embed[None], np.swapaxes(input_embed, 2, 1))[:, 0]
+        raise NotImplementedError
 
     def act(self, t=None, i_tr=None, goal_image=None, images=None, state=None):
         """

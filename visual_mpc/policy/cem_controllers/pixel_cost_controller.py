@@ -44,8 +44,6 @@ class PixelCostController(CEMBaseController):
 
     def _default_hparams(self):
         default_dict = {
-            'verbose': True,
-            'verbose_every_iter': False,
             "verbose_img_height": 128,
             'predictor_propagation':False,
             'only_take_first_view':False,
@@ -87,43 +85,42 @@ class PixelCostController(CEMBaseController):
 
         scores = self._eval_pixel_cost(cem_itr, gen_distrib, gen_images)
         
-        if self._hp.verbose:
-            if self._hp.verbose_every_iter or cem_itr == self._n_iter - 1:
-                verbose_folder = "planning_{}_itr_{}".format(self._t, cem_itr)
-                content_dict = OrderedDict()
-                visualize_indices = scores.argsort()[:10]
+        if self._verbose_condition(cem_itr):
+            verbose_folder = "planning_{}_itr_{}".format(self._t, cem_itr)
+            content_dict = OrderedDict()
+            visualize_indices = scores.argsort()[:10]
 
-                # start images
-                for c in range(self._n_cam):
-                    name = 'cam_{}_start'.format(c)
-                    save_path = save_img(self._verbose_worker, verbose_folder, name, self.images[-1, c])
-                    content_dict[name] = [save_path for _ in visualize_indices]
+            # start images
+            for c in range(self._n_cam):
+                name = 'cam_{}_start'.format(c)
+                save_path = save_img(self._verbose_worker, verbose_folder, name, self.images[-1, c])
+                content_dict[name] = [save_path for _ in visualize_indices]
 
-                # render distributions
-                for c in range(self._n_cam):
-                    for p in range(self._n_desig):
-                        dist_p = [gen_distrib[g_i, :, c, :, :, p] for g_i in visualize_indices]
-                        for v in range(len(dist_p)):
-                            rendered = []
-                            for t in range(gen_distrib.shape[1]):
-                                dist = dist_p[v][t] / (np.amax(dist_p[v][t]) + 1e-6)
-                                rendered.append((np.squeeze(plt.cm.viridis(dist)[:, :, :3]) * 255).astype(np.uint8))
-                            dist_p[v] = rendered
-                        desig_name = 'cam_{}_desig_{}'.format(c, p)
-                        content_dict[desig_name] = save_gifs(self._verbose_worker, verbose_folder,
-                                                            desig_name, dist_p)
+            # render distributions
+            for c in range(self._n_cam):
+                for p in range(self._n_desig):
+                    dist_p = [gen_distrib[g_i, :, c, :, :, p] for g_i in visualize_indices]
+                    for v in range(len(dist_p)):
+                        rendered = []
+                        for t in range(gen_distrib.shape[1]):
+                            dist = dist_p[v][t] / (np.amax(dist_p[v][t]) + 1e-6)
+                            rendered.append((np.squeeze(plt.cm.viridis(dist)[:, :, :3]) * 255).astype(np.uint8))
+                        dist_p[v] = rendered
+                    desig_name = 'cam_{}_desig_{}'.format(c, p)
+                    content_dict[desig_name] = save_gifs(self._verbose_worker, verbose_folder,
+                                                        desig_name, dist_p)
 
-                # render predicted images
-                for c in range(self._n_cam):
-                    verbose_images = [(gen_images[g_i, :, c] * 255).astype(np.uint8) for g_i in visualize_indices]
-                    row_name = 'cam_{}_pred_images'.format(c)
-                    content_dict[row_name] = save_gifs(self._verbose_worker, verbose_folder,
-                                                           row_name, verbose_images)
+            # render predicted images
+            for c in range(self._n_cam):
+                verbose_images = [(gen_images[g_i, :, c] * 255).astype(np.uint8) for g_i in visualize_indices]
+                row_name = 'cam_{}_pred_images'.format(c)
+                content_dict[row_name] = save_gifs(self._verbose_worker, verbose_folder,
+                                                       row_name, verbose_images)
 
-                # save scores
-                content_dict['scores'] = scores[visualize_indices]
-                html_page = fill_template(cem_itr, self._t, content_dict, img_height=self._hp.verbose_img_height)
-                save_html(self._verbose_worker, "{}/plan.html".format(verbose_folder), html_page)
+            # save scores
+            content_dict['scores'] = scores[visualize_indices]
+            html_page = fill_template(cem_itr, self._t, content_dict, img_height=self._hp.verbose_img_height)
+            save_html(self._verbose_worker, "{}/plan.html".format(verbose_folder), html_page)
 
         return scores
 

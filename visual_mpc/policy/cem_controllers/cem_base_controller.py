@@ -40,6 +40,8 @@ class CEMBaseController(Policy):
 
     def _default_hparams(self):
         default_dict = {
+            'verbose': True,
+            'verbose_every_iter': False,
             'logging_dir': '',
             'replan_interval': 0,
             'sampler': GaussianCEMSampler,
@@ -89,10 +91,17 @@ class CEMBaseController(Policy):
             self.plan_stat['scores_itr{}'.format(itr)] = scores
             if itr < self._n_iter - 1:
                 actions = self._sampler.sample_next_actions(self._hp.num_samples, self._best_actions)
+
         self._t_since_replan = 0
 
     def evaluate_rollouts(self, actions, cem_itr):
         raise NotImplementedError
+
+    def _verbose_condition(self, cem_itr):
+        if self._hp.verbose:
+            if self._hp.verbose_every_iter or cem_itr == self._n_iter - 1:
+                return True
+        return False
 
     def act(self, t=None, i_tr=None, state=None):
         """
