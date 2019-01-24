@@ -1,13 +1,13 @@
 import numpy as np
 import imp
-from .cemcontrollerbase import CEMControllerBase
+from .cem_base_controller import CEMBaseController
 from .visualizer.construct_html import save_gifs, save_html, save_img, fill_template
 import matplotlib.pyplot as plt
 from collections import OrderedDict
+from visual_mpc.video_prediction.pred_util import get_context, rollout_predictions
 
 
-
-class PixelCostController(CEMControllerBase):
+class PixelCostController(CEMBaseController):
     """
     Cross Entropy Method Stochastic Optimizer
     """
@@ -19,7 +19,7 @@ class PixelCostController(CEMControllerBase):
         :param gpu_id: gpu id
         :param ngpu: number of gpus to use
         """
-        CEMControllerBase.__init__(self, ag_params, policyparams)
+        CEMBaseController.__init__(self, ag_params, policyparams)
 
         params = imp.load_source('params', ag_params['current_dir'] + '/conf.py')
         netconf = params.configuration
@@ -74,35 +74,18 @@ class PixelCostController(CEMControllerBase):
 
         return one_hot_images
 
-    def evaluate_rollouts(self, actions, cem_itr, n_samps=None):
-        if n_samps is None:
-            n_samps = actions.shape[0]
+    def evaluate_rollouts(self, actions, cem_itr):
+        last_frames, last_states = get_context(self._net_context, self._t,
+                                               self._state, self._images, self._hp)
+        input_distrib = self._make_input_distrib(cem_itr)
 
-        actions, last_frames, last_states = self._prep_vidpred_inp(actions, cem_itr)
-        input_distrib = self.make_input_distrib(cem_itr)
+        gen_images, gen_distrib = rollout_predictions(self.predictor, self._net_bsize, actions,
+                                                      last_frames, last_states, input_distrib, logger=self._logger)[:2]
 
-        if n_samps > self._net_bsize:
-            nruns = n_samps//self._net_bsize
-            assert self._net_bsize * nruns == n_samps, "bsize: {}, nruns {}, but n_samps is {}".format(self._net_bsize, nruns, n_samps)
-        else:
-            nruns = 1
-            assert n_samps == self._net_bsize
-        gen_images_l, gen_distrib_l = [], []
-        for run in range(nruns):
-            self._logger.log('run{}'.format(run))
-            actions_ = actions[run*self._net_bsize:(run + 1) * self._net_bsize]
+        gen_images = np.concatenate(gen_images, 0)
+        gen_distrib = np.concatenate(gen_distrib, 0)
 
-            gen_images, gen_distrib, _, _ = self.predictor(input_images=last_frames,
-                                                                    input_state=last_states,
-                                                                    input_actions=actions_,
-                                                                    input_one_hot_images=input_distrib)
-            gen_images_l.append(gen_images)
-            gen_distrib_l.append(gen_distrib)
-
-        gen_images = np.concatenate(gen_images_l, 0)
-        gen_distrib = np.concatenate(gen_distrib_l, 0)
-
-        scores = self.eval_planningcost(cem_itr, gen_distrib, gen_images)
+        scores = self._eval_pixel_cost(cem_itr, gen_distrib, gen_images)
         
         if self._hp.verbose:
             if self._hp.verbose_every_iter or cem_itr == self._n_iter - 1:
@@ -144,13 +127,13 @@ class PixelCostController(CEMControllerBase):
 
         return scores
 
-    def eval_planningcost(self, cem_itr, gen_distrib, gen_images):
+    def _eval_pixel_cost(self, cem_itr, gen_distrib, gen_images):
         scores_per_task = []
 
         for icam in range(self._n_cam):
             for p in range(self._n_desig):
-                distance_grid = self.get_distancegrid(self._goal_pix[icam, p])
-                score = self._calc_pixel_scores(icam, p, gen_distrib[:, :, icam, :, :, p], distance_grid,
+                distance_grid = self._get_distancegrid(self._goal_pix[icam, p])
+                score = self._expected_distance(icam, p, gen_distrib[:, :, icam, :, :, p], distance_grid,
                                                 normalize=True)
                 
                 scores_per_task.append(score)
@@ -179,20 +162,7 @@ class PixelCostController(CEMControllerBase):
                 self._rec_input_distrib.append(best_gen_distrib)
         return scores
 
-    def _prep_vidpred_inp(self, actions, cem_itr):
-        ctxt = self._net_context
-        last_frames = self.images[self._t - ctxt + 1:self._t + 1]  # same as [t - 1:t + 1] for context 2
-        last_frames = last_frames.astype(np.float32) / 255.
-        last_frames = last_frames[None]
-        last_states = self.state[self._t - ctxt + 1:self._t + 1]
-        last_states = last_states[None]
-        if self._hp.state_append:
-            last_state_append = np.tile(np.array([[self._hp.state_append]]), (1, ctxt, 1))
-            last_states = np.concatenate((last_states, last_state_append), -1)
-
-        return actions, last_frames, last_states
-
-    def _calc_pixel_scores(self, icam, idesig, gen_distrib, distance_grid, normalize=True):
+    def _expected_distance(self, icam, idesig, gen_distrib, distance_grid, normalize=True):
         """
         :param gen_distrib: shape [batch, t, r, c]
         :param distance_grid: shape [r, c]
@@ -213,7 +183,7 @@ class PixelCostController(CEMControllerBase):
         scores = np.sum(scores, axis=1)/np.sum(t_mult)
         return scores
 
-    def get_distancegrid(self, goal_pix):
+    def _get_distancegrid(self, goal_pix):
         distance_grid = np.empty((self._img_height, self._img_width))
         for i in range(self._img_height):
             for j in range(self._img_width):
@@ -223,14 +193,14 @@ class PixelCostController(CEMControllerBase):
         self._logger.log('making distance grid with goal_pix', goal_pix)
         return distance_grid
 
-    def make_input_distrib(self, itr):
+    def _make_input_distrib(self, itr):
         if self._hp.predictor_propagation:  # using the predictor's DNA to propagate, no correction
-            input_distrib = self.get_recinput(itr, self._rec_input_distrib, self._desig_pix)
+            input_distrib = self._get_recinput(itr, self._rec_input_distrib, self._desig_pix)
         else:
             input_distrib = self.switch_on_pix(self._desig_pix)
         return input_distrib
 
-    def get_recinput(self, itr, rec_input_distrib, desig):
+    def _get_recinput(self, itr, rec_input_distrib, desig):
         ctxt = self._net_context
         if len(rec_input_distrib) < ctxt:
             input_distrib = self.switch_on_pix(desig)

@@ -197,7 +197,7 @@ def setup_predictor(hyperparams, conf, gpu_id=0, ngpu=1, logger=None):
                                                                     comb_gen_states],
                                                                    feed_dict)
 
-                return gen_images, gen_distrib, gen_states, None
+                return gen_images, gen_distrib, gen_states
 
             return predictor_func
 
