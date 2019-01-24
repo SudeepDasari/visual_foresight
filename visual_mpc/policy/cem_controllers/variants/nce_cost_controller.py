@@ -47,6 +47,7 @@ class NCECostController(CEMBaseController):
         self._images = None
         self._goal_image = None
         self._start_image = None
+        self._verbose_worker = None
 
     def _default_hparams(self):
         default_dict = {
@@ -55,7 +56,8 @@ class NCECostController(CEMBaseController):
             'nce_conf_path': '',
             'nce_restore_path': '',
             'nce_batch_size': 200,
-            'state_append': None
+            'state_append': None,
+            'verbose_img_height': 128
         }
         parent_params = super(NCECostController, self)._default_hparams()
 
@@ -89,7 +91,22 @@ class NCECostController(CEMBaseController):
             verbose_folder = "planning_{}_itr_{}".format(self._t, cem_itr)
             content_dict = OrderedDict()
             visualize_indices = scores.argsort()[:10]
-        
+
+            # start image and predictions (alternate by camera)
+            for c in range(self._n_cam):
+                name = 'cam_{}_start'.format(c)
+                save_path = save_img(self._verbose_worker, verbose_folder, name, self.images[-1, c])
+                content_dict[name] = [save_path for _ in visualize_indices]
+
+                verbose_images = [(gen_images[g_i, :, c] * 255).astype(np.uint8) for g_i in visualize_indices]
+                row_name = 'cam_{}_pred_images'.format(c)
+                content_dict[row_name] = save_gifs(self._verbose_worker, verbose_folder,
+                                                   row_name, verbose_images)
+
+            # scores
+            content_dict['scores'] = scores[visualize_indices]
+            html_page = fill_template(cem_itr, self._t, content_dict, img_height=self._hp.verbose_img_height)
+            save_html(self._verbose_worker, "{}/plan.html".format(verbose_folder), html_page)
         return scores
 
     def _eval_embedding_cost(self, goal_embed, input_embed):
@@ -98,7 +115,7 @@ class NCECostController(CEMBaseController):
             return -np.matmul(goal_embed[None], np.swapaxes(input_embed, 2, 1))[:, 0]
         raise NotImplementedError
 
-    def act(self, t=None, i_tr=None, goal_image=None, images=None, state=None):
+    def act(self, t=None, i_tr=None, goal_image=None, images=None, state=None, verbose_worker=None):
         """
         Return a random action for a state.
         Args:
@@ -110,5 +127,6 @@ class NCECostController(CEMBaseController):
         self._start_image = images[-1].astype(np.float32)
         self._goal_image = goal_image[1] * 255
         self._images = images
+        self._verbose_worker = verbose_worker
 
-        return super(NCECostController, self).act(t, i_tr)
+        return super(NCECostController, self).act(t, i_tr, state)
