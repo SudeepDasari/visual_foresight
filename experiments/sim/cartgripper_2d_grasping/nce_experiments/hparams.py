@@ -1,5 +1,5 @@
 import os.path
-from visual_mpc.policy.cem_controllers import CEM_NCE_Vidpred
+from visual_mpc.policy.cem_controllers import NCECostController
 from visual_mpc.agent.benchmarking_agent import BenchmarkAgent
 from visual_mpc.envs.mujoco_env.cartgripper_env.cartgripper_xz_grasp import CartgripperXZGrasp
 
@@ -28,7 +28,7 @@ agent = {
 }
 
 policy = {
-    'type': CEM_NCE_Vidpred,
+    'type': NCECostController,
     'action_order': ['x', 'z', 'grasp'],
     'initial_std_lift': 0.5,  # std dev. in xy
     'verbose': True,
