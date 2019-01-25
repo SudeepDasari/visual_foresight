@@ -116,10 +116,12 @@ def main():
     if 'RESULT_DIR' in os.environ:
         if 'exp_name' in hyperparams:
             exp_name = hyperparams['exp_name']
+        elif 'data_save_dir' in hyperparams['agent']:
+            exp_path = hyperparams['agent']['data_save_dir'].split('/')[-1]
+            import pdb; pdb.set_trace()
+            exp_name = hyperparams['agent']['data_save_dir'].split('/')[-1]
         elif 'record' in hyperparams['agent']:
             exp_name = [f for f in hyperparams['agent']['record'].split('/') if f != 'record' and len(f) > 0][-1]
-        elif 'data_save_dir' in hyperparams['agent']:
-            exp_name = hyperparams['agent']['data_save_dir'].split('/')[-1]
         else:
             raise NotImplementedError("can't find exp name")
         result_dir = '{}/{}'.format(os.environ['RESULT_DIR'], exp_name)
