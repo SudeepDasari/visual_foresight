@@ -94,7 +94,7 @@ class PixelCostController(CEMBaseController):
             # start images
             for c in range(self._n_cam):
                 name = 'cam_{}_start'.format(c)
-                save_path = save_img(self._verbose_worker, verbose_folder, name, self.images[-1, c])
+                save_path = save_img(self._verbose_worker, verbose_folder, name, self._images[-1, c])
                 content_dict[name] = [save_path for _ in visualize_indices]
 
             # render distributions

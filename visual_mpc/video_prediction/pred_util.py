@@ -13,6 +13,11 @@ def get_context(n_context, t, state, images, hp=None):
     return last_frames, last_states
 
 
+def _check_and_slice(arr, batch_size):
+    if arr is not None:
+        return arr[:batch_size]
+
+
 def rollout_predictions(predictor, b_size, actions, context_frames, context_states=None, input_distribs=None, logger=None):
     num_actions = actions.shape[0]
     nruns = max(1, num_actions // b_size)
@@ -34,8 +39,9 @@ def rollout_predictions(predictor, b_size, actions, context_frames, context_stat
                                                        input_state=context_states,
                                                        input_actions=padded_action_batch,
                                                        input_one_hot_images=input_distribs)
-        gen_images.append(_gen_images[:action_batch.shape[0]])
-        gen_distrib.append(_gen_distrib[:action_batch.shape[0]])
-        gen_state.append(_gen_state[:action_batch.shape[0]])
+
+        gen_images.append(_check_and_slice(_gen_images, actions.shape[0]))
+        gen_distrib.append(_check_and_slice(_gen_distrib, actions.shape[0]))
+        gen_state.append(_check_and_slice(_gen_state, actions.shape[0]))
 
     return gen_images, gen_distrib, gen_state
