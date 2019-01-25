@@ -86,9 +86,13 @@ class NCECostController(CEMBaseController):
             in_enc = embed_dict['input_enc'].reshape((actions.shape[0], self._n_pred, -1))
             scores[c] = self._eval_embedding_cost(gs_enc, in_enc)
 
-        scores = np.sum(scores, axis=0)
-        scores[:, -1] *= self._hp.finalweight
-        scores = np.sum(scores, axis=1) / sum([1. for _ in range(self._n_pred - 1)] + [self._hp.finalweight])
+        if self._hp.finalweight >= 0:
+            scores = np.sum(scores, axis=0)
+            scores[:, -1] *= self._hp.finalweight
+            scores = np.sum(scores, axis=1) / sum([1. for _ in range(self._n_pred - 1)] + [self._hp.finalweight])
+        else:
+            scores = np.sum(scores, axis=0)
+            scores = scores[:, -1]
 
         if self._verbose_condition(cem_itr):
             verbose_folder = "planning_{}_itr_{}".format(self._t, cem_itr)
