@@ -4,6 +4,9 @@ from .samplers import GaussianCEMSampler
 from visual_mpc.policy.policy import Policy
 
 
+_slice_if_not_none = lambda x,t: x[:, t:] if x is not None else x
+
+
 class CEMBaseController(Policy):
     """
     Cross Entropy Method Stochastic Optimizer
@@ -83,7 +86,7 @@ class CEMBaseController(Policy):
         K = self._hp.default_k
         if self._hp.selection_frac:
             K = max(int(self._hp.selection_frac * self._hp.num_samples), self._hp.default_k)
-        actions = self._sampler.sample_initial_actions(self._hp.num_samples, state[-1])
+        actions = self._sampler.sample_initial_actions(self._t, self._hp.num_samples, state[-1])
         for itr in range(self._n_iter):
             self._logger.log('------------')
             self._logger.log('iteration: ', itr)
@@ -134,6 +137,7 @@ class CEMBaseController(Policy):
         assert action.shape == (self.agentparams['adim'],), "action shape does not match adim!"
 
         self._logger.log('time {}, action - {}'.format(t, action))
-        self._sampler.log_best_action(action)
+        self._sampler.log_best_action(action, _slice_if_not_none(self._best_actions,
+                                                                 min(self._t_since_replan + 1, self._hp.T - 1)))
 
         return {'actions':action, 'plan_stat':self.plan_stat}

@@ -1,7 +1,7 @@
-from .cemsampler import CEMSampler
+from .cem_sampler import CEMSampler
 import numpy as np
-from visual_mpc.policy.utils.controller_utils import construct_initial_sigma, reuse_cov, \
-    reuse_action, truncate_movement, make_blockdiagonal, discretize
+from visual_mpc.policy.utils.controller_utils import construct_initial_sigma, reuse_cov,\
+    truncate_movement, make_blockdiagonal, discretize
 
 
 class GaussianCEMSampler(CEMSampler):
@@ -9,21 +9,33 @@ class GaussianCEMSampler(CEMSampler):
         super(GaussianCEMSampler, self).__init__(hp, adim, sdim, **kwargs)
         self._sigma, self._sigma_prev = None, None
         self._mean = None
-        self._t = 0
 
-    def sample_initial_actions(self, nsamples, current_state):
-        if not self._hp.reuse_cov or self._t < self._hp.repeat - 1 or self._sigma is None:
-            self._sigma = construct_initial_sigma(self._hp, self._adim, self._t)
-            self._sigma_prev = self._sigma
+    def sample_initial_actions(self, t, nsamples, current_state):
+        if not self._hp.reuse_cov or t < self._hp.repeat - 1 or self._sigma is None:
+            self._sigma = construct_initial_sigma(self._hp, self._adim, t)
         else:
             self._sigma = reuse_cov(self._sigma, self._adim, self._hp)
+        self._sigma_prev = self._sigma
 
-        if not self._hp.reuse_mean or self._t < self._hp.repeat - 1 or self._mean is None:
+        if not self._hp.reuse_mean or t < self._hp.repeat - 1 or self._mean is None:
             self._mean = np.zeros(self._adim * self._hp.nactions)
         else:
-            self._mean = reuse_action(self._chosen_actions[-1], self._hp)
+            import pdb; pdb.set_trace()
+            assert self._best_action_plans[-1] is not None, "Cannot reuse mean if best actions are not logged!"
+            best_action_plan = self._best_action_plans[-1][0]
 
-        self._t += 1
+            n_extra = best_action_plan.shape[0] % self._hp.repeat
+            if n_extra > 0:
+                zero_pad = np.zeros((self._hp.repeat - n_extra, self._adim))
+                last_actions = np.concatenate((best_action_plan, zero_pad), axis=0)
+            else:
+                last_actions = best_action_plan
+            last_actions = last_actions.reshape((-1, self._hp.repeat, self._adim))[:, 0, :]
+
+            self._mean = np.zeros((self._hp.nactions, self._adim))
+            self._mean[:last_actions.shape[0]] = last_actions
+            self._mean = self._mean.flatten()
+
         return self._sample(nsamples)
 
     def sample_next_actions(self, n_samples, best_actions):

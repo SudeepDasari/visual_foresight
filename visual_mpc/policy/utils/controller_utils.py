@@ -96,14 +96,6 @@ def reuse_cov(sigma, adim, hp):
     return sigma
 
 
-def reuse_action(prev_action, hp):
-    assert hp.replan_interval == 3
-    print('reusing mean form last MPC step...')
-    action = np.zeros_like(prev_action)
-    action[:-1] = prev_action[1:]
-    return action.flatten()
-
-
 def make_blockdiagonal(cov, nactions, adim):
     mat = np.zeros_like(cov)
     for i in range(nactions-1):

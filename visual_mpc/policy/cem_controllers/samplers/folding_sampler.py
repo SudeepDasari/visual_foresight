@@ -1,6 +1,6 @@
 import copy
 import numpy as np
-from .cemsampler import CEMSampler
+from .cem_sampler import CEMSampler
 
 class FoldingCEMSampler(CEMSampler):
     def __init__(self, sigma, mean, hp, repeat, base_adim):

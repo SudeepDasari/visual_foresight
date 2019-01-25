@@ -7,8 +7,9 @@ class CEMSampler(object):
         self._hp = hp
         self._adim, self._sdim = adim, sdim
         self._chosen_actions = []
+        self._best_action_plans = []
 
-    def sample_initial_actions(self, nsamples, current_state):
+    def sample_initial_actions(self, t, nsamples, current_state):
         """
         Samples initial actions for CEM iterations
         :param nsamples: number of samples
@@ -27,14 +28,16 @@ class CEMSampler(object):
         """
         raise NotImplementedError
 
-    def log_best_action(self, action):
+    def log_best_action(self, action, best_action_plans):
         """
         Some sampling distributions may change given the taken action
 
         :param action: action executed
+        :param best_action_plans: batch of next planned actions (after this timestep) ordered in ascending cost
         :return: None
         """
         self._chosen_actions.append(action.copy())
+        self._best_action_plans.append(best_action_plans)
 
     @staticmethod
     def get_default_hparams():

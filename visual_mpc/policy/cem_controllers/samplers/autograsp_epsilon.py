@@ -1,6 +1,6 @@
 import numpy as np
 from visual_mpc.policy.utils.controller_utils import truncate_movement
-from .cemsampler import CEMSampler
+from .cem_sampler import CEMSampler
 
 class AutograspEpsilon(CEMSampler):
     def __init__(self, sigma, mean, hp, repeat, base_adim):
