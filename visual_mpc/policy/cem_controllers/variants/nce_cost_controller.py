@@ -58,7 +58,8 @@ class NCECostController(CEMBaseController):
             'nce_restore_path': '',
             'nce_batch_size': 200,
             'state_append': None,
-            'verbose_img_height': 128
+            'verbose_img_height': 128,
+            'verbose_frac_display': 0.
         }
         parent_params = super(NCECostController, self)._default_hparams()
 
@@ -92,7 +93,7 @@ class NCECostController(CEMBaseController):
         if self._verbose_condition(cem_itr):
             verbose_folder = "planning_{}_itr_{}".format(self._t, cem_itr)
             content_dict = OrderedDict()
-            visualize_indices = scores.argsort()[:10]
+            visualize_indices = scores.argsort()[:max(10, int(actions.shape[0] * self._hp.verbose_frac_display))]
 
             # start image and predictions (alternate by camera)
             for c in range(self._n_cam):
