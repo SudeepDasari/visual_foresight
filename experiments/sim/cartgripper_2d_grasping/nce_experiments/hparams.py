@@ -31,10 +31,10 @@ policy = {
     'type': NCECostController,
     'action_order': ['x', 'z', 'grasp'],
     'initial_std_lift': 0.5,  # std dev. in xy
-    'verbose': True,
+    'verbose_every_iter': True,
     'rejection_sampling': False,
     'replan_interval': 10,
-    'num_samples': [800, 400],
+    'num_samples': 800,
     'nce_conf_path': os.path.expanduser('~/Documents/control_embedding/experiments/catrgripper_xz_grasp/nce_experiment/exp.json'),
     'nce_restore_path': os.path.expanduser('~/Documents/control_embedding/experiments/catrgripper_xz_grasp/nce_experiment/base_model/model-20000')
 }
@@ -46,7 +46,7 @@ config = {
     'seperate_good': False,
     'save_raw_images': True,
     'start_index': 0,
-    'end_index': 60000,
+    'end_index': 20,
     'agent': agent,
     'policy': policy,
     'ngroup': 1000

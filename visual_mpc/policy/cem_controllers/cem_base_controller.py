@@ -85,6 +85,8 @@ class CEMBaseController(Policy):
             self._logger.log('iteration: ', itr)
 
             scores = self.evaluate_rollouts(actions, itr)
+            assert scores.shape == (actions.shape[0],), "score shape should be (n_actions,)"
+
             self._best_indices = scores.argsort()[:K]
             self._best_actions = actions[self._best_indices]
 
@@ -124,6 +126,8 @@ class CEMBaseController(Policy):
             else:
                 self.perform_CEM(state)
             action = self._best_actions[0, self._t_since_replan]
+
+        assert action.shape == (self.agentparams['adim'],), "action shape does not match adim!"
 
         self._logger.log('time {}, action - {}'.format(t, action))
         self._sampler.log_best_action(action)

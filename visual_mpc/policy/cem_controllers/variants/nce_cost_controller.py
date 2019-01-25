@@ -37,6 +37,7 @@ class NCECostController(CEMBaseController):
 
         self._seqlen = net_conf['sequence_length']
         self._net_context = net_conf['context_frames']
+        self._hp.start_planning = self._net_context            # skip steps so there are enough context frames
         self._n_pred = self._seqlen - self._net_context
         assert self._n_pred > 0, "context_frames must be larger than sequence_length"
 
@@ -52,7 +53,7 @@ class NCECostController(CEMBaseController):
     def _default_hparams(self):
         default_dict = {
             'score_fn': 'dot_prod',
-            'finalweight': 10,
+            'finalweight': 100,
             'nce_conf_path': '',
             'nce_restore_path': '',
             'nce_batch_size': 200,
@@ -69,14 +70,14 @@ class NCECostController(CEMBaseController):
         last_frames, last_states = get_context(self._net_context, self._t,
                                                self._state, self._images, self._hp)
 
-        gen_images = rollout_predictions(self.predictor, self._net_bsize, actions,
+        gen_images = rollout_predictions(self._predictor, self._vpred_bsize, actions,
                                          last_frames, last_states, logger=self._logger)[0]
 
         gen_images = np.concatenate(gen_images, 0) * 255.
 
         scores = np.zeros((self._n_cam, actions.shape[0], self._n_pred))
         for c in range(self._n_cam):
-            goal, start = self.goal_image[c][None], self._start_image[c][None]
+            goal, start = self._goal_image[c][None], self._start_image[c][None]
             input_images = gen_images[:, :, c].reshape((-1, self._img_height, self._img_width, 3))
             embed_dict = self._scoring_func(goal, start, input_images)
 
@@ -86,6 +87,7 @@ class NCECostController(CEMBaseController):
 
         scores = np.sum(scores, axis=0)
         scores[:, -1] *= self._hp.finalweight
+        scores = np.sum(scores, axis=1) / sum([1. for _ in range(self._n_pred - 1)] + [self._hp.finalweight])
 
         if self._verbose_condition(cem_itr):
             verbose_folder = "planning_{}_itr_{}".format(self._t, cem_itr)
@@ -95,10 +97,14 @@ class NCECostController(CEMBaseController):
             # start image and predictions (alternate by camera)
             for c in range(self._n_cam):
                 name = 'cam_{}_start'.format(c)
-                save_path = save_img(self._verbose_worker, verbose_folder, name, self.images[-1, c])
+                save_path = save_img(self._verbose_worker, verbose_folder, name, self._images[-1, c])
                 content_dict[name] = [save_path for _ in visualize_indices]
 
-                verbose_images = [(gen_images[g_i, :, c] * 255).astype(np.uint8) for g_i in visualize_indices]
+                name = 'cam_{}_goal'.format(c)
+                save_path = save_img(self._verbose_worker, verbose_folder, name, self._goal_image[c].astype(np.uint8))
+                content_dict[name] = [save_path for _ in visualize_indices]
+
+                verbose_images = [gen_images[g_i, :, c].astype(np.uint8) for g_i in visualize_indices]
                 row_name = 'cam_{}_pred_images'.format(c)
                 content_dict[row_name] = save_gifs(self._verbose_worker, verbose_folder,
                                                    row_name, verbose_images)
