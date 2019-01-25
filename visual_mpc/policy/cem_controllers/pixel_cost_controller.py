@@ -38,6 +38,7 @@ class PixelCostController(CEMBaseController):
 
         self._desig_pix = None
         self._goal_pix = None
+        self._images = None
 
         if self._hp.predictor_propagation:
             self._rec_input_distrib = []  # record the input distributions
@@ -221,8 +222,7 @@ class PixelCostController(CEMBaseController):
         self._desig_pix = np.array(desig_pix).reshape((self._n_cam, self._n_desig, 2))
         self._goal_pix = np.array(goal_pix).reshape((self._n_cam, self._n_desig, 2))
 
-        self.images = images
-        self.state = state
+        self._images = images
 
         self._verbose_worker = verbose_worker
 
