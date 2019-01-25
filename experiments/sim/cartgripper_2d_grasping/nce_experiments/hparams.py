@@ -19,7 +19,7 @@ agent = {
     'type': BenchmarkAgent,
     'env': (CartgripperXZGrasp, env_params),
     'data_save_dir': BASE_DIR,
-    'T': 30,
+    'T': 45,
     'image_height': 48,
     'image_width': 64,
     'make_final_gif': '',
@@ -33,11 +33,13 @@ policy = {
     'initial_std_lift': 0.5,  # std dev. in xy
     'verbose_every_iter': True,
     'rejection_sampling': False,
-    'finalweight': -1,
     'selection_frac': 0.05,
     'verbose_frac_display': 0.05,
-    'replan_interval': 10,
+    'replan_interval': 5,
     'num_samples': 800,
+    'reuse_mean': True,
+    'nactions': 15,
+    'repeat': 1,
     'nce_conf_path': os.path.expanduser('~/Documents/control_embedding/experiments/catrgripper_xz_grasp/nce_experiment/exp.json'),
     'nce_restore_path': os.path.expanduser('~/Documents/control_embedding/experiments/catrgripper_xz_grasp/nce_experiment/base_model/model-20000')
 }

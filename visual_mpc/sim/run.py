@@ -15,6 +15,7 @@ import os
 from visual_mpc.sim.util.combine_score import combine_scores
 import ray
 import pdb
+import shutil
 
 
 class SynchCounter:
@@ -71,6 +72,7 @@ def main():
     parser.add_argument('--isplit', type=int, help='split id', default=-1)
     parser.add_argument('--cloud', dest='cloud', action='store_true', default=False)
     parser.add_argument('--benchmark', dest='do_benchmark', action='store_true', default=False)
+    parser.add_argument('--overwrite_folder', dest='overwrite', action='store_true', default=False)
 
     parser.add_argument('--iex', type=int, help='if different from -1 use only do example', default=-1)
 
@@ -125,6 +127,11 @@ def main():
         else:
             raise NotImplementedError("can't find exp name")
         result_dir = '{}/{}'.format(os.environ['RESULT_DIR'], exp_name)
+
+        if args.overwrite and os.path.exists(result_dir):
+            shutil.rmtree(result_dir)
+        elif os.path.exists(result_dir):
+            raise IOError("Folder {} already exists!".format(result_dir))
 
         if 'verbose' in hyperparams['policy'] and not os.path.exists(result_dir + '/verbose'):
             os.makedirs(result_dir + '/verbose')

@@ -69,6 +69,10 @@ class CEMBaseController(Policy):
         return super(CEMBaseController, self)._override_defaults(policyparams)
 
     def reset(self):
+        self._best_indices = None
+        self._best_actions = None
+        self._t_since_replan = None
+
         self._sampler = self._hp.sampler(self._hp, self._adim, self._sdim)
         self.plan_stat = {} #planning statistics
 
