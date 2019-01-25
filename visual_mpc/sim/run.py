@@ -117,9 +117,9 @@ def main():
         if 'exp_name' in hyperparams:
             exp_name = hyperparams['exp_name']
         elif 'data_save_dir' in hyperparams['agent']:
-            exp_path = hyperparams['agent']['data_save_dir'].split('/')[-1]
-            import pdb; pdb.set_trace()
-            exp_name = hyperparams['agent']['data_save_dir'].split('/')[-1]
+            exp_path = hyperparams['agent']['data_save_dir'].split('/')
+            exp_index = min(max([i for i, v in enumerate(exp_path) if v == 'experiments'] + [0]) + 1, len(exp_path) - 1)
+            exp_name = '/'.join(exp_path[exp_index:])
         elif 'record' in hyperparams['agent']:
             exp_name = [f for f in hyperparams['agent']['record'].split('/') if f != 'record' and len(f) > 0][-1]
         else:
