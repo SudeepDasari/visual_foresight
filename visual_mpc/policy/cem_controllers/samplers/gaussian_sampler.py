@@ -9,18 +9,20 @@ class GaussianCEMSampler(CEMSampler):
         super(GaussianCEMSampler, self).__init__(hp, adim, sdim, **kwargs)
         self._sigma, self._sigma_prev = None, None
         self._mean = None
+        self._last_reduce = None
 
     def sample_initial_actions(self, t, nsamples, current_state):
+        reduce_samp = False
         if not self._hp.reuse_cov or t < self._hp.repeat - 1 or self._sigma is None:
             self._sigma = construct_initial_sigma(self._hp, self._adim, t)
         else:
+            reduce_samp = True
             self._sigma = reuse_cov(self._sigma, self._adim, self._hp)
         self._sigma_prev = self._sigma
 
         if not self._hp.reuse_mean or t < self._hp.repeat - 1 or self._mean is None:
             self._mean = np.zeros(self._adim * self._hp.nactions)
         else:
-            import pdb; pdb.set_trace()
             assert self._best_action_plans[-1] is not None, "Cannot reuse mean if best actions are not logged!"
             best_action_plan = self._best_action_plans[-1][0]
 
@@ -36,11 +38,14 @@ class GaussianCEMSampler(CEMSampler):
             self._mean[:last_actions.shape[0]] = last_actions
             self._mean = self._mean.flatten()
 
-        return self._sample(nsamples)
+            reduce_samp = True
+
+        self._last_reduce = reduce_samp
+        return self._sample(nsamples, reduce_samp)
 
     def sample_next_actions(self, n_samples, best_actions):
         self._fit_gaussians(best_actions)
-        return self._sample(n_samples)
+        return self._sample(n_samples, self._last_reduce)
 
     @staticmethod
     def get_default_hparams():
@@ -65,8 +70,8 @@ class GaussianCEMSampler(CEMSampler):
         }
         return hparams
 
-    def _sample(self, M):
-        if self._hp.reuse_cov or self._hp.reuse_mean:
+    def _sample(self, M, reduce_samp):
+        if reduce_samp:
             M = max(int(M * self._hp.reuse_factor), 1)
 
         if self._hp.rejection_sampling:
