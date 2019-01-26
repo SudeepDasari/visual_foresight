@@ -16,6 +16,7 @@ from visual_mpc.sim.util.combine_score import combine_scores
 import ray
 import pdb
 import shutil
+import datetime
 
 
 class SynchCounter:
@@ -62,7 +63,7 @@ def check_and_pop(dict, key):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='run parllel data collection')
+    parser = argparse.ArgumentParser(description='run simulation experiments')
     parser.add_argument('experiment', type=str, help='experiment name')
     parser.add_argument('--nworkers', type=int, help='use multiple threads or not', default=1)
     parser.add_argument('--gpu_id', type=int, help='the starting gpu_id', default=0)
@@ -71,15 +72,15 @@ def main():
     parser.add_argument('--nsplit', type=int, help='number of splits', default=-1)
     parser.add_argument('--isplit', type=int, help='split id', default=-1)
     parser.add_argument('--cloud', dest='cloud', action='store_true', default=False)
-    parser.add_argument('--benchmark', dest='do_benchmark', action='store_true', default=False)
-    parser.add_argument('--overwrite_folder', dest='overwrite', action='store_true', default=False)
+    parser.add_argument('--benchmark', dest='do_benchmark', action='store_true', default=False)    # look into removing this
 
     parser.add_argument('--iex', type=int, help='if different from -1 use only do example', default=-1)
 
     args = parser.parse_args()
     hyperparams_file = args.experiment
-    gpu_id = args.gpu_id
+    assert os.path.exists(hyperparams_file) and os.path.isfile(hyperparams_file), "hyperparams file does not exist!"
 
+    gpu_id = args.gpu_id
     n_worker = args.nworkers
     if args.nworkers == 1:
         parallel = False
@@ -126,13 +127,12 @@ def main():
             exp_name = [f for f in hyperparams['agent']['record'].split('/') if f != 'record' and len(f) > 0][-1]
         else:
             raise NotImplementedError("can't find exp name")
-        result_dir = '{}/{}'.format(os.environ['RESULT_DIR'], exp_name)
-
-        if args.overwrite and os.path.exists(result_dir):
-            shutil.rmtree(result_dir)
-        elif os.path.exists(result_dir):
-            raise IOError("Folder {} already exists!".format(result_dir))
-
+        now = datetime.datetime.now()
+        result_dir = '{}/{}/exp_{}_{}_{}_{}_{}'.format(os.environ['RESULT_DIR'], exp_name, now.year, now.month,
+                                                       now.day, now.hour, now.minute)
+        os.makedirs(result_dir)
+        shutil.copyfile(hyperparams_file, '{}/hparams.py'.format(result_dir))
+        
         if 'verbose' in hyperparams['policy'] and not os.path.exists(result_dir + '/verbose'):
             os.makedirs(result_dir + '/verbose')
 

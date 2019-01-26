@@ -127,14 +127,6 @@ class NCECostController(CEMBaseController):
         raise NotImplementedError
 
     def act(self, t=None, i_tr=None, goal_image=None, images=None, state=None, verbose_worker=None):
-        """
-        Return a random action for a state.
-        Args:
-            if performing highres tracking images is highres image
-            t: the current controller's Time step
-            goal_pix: in coordinates of small image
-            desig_pix: in coordinates of small image
-        """
         self._start_image = images[-1].astype(np.float32)
         self._goal_image = goal_image[1] * 255
         self._images = images
