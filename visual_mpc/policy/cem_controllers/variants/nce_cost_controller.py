@@ -76,7 +76,7 @@ class NCECostController(CEMBaseController):
 
         gen_images = np.concatenate(gen_images, 0) * 255.
 
-        scores = np.zeros((self._n_cam, actions.shape[0], self._n_pred))
+        raw_scores = np.zeros((self._n_cam, actions.shape[0], self._n_pred))
         for c in range(self._n_cam):
             goal, start = self._goal_image[c][None], self._start_image[c][None]
             input_images = gen_images[:, :, c].reshape((-1, self._img_height, self._img_width, 3))
@@ -84,15 +84,15 @@ class NCECostController(CEMBaseController):
 
             gs_enc = embed_dict['goal_enc'][0][None]
             in_enc = embed_dict['input_enc'].reshape((actions.shape[0], self._n_pred, -1))
-            scores[c] = self._eval_embedding_cost(gs_enc, in_enc)
+            raw_scores[c] = self._eval_embedding_cost(gs_enc, in_enc)
 
+        raw_scores = np.sum(raw_scores, axis=0)
         if self._hp.finalweight >= 0:
-            scores = np.sum(scores, axis=0)
+            scores = raw_scores.copy()
             scores[:, -1] *= self._hp.finalweight
             scores = np.sum(scores, axis=1) / sum([1. for _ in range(self._n_pred - 1)] + [self._hp.finalweight])
         else:
-            scores = np.sum(scores, axis=0)
-            scores = scores[:, -1]
+            scores = raw_scores[:, -1]
 
         if self._verbose_condition(cem_itr):
             verbose_folder = "planning_{}_itr_{}".format(self._t, cem_itr)
@@ -116,6 +116,7 @@ class NCECostController(CEMBaseController):
 
             # scores
             content_dict['scores'] = scores[visualize_indices]
+            content_dict['NCE Res'] = raw_scores[visualize_indices]
             html_page = fill_template(cem_itr, self._t, content_dict, img_height=self._hp.verbose_img_height)
             save_html(self._verbose_worker, "{}/plan.html".format(verbose_folder), html_page)
         return scores

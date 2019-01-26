@@ -68,12 +68,10 @@ def main():
     parser.add_argument('--nworkers', type=int, help='use multiple threads or not', default=1)
     parser.add_argument('--gpu_id', type=int, help='the starting gpu_id', default=0)
     parser.add_argument('--ngpu', type=int, help='the number of gpus to use', default=1)
-
     parser.add_argument('--nsplit', type=int, help='number of splits', default=-1)
     parser.add_argument('--isplit', type=int, help='split id', default=-1)
     parser.add_argument('--cloud', dest='cloud', action='store_true', default=False)
     parser.add_argument('--benchmark', dest='do_benchmark', action='store_true', default=False)    # look into removing this
-
     parser.add_argument('--iex', type=int, help='if different from -1 use only do example', default=-1)
 
     args = parser.parse_args()
@@ -132,7 +130,7 @@ def main():
                                                        now.day, now.hour, now.minute)
         os.makedirs(result_dir)
         shutil.copyfile(hyperparams_file, '{}/hparams.py'.format(result_dir))
-        
+
         if 'verbose' in hyperparams['policy'] and not os.path.exists(result_dir + '/verbose'):
             os.makedirs(result_dir + '/verbose')
 
