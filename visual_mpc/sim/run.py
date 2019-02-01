@@ -126,7 +126,12 @@ def main():
         else:
             raise NotImplementedError("can't find exp name")
         now = datetime.datetime.now()
-        result_dir = '{}/{}/exp_{}_{}_{}_{}_{}'.format(os.environ['RESULT_DIR'], exp_name, now.year, now.month,
+
+        mode = 'traj_data'
+        if args.do_benchmark:
+            mode = 'experiments'
+
+        result_dir = '{}/{}/{}/exp_{}_{}_{}_{}_{}'.format(os.environ['RESULT_DIR'], mode, exp_name, now.year, now.month,
                                                        now.day, now.hour, now.minute)
         os.makedirs(result_dir)
         shutil.copyfile(hyperparams_file, '{}/hparams.py'.format(result_dir))

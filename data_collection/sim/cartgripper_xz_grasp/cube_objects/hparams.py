@@ -25,25 +25,25 @@ agent = {
     'image_height' : 48,
     'image_width' : 64,
     'gen_xml': 1,   #generate xml every nth trajecotry
-    'rejection_sample': 5,
-    'make_final_gif': ''
+    'make_final_gif': '',
+    'rejection_sample': 5
 }
 
 policy = {
     'type' : GaussianPolicy,
     'nactions': 10,
     'action_order': ['x', 'z', 'grasp'],
-    'initial_std_lift': 0.5,  # std dev. in xy
+    'initial_std_lift': 0.1,  # std dev. in xy
 }
 
 config = {
     'traj_per_file':128,
     'current_dir' : current_dir,
     'save_data': True,
-    'seperate_good': False,
-    'save_raw_images' : True,
+    'seperate_good': True,
+    'save_raw_images' : False,
     'start_index':0,
-    'end_index': 60000,
+    'end_index': 100000,
     'agent': agent,
     'policy': policy,
     'ngroup': 1000
