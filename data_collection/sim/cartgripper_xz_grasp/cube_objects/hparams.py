@@ -25,7 +25,7 @@ agent = {
     'image_height' : 48,
     'image_width' : 64,
     'gen_xml': 1,   #generate xml every nth trajecotry
-    'make_final_gif': '',
+#    'make_final_gif': '',
     'rejection_sample': 5
 }
 
