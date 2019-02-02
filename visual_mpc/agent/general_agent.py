@@ -2,7 +2,7 @@
 import copy
 import numpy as np
 import cv2
-from visual_mpc.policy.policy import get_policy_args
+from visual_mpc.policy import get_policy_args
 from visual_mpc.utils.im_utils import resize_store, npy_to_gif
 
 
@@ -150,7 +150,7 @@ class GeneralAgent(object):
             obs['reset_state'] = self._reset_state
         return obs
 
-    def _required_rollout_metadata(self, agent_data, traj_ok, t, i_tr):
+    def _required_rollout_metadata(self, agent_data, traj_ok, t, i_tr, reset_state):
         """
         Adds meta_data into the agent dictionary that is MANDATORY for later parts of pipeline
         :param agent_data: Agent data dictionary
@@ -161,6 +161,9 @@ class GeneralAgent(object):
         if self.env.has_goal():
             agent_data['goal_reached'] = self.env.goal_reached()
         agent_data['traj_ok'] = traj_ok
+
+        if self._hyperparams.get('save_reset_data', False):
+            agent_data['reset_state'] = reset_state
 
     def rollout(self, policy, i_trial, i_traj):
         """
@@ -179,7 +182,7 @@ class GeneralAgent(object):
         # Take the sample.
         t = 0
         done = self._hyperparams['T'] <= 0
-        initial_env_obs, _ = self.env.reset()
+        initial_env_obs, reset_state = self.env.reset()
         obs = self._post_process_obs(initial_env_obs, agent_data, True)
         policy.reset()
 
@@ -219,7 +222,7 @@ class GeneralAgent(object):
                 traj_ok = self.env.goal_reached()
             print('goal_reached', self.env.goal_reached())
 
-        self._required_rollout_metadata(agent_data, traj_ok, t, i_trial)
+        self._required_rollout_metadata(agent_data, traj_ok, t, i_trial, reset_state)
         return agent_data, obs, policy_outputs
 
     def save_gif(self, itr, overlay=False):

@@ -31,7 +31,7 @@ class BenchmarkAgent(GeneralAgent):
         assert old_ncam == self.ncam, """Environment has {} cameras but benchmark has {}. 
                                             Feed correct ncam in agent_params""".format(self.ncam, old_ncam)
 
-    def _required_rollout_metadata(self, agent_data, traj_ok, t, i_itr):
+    def _required_rollout_metadata(self, agent_data, traj_ok, t, i_itr, reset_state):
         GeneralAgent._required_rollout_metadata(self, agent_data, traj_ok, t, i_itr)
         point_target_width = self._hyperparams.get('point_space_width', self._hyperparams['image_width'])
         ntasks = self._hyperparams.get('ntask', 1)
