@@ -32,15 +32,18 @@ agent = {
 
 policy = {
     'type' : LiftingPolicy,
+    'sigma': [0.0, 0., 0],
+    'frac_act': [0.4, 0.2],
+    'bounds': [[-0.4, 0.1], [0.4, 0.15]],
 }
 
 config = {
     'current_dir' : current_dir,
     'save_data': True,
-    'seperate_good': True,
-    'save_raw_images' : False,
+    'seperate_good': False,
+    'save_raw_images' : True,
     'start_index':0,
-    'end_index': 100,
+    'end_index': 10,
     'agent': agent,
     'policy': policy,
     'ngroup': 1000

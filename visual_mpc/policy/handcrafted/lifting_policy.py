@@ -7,7 +7,7 @@ class LiftingPolicy(Policy):
         self._hp = self._default_hparams()
         self._override_defaults(policyparams)
 
-        if self._hp.type == 'xzgrasp':
+        if self._hp.action_space == 'xzgrasp':
             assert self._hp.nactions >= 5, "Need at least 5 actions"
             assert all([x > 0 for x in self._hp.frac_act]) and sum(self._hp.frac_act) <= 1.
             assert ag_params['adim'] == 3, "xzgrasp should have adim = 3"
@@ -18,7 +18,7 @@ class LiftingPolicy(Policy):
         default_dict = {
             'nactions': 15,
             'repeat': 1,
-            'type': 'xzgrasp',
+            'action_space': 'xzgrasp',
             'frac_act': [0.4, 0.1],
             'sigma': [0.05, 0.1, 0],
             'bounds': [[-0.4, 0.05], [0.4, 0.15]],
@@ -32,13 +32,14 @@ class LiftingPolicy(Policy):
         return parent_params
 
     def act(self, t, state, object_poses):
-        if self._hp.type == 'xzgrasp':
+        if self._hp.action_space == 'xzgrasp':
             return self._act_xzgrasp(t, state, object_poses)
         raise NotImplementedError
 
     def reset(self):
-        if self._hp.type == 'xzgrasp':
+        if self._hp.action_space == 'xzgrasp':
             self._actions = None
+            return
         raise NotImplementedError
 
     def _act_xzgrasp(self, t, state, object_poses):
@@ -61,8 +62,8 @@ class LiftingPolicy(Policy):
             delta_x2 = target_pos[0] - object_poses[0, chosen_ind, 0]
             actions[t_down + t_move_1 + 1:] = [delta_x2 / t_move_2, (target_pos[1] - self._hp.floor_z) / t_move_2, 1]
 
-            actions += np.tile(self._hp.sigma, self._hp.nactions) * np.random.normal(size=(self._hp.nactions, 3))
-
+            actions += np.random.normal(size=(self._hp.nactions, 3)) * self._hp.sigma
+     
             actions = np.repeat(actions, self._hp.repeat, axis=0)
             actions[:,:2] /= self._hp.repeat
 
