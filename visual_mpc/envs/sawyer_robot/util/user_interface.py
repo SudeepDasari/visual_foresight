@@ -87,7 +87,7 @@ def select_points(cam_images, cam_names, fig_name, fig_save_dir, clicks_per_desi
         goal_pix = []
     for img, cam in zip(cam_images, cam_names):
         img_height, img_width = img.shape[:2]
-        c_main = Getdesig(img, fig_save_dir, '{}_{}'.format(fig_name, cam), n_desig=n_desig,
+        c_main = Getdesig(img, fig_save_dir, '{}{}'.format(fig_name, cam), n_desig=n_desig,
                           im_shape=[img_height, img_width], clicks_per_desig=clicks_per_desig)
 
         start_pos = c_main.desig.astype(np.int64)
