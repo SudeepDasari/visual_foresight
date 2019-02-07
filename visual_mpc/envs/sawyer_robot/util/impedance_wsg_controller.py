@@ -100,14 +100,13 @@ class ImpedanceWSGController(RobotController):
         self.set_gripper(GRIPPER_CLOSE, wait=wait)
 
     def _set_gripper(self, command_pos, wait=False):
+        self._status_mutex.acquire()
         self._desired_gpos = command_pos
         if wait:
             if self.num_timeouts > MAX_TIMEOUT:
                 rospy.signal_shutdown("MORE THAN {} GRIPPER TIMEOUTS".format(MAX_TIMEOUT))
 
             sem = Semaphore(value=0)  # use of semaphore ensures script will block if gripper dies during execution
-
-            self._status_mutex.acquire()
             self.sem_list.append(sem)
             self._status_mutex.release()
 
@@ -115,6 +114,8 @@ class ImpedanceWSGController(RobotController):
             self._debug_print("gripper sem acquire, list len-{}".format(len(self.sem_list)))
             sem.acquire()
             self._debug_print("waited on gripper for {} seconds".format(rospy.get_time() - start))
+        else:
+            self._status_mutex.release()
 
     def set_gripper(self, command_pos, wait = False):
         if not self._gripper_attached:

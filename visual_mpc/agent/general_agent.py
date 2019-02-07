@@ -34,6 +34,7 @@ class GeneralAgent(object):
         self._goal_image = None
         self._reset_state = None
         self._setup_world(0)
+        self._is_robot = 'robot_name' in hyperparams['env'][1]
 
     def _setup_world(self, itr):
         """
@@ -54,11 +55,12 @@ class GeneralAgent(object):
         Runs a trial and constructs a new sample containing information
         about the trial.
         """
-        if "gen_xml" in self._hyperparams:
-            if i_traj % self._hyperparams['gen_xml'] == 0 and i_traj > 0:
+        if not self._is_robot:
+            if "gen_xml" in self._hyperparams:
+                if i_traj % self._hyperparams['gen_xml'] == 0 and i_traj > 0:
+                    self._setup_world(i_traj)
+            elif i_traj > 0:
                 self._setup_world(i_traj)
-        elif i_traj > 0:
-            self._setup_world(i_traj)
 
         traj_ok, obs_dict, policy_outs, agent_data = False, None, None, None
         i_trial = 0

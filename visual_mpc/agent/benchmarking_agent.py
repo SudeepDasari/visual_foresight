@@ -13,10 +13,9 @@ class BenchmarkAgent(GeneralAgent):
         self._start_goal_confs = hyperparams.get('start_goal_confs', None)
         self.ncam = hyperparams['env'][1].get('ncam', hyperparams['env'][0].default_ncam()) # check if experiment has ncam set, otherwise get env default
         self._save_worker = start_file_worker()
-        self._is_robot_bench = 'robot_name' in hyperparams['env'][1]
         GeneralAgent.__init__(self, hyperparams)
 
-        if not self._is_robot_bench:
+        if not self._is_robot:
             self._hyperparams['gen_xml'] = 1
 
     def _post_process_obs(self, env_obs, agent_data, initial_obs=False):
@@ -37,7 +36,7 @@ class BenchmarkAgent(GeneralAgent):
         ntasks = self._hyperparams.get('ntask', 1)
         agent_data['stats'] = self.env.eval(point_target_width, self._hyperparams.get('_bench_save', None), ntasks)
 
-        if not traj_ok and self._is_robot_bench:
+        if not traj_ok and self._is_robot:
             """
             Hot-wire traj_ok to give user chance to abort experiment on failure
             """
@@ -46,7 +45,7 @@ class BenchmarkAgent(GeneralAgent):
                 agent_data['traj_ok'] = True
 
     def _init(self):
-        if self._is_robot_bench:
+        if self._is_robot:
             if '_bench_save' not in self._hyperparams:
                 raise Error("Benchmark dir missing! Maybe you didn't add --benchmark flag?")
 
@@ -83,7 +82,7 @@ class BenchmarkAgent(GeneralAgent):
         :param itr:
         :return:
         """
-        if self._is_robot_bench:   # robot experiments don't have a reset state
+        if self._is_robot:   # robot experiments don't have a reset state
             return None
 
         itr = self._hyperparams.get('iex', itr)
