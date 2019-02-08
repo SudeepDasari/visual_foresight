@@ -79,7 +79,7 @@ def save_gifs(save_worker, folder, name, gif_array):
     for i, a in enumerate(gif_array):
         html_path = 'assets/{}_{}.gif'.format(name, i)
         html_paths.append(html_path)
-        save_worker.put(('gif', '{}/{}'.format(folder, html_path), a))
+        save_worker.put(('mov', '{}/{}'.format(folder, html_path), a))
     return html_paths
 
 

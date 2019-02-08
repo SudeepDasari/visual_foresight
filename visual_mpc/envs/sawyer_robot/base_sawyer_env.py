@@ -3,7 +3,7 @@ import numpy as np
 import random
 from geometry_msgs.msg import Quaternion as Quaternion_msg
 from pyquaternion import Quaternion
-from visual_mpc.agent.general_agent import Image_Exception, Bad_Traj_Exception
+from visual_mpc.agent.general_agent import Image_Exception
 from .util.limb_recorder import LimbWSGRecorder
 from .util.camera_recorder import CameraRecorder
 from .util.impedance_wsg_controller import ImpedanceWSGController, NEUTRAL_JOINT_CMD
@@ -11,8 +11,6 @@ from visual_mpc.foresight_rospkg.src.utils import inverse_kinematics
 from visual_mpc.envs.util.interpolation import QuinticSpline
 import copy
 import rospy
-import os
-from visual_mpc.utils.im_utils import npy_to_mp4
 from .util.user_interface import select_points
 from .util.topic_utils import IMTopic
 
@@ -136,7 +134,7 @@ class BaseSawyerEnv(BaseEnv):
         self._controller = ImpedanceWSGController(CONTROL_RATE, self._robot_name,
                                                   self._hp.print_debug, self._hp.gripper_attached)
         self._limb_recorder = LimbWSGRecorder(self._controller)
-        self._save_video = self._hp.video_save_dir is not None
+        self._save_video = self._hp.save_video
         self._cameras = [CameraRecorder(t, self._hp.opencv_tracking, self._save_video) for t in self._hp.camera_topics]
 
         self._controller.open_gripper(True)
@@ -170,7 +168,7 @@ class BaseSawyerEnv(BaseEnv):
                         'gripper_attached': True,
                         'camera_topics': [IMTopic('/camera0/image_raw', flip=True), IMTopic('/camera1/image_raw')],
                         'opencv_tracking': False,
-                        'video_save_dir': None,
+                        'save_video': False,
                         'start_at_neutral': False,
                         'start_box': [1., 1., 1.],          # amount of xyz state range gripper can start in
                         'OFFSET_TOL': 0.06,
@@ -338,19 +336,14 @@ class BaseSawyerEnv(BaseEnv):
         self._previous_target_qpos[3] = quat_to_zangle(eep[3:])
         self._previous_target_qpos[4] = -1
 
-    def _save_videos(self):
+    def _save_videos(self, save_worker, i_traj):
         if self._save_video:
             buffers = [c.reset_recording() for c in self._cameras]
             if max([len(b) for b in buffers]) == 0:
                 return
 
-            clip_base_name = '{}/recording{}/'.format(self._hp.video_save_dir, self._reset_counter)
-            if not os.path.exists:
-                os.makedirs(clip_base_name)
-
             for name, b in zip(self._cam_names, buffers):
-                if len(b) > 0:
-                    npy_to_mp4(b, '{}/{}_clip'.format(clip_base_name, name), 30)
+                save_worker.put(('mov', 'recording{}/{}_clip.mp4'.format(i_traj, name), b, 30))
 
     def _end_reset(self):
         if self._hp.opencv_tracking:
@@ -378,7 +371,8 @@ class BaseSawyerEnv(BaseEnv):
         Resets the environment and returns initial observation
         :return: obs dict (look at step(self, action) for documentation)
         """
-        self._save_videos()
+        if self._save_video:
+            [c.reset_recording() for c in self._cameras]
 
         if self._hp.start_at_neutral:
             self._controller.open_gripper(True)
@@ -404,7 +398,6 @@ class BaseSawyerEnv(BaseEnv):
         self._controller.open_gripper(False)
         rospy.sleep(0.5)
         self._reset_previous_qpos()
-
 
         rand_xyz = np.random.uniform(self._low_bound[:3], self._high_bound[:3])
         rand_zangle = np.random.uniform(self._low_bound[3], self._high_bound[3])
@@ -506,7 +499,6 @@ class BaseSawyerEnv(BaseEnv):
         if target_width == None:
             return None
 
-        self._save_videos()
         if self._hp.reset_before_eval:
             self._controller.open_gripper(True)
             self._controller.neutral_with_impedance()
@@ -530,9 +522,6 @@ class BaseSawyerEnv(BaseEnv):
         return {'final_dist': final_dist, 'start_dist': start_dist, 'improvement': improvement}
 
     def get_obj_desig_goal(self, save_dir, collect_goal_image=False, ntasks=1):
-        if self._hp.video_save_dir is not None:
-            self._hp.video_save_dir = save_dir
-
         raw_input("Robot in safe position? Hit enter when ready...")
         self._goto_closest_neutral()
         self._controller.open_gripper(True)

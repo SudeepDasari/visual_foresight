@@ -62,6 +62,7 @@ class SawyerEnv(BaseEnv):
         return self._step(target_qpos)
 
     def reset(self):
+        super().reset()
         self._proc_obs(self._env.reset())
         self._init_dynamics()
         return self._step(self._previous_target_qpos), None

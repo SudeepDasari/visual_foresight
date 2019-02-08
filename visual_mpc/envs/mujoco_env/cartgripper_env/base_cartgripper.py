@@ -183,6 +183,8 @@ class BaseCartgripperEnv(BaseMujocoEnv):
         return poses
 
     def reset(self, reset_state=None):
+        super().reset()
+
         if reset_state is not None:
             self._read_reset_state = reset_state
 

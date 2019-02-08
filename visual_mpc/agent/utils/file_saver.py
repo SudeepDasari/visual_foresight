@@ -35,11 +35,10 @@ def _file_worker(file_queue):
             with open(save_path, 'w') as f:
                 f.write(data[2])
                 f.write('\n')
-
-        elif dat_type == 'gif':
+        elif dat_type == 'mov':
             save_path = '{}/{}'.format(prepend_path, data[1])
             _make_parent_if_needed(save_path)
-            fps, frames=4, data[2]
+            fps, frames = 4, data[2]
             if len(data) == 4:
                 fps = data[3]
             writer = io.get_writer(save_path, fps=fps)

@@ -73,9 +73,12 @@ class RobotEnvironment:
                 self.take_sample(i)
         else:
             itr = 0
-            while True:
+            continue_collection = True
+            while continue_collection:
                 self.take_sample(itr)
                 itr += 1
+                continue_collection = 'y' in raw_input('Continue collection? (y if yes):')
+        self.agent.cleanup()
 
     def _get_bench_name(self):
         name = raw_input('input benchmark name: ')

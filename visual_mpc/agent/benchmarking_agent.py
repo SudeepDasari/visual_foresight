@@ -5,14 +5,12 @@ import numpy as np
 import cv2
 import os
 import shutil
-from .utils.file_saver import start_file_worker
 
 
 class BenchmarkAgent(GeneralAgent):
     def __init__(self, hyperparams):
         self._start_goal_confs = hyperparams.get('start_goal_confs', None)
         self.ncam = hyperparams['env'][1].get('ncam', hyperparams['env'][0].default_ncam()) # check if experiment has ncam set, otherwise get env default
-        self._save_worker = start_file_worker()
         GeneralAgent.__init__(self, hyperparams)
 
         if not self._is_robot:
@@ -30,8 +28,8 @@ class BenchmarkAgent(GeneralAgent):
         assert old_ncam == self.ncam, """Environment has {} cameras but benchmark has {}. 
                                             Feed correct ncam in agent_params""".format(self.ncam, old_ncam)
 
-    def _required_rollout_metadata(self, agent_data, traj_ok, t, i_itr, reset_state):
-        GeneralAgent._required_rollout_metadata(self, agent_data, traj_ok, t, i_itr)
+    def _required_rollout_metadata(self, agent_data, traj_ok, t, i_traj, i_itr, reset_state):
+        GeneralAgent._required_rollout_metadata(self, agent_data, traj_ok, t, i_traj, i_itr, reset_state)
         point_target_width = self._hyperparams.get('point_space_width', self._hyperparams['image_width'])
         ntasks = self._hyperparams.get('ntask', 1)
         agent_data['stats'] = self.env.eval(point_target_width, self._hyperparams.get('_bench_save', None), ntasks)
@@ -60,7 +58,7 @@ class BenchmarkAgent(GeneralAgent):
 
                 if 'register_gtruth' in self._hyperparams and len(self._hyperparams['register_gtruth']) == 2:
                     raw_goal_image, self._goal_obj_pose = self.env.get_obj_desig_goal(self._hyperparams['_bench_save'], True,
-                                                                                  ntasks=ntasks)
+                                                                                       ntasks=ntasks)
                     goal_dims = (1, self.ncam, self._hyperparams['image_height'], self._hyperparams['image_width'], 3)
                     self._goal_image = np.zeros(goal_dims, dtype=np.uint8)
                     resize_store(0, self._goal_image, raw_goal_image)
@@ -119,6 +117,9 @@ class BenchmarkAgent(GeneralAgent):
 
         return reset_state
 
-    def cleanup(self):
-        self._save_worker.put(None)
-        self._save_worker.join()
+    @property
+    def record_path(self):
+        if self._is_robot:
+            return self._hyperparams['_bench_save']
+        else:
+            return self._hyperparams['data_save_dir'] + '/record/'

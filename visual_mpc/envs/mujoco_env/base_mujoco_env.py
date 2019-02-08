@@ -1,7 +1,6 @@
 from mujoco_py import load_model_from_path, MjSim
 import numpy as np
 from visual_mpc.envs.base_env import BaseEnv
-import pdb
 
 
 class BaseMujocoEnv(BaseEnv):
@@ -9,7 +8,8 @@ class BaseMujocoEnv(BaseEnv):
         self._frame_height = _hp.viewer_image_height
         self._frame_width = _hp.viewer_image_width
 
-        self._reset_sim(model_path)
+        self._model_path = model_path
+        self.sim = MjSim(load_model_from_path(self._model_path))
 
         self._base_adim, self._base_sdim = None, None                 #state/action dimension of Mujoco control
         self._adim, self._sdim = None, None   #state/action dimension presented to agent
@@ -22,6 +22,8 @@ class BaseMujocoEnv(BaseEnv):
 
         self._last_obs = None
         self._hp = _hp
+
+        self._save_buffer = []
     
     def _default_hparams(self):
         parent_params = super()._default_hparams()
@@ -34,18 +36,12 @@ class BaseMujocoEnv(BaseEnv):
     def set_goal_obj_pose(self, pose):
         self._goal_obj_pose = pose
 
-    def _reset_sim(self, model_path):
-        """
-        Creates a MjSim from passed in model_path
-        :param model_path: Absolute path to model file
-        :return: None
-        """
-        self._model_path = model_path
-        self.sim = MjSim(load_model_from_path(self._model_path))
-
     def _reset_eval(self):
         if self._goal_obj_pose is not None:
             self._goaldistances = [self.get_distance_score()]
+
+    def reset(self):
+        self._save_buffer = []
 
     def render(self):
         """ Renders the enviornment.
@@ -60,6 +56,7 @@ class BaseMujocoEnv(BaseEnv):
         images = np.zeros((self._ncam, self._frame_height, self._frame_width, 3), dtype=np.uint8)
         for i, cam in enumerate(self.cameras):
             images[i] = self.sim.render(self._frame_width, self._frame_height, camera_name=cam)
+        self._save_buffer.append(images[0])
         return images
 
     def project_point(self, point, camera):
@@ -151,3 +148,7 @@ class BaseMujocoEnv(BaseEnv):
 
     def generate_task(self):
         raise NotImplementedError
+
+    def save_recording(self, save_worker, i_traj):
+        if len(self._save_buffer):
+            save_worker.put(('mov', 'traj_{}.gif'.format(i_traj), self._save_buffer))
