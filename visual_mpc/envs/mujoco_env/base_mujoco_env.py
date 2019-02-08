@@ -56,8 +56,11 @@ class BaseMujocoEnv(BaseEnv):
         images = np.zeros((self._ncam, self._frame_height, self._frame_width, 3), dtype=np.uint8)
         for i, cam in enumerate(self.cameras):
             images[i] = self.sim.render(self._frame_width, self._frame_height, camera_name=cam)
-        self._save_buffer.append(images[0])
+        self._append_save_buffer(images[0])
         return images
+
+    def _append_save_buffer(self, img):
+        self._save_buffer.append(img.copy())
 
     def project_point(self, point, camera):
         model_matrix = np.zeros((4, 4))

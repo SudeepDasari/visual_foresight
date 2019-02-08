@@ -250,6 +250,9 @@ class BaseCartgripperEnv(BaseMujocoEnv):
         # xpos0[-1] = low_bound[-1]  # start with gripper open
         return xpos0
 
+    def _append_save_buffer(self, img):
+        super()._append_save_buffer(img[::-1])
+
     def _get_obs(self, finger_sensors):
         obs, touch_offset = {}, 0
         #report finger sensors as needed

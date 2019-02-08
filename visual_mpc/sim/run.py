@@ -36,7 +36,7 @@ class SynchCounter:
         return ret_val
 
 
-def worker(conf, iex=-1, ngpu=1):
+def use_worker(conf, iex=-1, ngpu=1):
     print('started process with PID:', os.getpid())
     print('making trajectories {0} to {1}'.format(
         conf['start_index'],
@@ -48,13 +48,6 @@ def worker(conf, iex=-1, ngpu=1):
 
     s = Sim(conf)
     s.run()
-
-def bench_worker(conf, iex=-1, ngpu=1):
-    print('started process with PID:', os.getpid())
-    random.seed(None)
-    np.random.seed(None)
-
-    perform_benchmark(conf, iex, gpu_id=conf['gpu_id'], ngpu=ngpu)
 
 
 def check_and_pop(dict, key):
@@ -109,10 +102,6 @@ def main():
         try:
             os.system("rm {}".format('/'.join(str.split(hyperparams['agent']['filename'], '/')[:-1]) + '/auto_gen/*'))
         except: pass
-
-    if args.do_benchmark:
-        use_worker = bench_worker
-    else: use_worker = worker
 
     if 'RESULT_DIR' in os.environ:
         if 'exp_name' in hyperparams:

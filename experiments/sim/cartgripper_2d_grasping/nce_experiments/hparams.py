@@ -22,7 +22,7 @@ agent = {
     'T': 45,
     'image_height': 48,
     'image_width': 64,
-    'make_final_gif': '',
+    'make_final_recording': '',
     'start_goal_confs': os.environ['VMPC_DATA_DIR'] + '/cartgripper_xz_grasp/lifting_tasks',
     'current_dir': current_dir
 }

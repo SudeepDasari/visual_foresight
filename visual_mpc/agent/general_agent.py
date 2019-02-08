@@ -34,9 +34,9 @@ class GeneralAgent(object):
         self._goal_obj_pose = None
         self._goal_image = None
         self._reset_state = None
-        self._setup_world(0)
         self._is_robot = 'robot_name' in hyperparams['env'][1]
         self._save_worker = start_file_worker()
+        self._setup_world(0)
 
     def _setup_world(self, itr):
         """
@@ -167,6 +167,7 @@ class GeneralAgent(object):
             agent_data['reset_state'] = reset_state
 
         if 'make_final_recording' in self._hyperparams:
+            import pdb; pdb.set_trace()
             self._save_worker.put(('path', self.record_path))
             self.env.save_recording(self._save_worker, i_traj)
 
@@ -227,7 +228,7 @@ class GeneralAgent(object):
                 traj_ok = self.env.goal_reached()
             print('goal_reached', self.env.goal_reached())
 
-        self._required_rollout_metadata(agent_data, traj_ok, t, i_trial, reset_state)
+        self._required_rollout_metadata(agent_data, traj_ok, t, i_traj, i_trial, reset_state)
         return agent_data, obs, policy_outputs
 
     def _init(self):
