@@ -52,7 +52,6 @@ class BenchmarkAgent(GeneralAgent):
                 if os.path.exists(self._hyperparams['_bench_save']):
                     shutil.rmtree(self._hyperparams['_bench_save'])
                 os.makedirs(self._hyperparams['_bench_save'])
-                self._save_worker.put(('path', self._hyperparams['_bench_save']))
 
                 ntasks = self._hyperparams.get('ntask', 1)
 
@@ -68,6 +67,7 @@ class BenchmarkAgent(GeneralAgent):
                     self._goal_obj_pose = self.env.get_obj_desig_goal(self._hyperparams['_bench_save'], ntasks=ntasks)
                 if 'y' in raw_input('Is definition okay? (y/n):'):
                     done = True
+                    self._save_worker.put(('path', self._hyperparams['_bench_save']))
 
             return GeneralAgent._init(self)
 
