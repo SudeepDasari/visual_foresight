@@ -50,3 +50,4 @@ def _file_worker(file_queue):
             cv2.imwrite(save_path, data[2][:, :, ::-1])
 
         data = file_queue.get(True)
+    return

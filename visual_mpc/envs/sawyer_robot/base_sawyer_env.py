@@ -336,7 +336,7 @@ class BaseSawyerEnv(BaseEnv):
         self._previous_target_qpos[3] = quat_to_zangle(eep[3:])
         self._previous_target_qpos[4] = -1
 
-    def _save_videos(self, save_worker, i_traj):
+    def save_recording(self, save_worker, i_traj):
         if self._save_video:
             buffers = [c.reset_recording() for c in self._cameras]
             if max([len(b) for b in buffers]) == 0:

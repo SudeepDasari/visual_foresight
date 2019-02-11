@@ -209,7 +209,6 @@ class PixelCostController(CEMBaseController):
             input_distrib = np.stack(input_distrib, axis=1)
         return input_distrib
 
-
     def act(self, t=None, i_tr=None, desig_pix=None, goal_pix=None, images=None, state=None, verbose_worker=None):
         """
         Return a random action for a state.

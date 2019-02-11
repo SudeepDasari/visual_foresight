@@ -7,7 +7,7 @@ def truncate_movement(actions, hp):
     maxshift = hp.initial_std * 2
 
     if len(actions.shape) == 3:
-        if hp.action_order[0] is not None:
+        if hp.action_order is not None:
             for i, a in enumerate(hp.action_order):
                 if a == 'x' or a == 'y':
                     maxshift = hp.initial_std * 2
@@ -24,7 +24,7 @@ def truncate_movement(actions, hp):
             actions[:, :, 3] = np.clip(actions[:, :, 3], -maxrot, maxrot)
 
     elif len(actions.shape) == 2:
-        if hp.action_order[0] is not None:
+        if hp.action_order is not None:
             for i, a in enumerate(hp.action_order):
                 if a == 'x' or a == 'y':
                     maxshift = hp.initial_std * 2
@@ -48,7 +48,7 @@ def construct_initial_sigma(hp, adim, t=None):
     xy_std = hp.initial_std
     diag = [xy_std**2, xy_std**2]
 
-    if hp.action_order[0] is not None:
+    if hp.action_order is not None:
         diag = []
         for a in hp.action_order:
             if a == 'x' or a == 'y':

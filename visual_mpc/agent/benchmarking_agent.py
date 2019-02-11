@@ -32,7 +32,8 @@ class BenchmarkAgent(GeneralAgent):
         GeneralAgent._required_rollout_metadata(self, agent_data, traj_ok, t, i_traj, i_itr, reset_state)
         point_target_width = self._hyperparams.get('point_space_width', self._hyperparams['image_width'])
         ntasks = self._hyperparams.get('ntask', 1)
-        agent_data['stats'] = self.env.eval(point_target_width, self._hyperparams.get('_bench_save', None), ntasks)
+        if 'no_goal_def' not in self._hyperparams:
+            agent_data['stats'] = self.env.eval(point_target_width, self._hyperparams.get('_bench_save', None), ntasks)
 
         if not traj_ok and self._is_robot:
             """
@@ -45,7 +46,7 @@ class BenchmarkAgent(GeneralAgent):
     def _init(self):
         if self._is_robot:
             if '_bench_save' not in self._hyperparams:
-                raise Error("Benchmark dir missing! Maybe you didn't add --benchmark flag?")
+                raise ValueError("Benchmark dir missing! Maybe you didn't add --benchmark flag?")
 
             done = False
             while not done:
@@ -55,17 +56,19 @@ class BenchmarkAgent(GeneralAgent):
 
                 ntasks = self._hyperparams.get('ntask', 1)
 
-                if 'register_gtruth' in self._hyperparams and len(self._hyperparams['register_gtruth']) == 2:
-                    raw_goal_image, self._goal_obj_pose = self.env.get_obj_desig_goal(self._hyperparams['_bench_save'], True,
-                                                                                       ntasks=ntasks)
-                    goal_dims = (1, self.ncam, self._hyperparams['image_height'], self._hyperparams['image_width'], 3)
-                    self._goal_image = np.zeros(goal_dims, dtype=np.uint8)
-                    resize_store(0, self._goal_image, raw_goal_image)
-                    self._goal_image = self._goal_image.astype(np.float32) / 255.
+                if 'no_goal_def' not in self._hyperparams:
+                    if 'register_gtruth' in self._hyperparams and len(self._hyperparams['register_gtruth']) == 2:
+                        raw_goal_image, self._goal_obj_pose = self.env.get_obj_desig_goal(self._hyperparams['_bench_save'], True,
+                                                                                           ntasks=ntasks)
+                        goal_dims = (1, self.ncam, self._hyperparams['image_height'], self._hyperparams['image_width'], 3)
+                        self._goal_image = np.zeros(goal_dims, dtype=np.uint8)
+                        resize_store(0, self._goal_image, raw_goal_image)
+                        self._goal_image = self._goal_image.astype(np.float32) / 255.
 
-                else:
-                    self._goal_obj_pose = self.env.get_obj_desig_goal(self._hyperparams['_bench_save'], ntasks=ntasks)
-                if 'y' in raw_input('Is definition okay? (y/n):'):
+                    else:
+                        self._goal_obj_pose = self.env.get_obj_desig_goal(self._hyperparams['_bench_save'], ntasks=ntasks)
+
+                if 'no_goal_def' in self._hyperparams or 'y' in raw_input('Is definition okay? (y/n):'):
                     done = True
                     self._save_worker.put(('path', self._hyperparams['_bench_save']))
 

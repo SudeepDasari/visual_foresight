@@ -28,7 +28,9 @@ class RobotEnvironment:
             conf['agent']['imax'] = 5
 
         if 'RESULT_DIR' in os.environ:
-            exp_name = conf['agent']['data_save_dir'].split('/')[-1]
+            exp_path = conf['agent']['data_save_dir'].split('/')
+            exp_index = min(max([i for i, v in enumerate(exp_path) if v == 'experiments'] + [0]) + 1, len(exp_path) - 1)
+            exp_name = '/'.join(exp_path[exp_index:])
             conf['agent']['data_save_dir'] = '{}/{}'.format(os.environ['RESULT_DIR'], exp_name)
 
         self._hyperparams = conf

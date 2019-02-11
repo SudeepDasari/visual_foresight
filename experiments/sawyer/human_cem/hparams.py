@@ -2,7 +2,7 @@ import numpy as np
 import os
 from visual_mpc.agent.benchmarking_agent import BenchmarkAgent
 from visual_mpc.envs.sawyer_robot.autograsp_sawyer_env import AutograspSawyerEnv
-from visual_mpc.policy.cem_controllers.pixel_cost_controller import PixelCostController
+from visual_mpc.policy.cem_controllers.human_cem_controller import HumanCEMController
 from visual_mpc.envs.sawyer_robot.util.topic_utils import IMTopic
 
 
@@ -30,15 +30,15 @@ agent = {'type' : BenchmarkAgent,
          'image_height': 48,
          'image_width': 64,
          'current_dir': current_dir,
-         'make_final_recording': ''
+         'make_final_recording': '',
+         'no_goal_def': ''
 }
 
 policy = {
-    'type': PixelCostController,
+    'type': HumanCEMController,
     'replan_interval': 10,
-    'num_samples': 600,
-    'selection_frac': 0.05,
-    'predictor_propagation': True,   # use the model get the designated pixel for the next step!
+    'num_samples': 50,
+    'selection_frac': 0.1,
     'initial_std_lift': 0.2,  # std dev. in xy
     'initial_std_rot': np.pi / 10,
     'rejection_sampling': False,

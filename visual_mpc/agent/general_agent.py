@@ -1,9 +1,8 @@
 """ This file defines an agent for the MuJoCo simulator environment. """
 import copy
 import numpy as np
-import cv2
 from visual_mpc.policy import get_policy_args
-from visual_mpc.utils.im_utils import resize_store, npy_to_gif
+from visual_mpc.utils.im_utils import resize_store
 from .utils.file_saver import start_file_worker
 
 
@@ -167,7 +166,6 @@ class GeneralAgent(object):
             agent_data['reset_state'] = reset_state
 
         if 'make_final_recording' in self._hyperparams:
-            import pdb; pdb.set_trace()
             self._save_worker.put(('path', self.record_path))
             self.env.save_recording(self._save_worker, i_traj)
 
@@ -238,6 +236,7 @@ class GeneralAgent(object):
         self.large_images_traj, self.traj_points = [], None
 
     def cleanup(self):
+        print('Cleaning up file saver....')
         self._save_worker.put(None)
         self._save_worker.join()
 
