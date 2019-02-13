@@ -22,6 +22,7 @@ agent = {
     'T': 45,
     'image_height': 48,
     'image_width': 64,
+    'num_load_steps': 16,
     'make_final_recording': '',
     'start_goal_confs': os.environ['VMPC_DATA_DIR'] + '/cartgripper_xz_grasp/expert_lifting_tasks',
     'current_dir': current_dir
@@ -34,7 +35,8 @@ policy = {
     'rejection_sampling': False,
     'selection_frac': 0.05,
     'verbose_frac_display': 0.05,
-    'replan_interval': 15,
+    'compare_to_expert': True,
+    'replan_interval': 5,
     'num_samples': 800,
     'nce_conf_path': os.path.expanduser('~/Documents/control_embedding/experiments/catrgripper_xz_grasp/nce_experiment/exp.json'),
     'nce_restore_path': os.path.expanduser('~/Documents/control_embedding/experiments/catrgripper_xz_grasp/nce_experiment/base_model/model-20000')

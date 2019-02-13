@@ -17,4 +17,4 @@ def plot_score_hist(scores, tick_value=None):
     s, (width, height) = canvas.print_to_buffer()
     image = np.fromstring(s, np.uint8).reshape((height, width, 4))
 
-    return image[:, :, ::3]
+    return image[:, :, :3]

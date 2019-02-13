@@ -48,16 +48,19 @@ class NCECostController(CEMBaseController):
 
         self._images = None
         self._expert_images = None
+        self._expert_score = None
         self._goal_image = None
         self._start_image = None
         self._verbose_worker = None
 
     def reset(self):
+        self._expert_score = None
         self._images = None
         self._expert_images = None
         self._goal_image = None
         self._start_image = None
         self._verbose_worker = None
+        return super(NCECostController, self).reset()
 
     def _default_hparams(self):
         default_dict = {
@@ -123,20 +126,19 @@ class NCECostController(CEMBaseController):
             content_dict['scores'] = scores[visualize_indices]
             content_dict['NCE Res'] = raw_scores[visualize_indices]
 
-            expert_score = None
-            if self._hp.compare_to_expert:
+            if self._hp.compare_to_expert and self._expert_score is None:
                 expert_scores = np.zeros((self._n_cam, 1, self._n_pred))
                 for c in range(self._n_cam):
                     expert_goal, expert_start = self._expert_images[-1][c], self._expert_images[0][c]
-                    embed_dict = self._scoring_func(expert_goal, expert_start, self._expert_images[:][c])
+                    embed_dict = self._scoring_func(expert_goal[None], expert_start[None], self._expert_images[:,c])
 
                     gs_enc = embed_dict['goal_enc'][0][None]
                     in_enc = embed_dict['input_enc'].reshape((1, self._n_pred, -1))
                     expert_scores[c] = self._eval_embedding_cost(gs_enc, in_enc)
 
-                expert_score = self._weight_scores(np.sum(expert_scores, axis=0))
+                self._expert_score = self._weight_scores(np.sum(expert_scores, axis=0))[0]
 
-            hist = plot_score_hist(scores, tick_value=expert_score)
+            hist = plot_score_hist(scores, tick_value=self._expert_score)
             hist_path = save_img(self._verbose_worker, verbose_folder, "score_histogram", hist)
             extra_entry = img_entry_html(hist_path, height=hist.shape[0], caption="score histogram")
 
