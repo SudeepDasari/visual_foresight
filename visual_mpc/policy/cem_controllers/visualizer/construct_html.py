@@ -25,7 +25,7 @@ td {{
 {3}
 </table>
 
-
+{4}
 </body>
 </html>
 """
@@ -55,7 +55,7 @@ def _format_txt_row(name, content_list):
     return template
 
 
-def fill_template(cem_itr, t, item_dict, column_title='traj', exp_name='Visual MPC', img_height=128):
+def fill_template(cem_itr, t, item_dict, column_title='traj', exp_name='Visual MPC', img_height=128, extra_html=""):
     row_length = None
     for k, i in item_dict.items():
         if row_length is None:
@@ -71,7 +71,7 @@ def fill_template(cem_itr, t, item_dict, column_title='traj', exp_name='Visual M
         else:
             rows += _format_txt_row(k, i)
 
-    return template.format(exp_name, cem_itr, t, rows)
+    return template.format(exp_name, cem_itr, t, rows, extra_html)
 
 
 def save_gifs(save_worker, folder, name, gif_array):
@@ -91,3 +91,8 @@ def save_img(save_worker, folder, name, img):
 
 def save_html(save_worker, path, content):
     save_worker.put(('txt_file', path, content))
+
+
+def img_entry_html(img_path, height=640, caption=""):
+    return "<br>\n<br>\n<div>\n  <img src=\"{0}\" height=\"{1}\">\n  <p>{2}</p>\n</div>".format(img_path,
+                                                                                                height, caption)

@@ -3,7 +3,8 @@ import imp
 import control_embedding
 import numpy as np
 from visual_mpc.video_prediction.pred_util import get_context, rollout_predictions
-from ..visualizer.construct_html import save_gifs, save_html, save_img, fill_template
+from ..visualizer.construct_html import save_gifs, save_html, save_img, fill_template, img_entry_html
+from ..visualizer.plot_helper import plot_score_hist
 from collections import OrderedDict
 
 
@@ -46,6 +47,14 @@ class NCECostController(CEMBaseController):
         self._n_cam = net_conf['ncam']
 
         self._images = None
+        self._expert_images = None
+        self._goal_image = None
+        self._start_image = None
+        self._verbose_worker = None
+
+    def reset(self):
+        self._images = None
+        self._expert_images = None
         self._goal_image = None
         self._start_image = None
         self._verbose_worker = None
@@ -58,6 +67,7 @@ class NCECostController(CEMBaseController):
             'nce_restore_path': '',
             'nce_batch_size': 200,
             'state_append': None,
+            'compare_to_expert': False,
             'verbose_img_height': 128,
             'verbose_frac_display': 0.
         }
@@ -87,12 +97,7 @@ class NCECostController(CEMBaseController):
             raw_scores[c] = self._eval_embedding_cost(gs_enc, in_enc)
 
         raw_scores = np.sum(raw_scores, axis=0)
-        if self._hp.finalweight >= 0:
-            scores = raw_scores.copy()
-            scores[:, -1] *= self._hp.finalweight
-            scores = np.sum(scores, axis=1) / sum([1. for _ in range(self._n_pred - 1)] + [self._hp.finalweight])
-        else:
-            scores = raw_scores[:, -1]
+        scores = self._weight_scores(raw_scores)
 
         if self._verbose_condition(cem_itr):
             verbose_folder = "planning_{}_itr_{}".format(self._t, cem_itr)
@@ -117,8 +122,37 @@ class NCECostController(CEMBaseController):
             # scores
             content_dict['scores'] = scores[visualize_indices]
             content_dict['NCE Res'] = raw_scores[visualize_indices]
-            html_page = fill_template(cem_itr, self._t, content_dict, img_height=self._hp.verbose_img_height)
+
+            expert_score = None
+            if self._hp.compare_to_expert:
+                expert_scores = np.zeros((self._n_cam, 1, self._n_pred))
+                for c in range(self._n_cam):
+                    expert_goal, expert_start = self._expert_images[-1][c], self._expert_images[0][c]
+                    embed_dict = self._scoring_func(expert_goal, expert_start, self._expert_images[:][c])
+
+                    gs_enc = embed_dict['goal_enc'][0][None]
+                    in_enc = embed_dict['input_enc'].reshape((1, self._n_pred, -1))
+                    expert_scores[c] = self._eval_embedding_cost(gs_enc, in_enc)
+
+                expert_score = self._weight_scores(np.sum(expert_scores, axis=0))
+
+            hist = plot_score_hist(scores, tick_value=expert_score)
+            hist_path = save_img(self._verbose_worker, verbose_folder, "score_histogram", hist)
+            extra_entry = img_entry_html(hist_path, height=hist.shape[0], caption="score histogram")
+
+            html_page = fill_template(cem_itr, self._t, content_dict, img_height=self._hp.verbose_img_height,
+                                      extra_html=extra_entry)
             save_html(self._verbose_worker, "{}/plan.html".format(verbose_folder), html_page)
+
+        return scores
+
+    def _weight_scores(self, raw_scores):
+        if self._hp.finalweight >= 0:
+            scores = raw_scores.copy()
+            scores[:, -1] *= self._hp.finalweight
+            scores = np.sum(scores, axis=1) / sum([1. for _ in range(self._n_pred - 1)] + [self._hp.finalweight])
+        else:
+            scores = raw_scores[:, -1].copy()
         return scores
 
     def _eval_embedding_cost(self, goal_embed, input_embed):
@@ -129,8 +163,11 @@ class NCECostController(CEMBaseController):
 
     def act(self, t=None, i_tr=None, goal_image=None, images=None, state=None, verbose_worker=None):
         self._start_image = images[-1].astype(np.float32)
-        self._goal_image = goal_image[1] * 255
+        self._goal_image = goal_image[-1] * 255
         self._images = images
         self._verbose_worker = verbose_worker
+
+        if self._hp.compare_to_expert:
+            self._expert_images = goal_image[1:self._n_pred + 1] * 255
 
         return super(NCECostController, self).act(t, i_tr, state)

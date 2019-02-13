@@ -32,6 +32,7 @@ agent = {
     'data_save_dir': BASE_DIR,
     'make_final_gif_pointoverlay': True,
     'record': BASE_DIR + '/record/',
+    'num_load_steps': 16,
     'start_goal_confs': os.environ['VMPC_DATA_DIR'] + '/ensemble_lifting_tasks',
     'current_dir': current_dir
 }
