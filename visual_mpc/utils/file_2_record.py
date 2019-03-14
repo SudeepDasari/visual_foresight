@@ -7,10 +7,11 @@ import cPickle as pkl
 import numpy as np
 import glob
 import random
+import copy
 
 
 def save_worker(save_conf):
-    assigned_files, record_queue, T, target_width, seperate, infer_gripper = save_conf
+    assigned_files, record_queue, T, target_width, seperate, infer_gripper, separate_views = save_conf
     target_dim = None
     ncam = None
     for traj in assigned_files:
@@ -58,8 +59,15 @@ def save_worker(save_conf):
         if 'stats' in agent_data:     #due to bug in genral_agent some robot trajs have a stats key that should be ignored
             assert agent_data['stats'] is None
             agent_data.pop('stats')
-
-        record_queue.put((agent_data, obs_dict, policy_out))
+        
+        if separate_views:
+            obs_images = obs_dict.pop('images')
+            for n in range(ncam):
+                agent_data_n, obs_dict_n, policy_out_n = [copy.deepcopy(x) for x in [agent_data, obs_dict, policy_out]]
+                obs_dict_n['images'] = obs_images[:, n].reshape((T, 1, target_dim[1], target_dim[0], 3))
+                record_queue.put((agent_data_n, obs_dict_n, policy_out_n))
+        else:
+            record_queue.put((agent_data, obs_dict, policy_out))
 
 
 if __name__ == '__main__':
@@ -74,6 +82,7 @@ if __name__ == '__main__':
     parser.add_argument('--traj_per_file', type=int, help='number of trajectories per file', default=16)
     parser.add_argument('--seperate', dest='seperate_good', action='store_true', default=False, help="seperates good and bad trajectories")
     parser.add_argument('--infer_gripper', action='store_true', default=False, help="adds gripper action to adim=4 trajs")
+    parser.add_argument('--separate_views', action='store_true', default=False, help="create a separate record for each view in trajectory")
 
     args = parser.parse_args()
     assert sum(args.split) == 1 and not any([i < 0 or i > 1 for i in args.split]), "Split must be valid distrib"
@@ -113,13 +122,15 @@ if __name__ == '__main__':
                 end = len(traj_files)
             workers_files = traj_files[start:end]
 
-            save_conf = (workers_files, record_queue, T, args.target_width, args.seperate_good, args.infer_gripper)
+            save_conf = (workers_files, record_queue, T, args.target_width,
+                         args.seperate_good, args.infer_gripper, args.separate_views)
             confs.append(save_conf)
 
         p = Pool(args.nworkers)
         p.map(save_worker, confs)
     else:
-        save_worker((traj_files, record_queue, T, args.target_width, args.seperate_good, args.infer_gripper))
+        save_worker((traj_files, record_queue, T, args.target_width, args.seperate_good,
+                     args.infer_gripper, args.separate_views))
 
     record_queue.put(None)
     record_saver_proc.join()
