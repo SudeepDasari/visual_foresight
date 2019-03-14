@@ -27,7 +27,7 @@ Docker allows a cleaner way to get started with our code. Since we heavily use t
 git clone https://github.com/SudeepDasari/visual_foresight.git && cd docker && cp ~/.mujoco/mjkey.txt ./
 nvidia-docker build -t foresight/sim:latest .
 ```
-Now to create a new bash in this environment run: `nvidia-docker run -it foresight/sim: bash`
+Now to create a new bash in this environment run: `nvidia-docker run -it foresight/sim:latest bash`
 ### Python Path
 You will have to configure your python path each time you open a new shell (in both docker and virtual env). One way to do so is:
 ```
