@@ -18,8 +18,9 @@ git clone https://github.com/febert/video_prediction-1.git && cd video_predictio
 # install meta-classifier code
 git clone https://github.com/anxie/meta_classifier.git
 #install visual-MPC
-git clone https://github.com/SudeepDasari/visual_foresight.git
+git clone https://github.com/SudeepDasari/visual_foresight.git && cd visual_foresight
 pip install -r requirements.txt
+python setup.py develop
 ```
 ### Docker Installation
 Docker allows a cleaner way to get started with our code. Since we heavily use the GPU, you will have to install [nvidia-docker](https://github.com/NVIDIA/nvidia-docker) and all related dependencies. After that run:
@@ -28,14 +29,6 @@ git clone https://github.com/SudeepDasari/visual_foresight.git && cd docker && c
 nvidia-docker build -t foresight/sim:latest .
 ```
 Now to create a new bash in this environment run: `nvidia-docker run -it foresight/sim: bash`
-### Python Path
-You will have to configure your python path each time you open a new shell (in both docker and virtual env). One way to do so is:
-```
-# configure python path (you will have to run this for each new shell)
-export WORKDIR=<PATH TO dir containing repos (in docker just /)>
-export PYTHONPATH='$WORKDIR/visual_foresight:$WORKDIR/video_prediction-1/:$WORKDIR/meta_classifier:'
-```
-We are planning to make this software setup process cleaner over time, so keep checking back!
 
 ## Robot
 ### Hardware Setup
