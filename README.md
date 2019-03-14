@@ -14,7 +14,7 @@ Since this project is deployed in sim and on a robot, all code is written to be 
 Our simulator requires **Python 3.5.2** and [MuJoCo 1.5](https://www.roboti.us/index.html) to run successfully. We strongly recommend using a virtual environment (such as Anaconda) for this project. After you setup Python and MuJoCo, installation directions are as follows:
 ```
 # install video prediction code
-git clone https://github.com/febert/video_prediction-1.git && cd video_prediction-1 && git checkout dev && cd ..
+git clone https://github.com/febert/video_prediction-1.git && cd video_prediction-1 && git checkout dev && python setup.py develop && cd ..
 # install meta-classifier code
 git clone https://github.com/anxie/meta_classifier.git
 #install visual-MPC
@@ -41,15 +41,11 @@ Robot code heavily uses ROS. Assuming you use our same hardware, you will need t
 * Any ROS node to access webcams. We use a [modified version of video_stream_opencv](https://github.com/SudeepDasari/video_stream_opencv)
 
 Once you've installed the dependencies:
-1. Clone our repository into your ROS workspace's src folder. Then run `catkin_make` to rebuild your workspace.
-2. Clone and install the [video_prediction](https://github.com/febert/visual_mpc/tree/dev) code-base.
+1. Clone our repository into your ROS workspace's src folder. Then run `catkin_make` to rebuild your workspace. 
+2. Clone and install the [video_prediction](https://github.com/febert/visual_mpc/tree/dev) code-base. 
 3. Clone and install the [meta-classifier](https://github.com/anxie/meta_classifier) code-base
-4. (optional) Add the following lines right after the EOF in your `intera.sh`. While hacky, modifying your Python path is a quick and dirty way to get this code running while allowing you to modify it.
-```
-
-export PYTHONPATH='$PYTHONPATH:<PATH TO workspace src>/visual_foresight:<PATH TO video_prediction-1>'
-```
-4. Start up required ROS nodes:
+4. Remember to install our python packages by running `sudo python setup.py develop` in EVERY project workspace
+5. Start up required ROS nodes:
 ```
 # in a new intera terminal
 roslaunch foresight_rospkg start_cameras.launch   # run cameras
@@ -80,6 +76,7 @@ While the raw (pkl/jpeg file) data format is convenient to work with, it is far 
 
 ## Running Benchmarks
 Again pass in the python config file to the corresponding entry point. This time add a `--benchmark` flag!
+
 ### Robot
 * For Registration Experiments: `rosrun foresight_rospkg run_robot.py <robot name/id> experiments/sawyer/registration_experiments/hparams.py --benchmark`
 * For Mixed Object Experiments (one model which handles both deformable and rigid objects)
