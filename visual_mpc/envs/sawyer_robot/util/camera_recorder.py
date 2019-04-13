@@ -5,6 +5,7 @@ from cv_bridge import CvBridge
 import cv2
 from sensor_msgs.msg import Image as Image_msg
 import copy
+import hashlib
 
 
 class LatestObservation(object):
@@ -29,6 +30,7 @@ class LatestObservation(object):
 
 class CameraRecorder:
     TRACK_SKIP = 2        # the camera publisher works at 60 FPS but camera itself only goes at 30
+    MAX_REPEATS = 100      # camera errors after 10 repeated frames in a row
 
     def __init__(self, topic_data, opencv_tracking=False, save_videos=False):
         self._tracking_enabled, self._save_vides = opencv_tracking, save_videos
@@ -40,8 +42,9 @@ class CameraRecorder:
             self.box_height = 80
 
         self.bridge = CvBridge()
-        self._first_status, self._status_sem = False, Semaphore(value=0)
+        self._is_first_status, self._status_sem = True, Semaphore(value=0)
         self._cam_height, self._cam_width = None, None
+        self._last_hash, self._num_repeats = None, 0
         if self._save_vides:
             self._buffers = []
             self._saving = False
@@ -148,10 +151,20 @@ class CameraRecorder:
         self._latest_image.mutex.acquire()
         self._proc_image(self._latest_image, data)
 
-        if not self._first_status:
+        current_hash = hashlib.sha256(self._latest_image.img_cv2.tostring()).hexdigest()
+        if self._is_first_status:
             self._cam_height, self._cam_width = self._latest_image.img_cv2.shape[:2]
-            self._first_status = True
+            self._is_first_status = False
             self._status_sem.release()
+        elif self._last_hash == current_hash:
+            if self._num_repeats < self.MAX_REPEATS:
+                self._num_repeats += 1
+            else:
+                print('Too many repeated images. Check camera!')
+                rospy.signal_shutdown('Too many repeated images. Check camera!')
+        else:
+            self._num_repeats = 0
+        self._last_hash = current_hash
 
         if self._save_vides and self._saving:
             if self._latest_image.save_itr % self.TRACK_SKIP == 0:
