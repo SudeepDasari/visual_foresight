@@ -11,22 +11,22 @@ current_dir = os.path.dirname(os.path.realpath(__file__))
 
 
 env_params = {
-    'lower_bound_delta': [0, 0., 0.008, 0., 0],
-    'upper_bound_delta': [0, 0., 0.008, 0., 0],
+    'lower_bound_delta': [0, 0., -0.01, 265 * np.pi / 180 - np.pi/2, 0],
+    'upper_bound_delta': [0, -0.15, -0.01, 0., 0],
     'start_box': [1, 1, 0.7],
     'normalize_actions': True,
     'gripper_joint_thresh': 0.999856,
     'reset_before_eval': False,
     'rand_drop_reset': False,
     'save_video': True,
-    'camera_topics': [IMTopic('/camera0/image_raw', flip=True),
-                      IMTopic('/camera1/image_raw')]
+    'camera_topics': [IMTopic('/front/image_raw', flip=True),
+                      IMTopic('/left/image_raw')]
 }
 
 agent = {'type' : BenchmarkAgent,
          'env': (AutograspSawyerEnv, env_params),
          'data_save_dir': BASE_DIR,
-         'T': 20,  #number of commands per episodes (issued at control_rate / substeps HZ)
+         'T': 30,  #number of commands per episodes (issued at control_rate / substeps HZ)
          'image_height': 48,
          'image_width': 64,
          'current_dir': current_dir,
@@ -42,7 +42,7 @@ policy = {
     'initial_std_lift': 0.2,  # std dev. in xy
     'initial_std_rot': np.pi / 10,
     'rejection_sampling': False,
-    'state_append': [0.41, 0.4, 0.184]
+    'state_append': [0.41, 0.25, 0.166]
 }
 
 config = {

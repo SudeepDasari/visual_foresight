@@ -34,7 +34,12 @@ class HumanCEMController(CEMBaseController):
         self._n_cam = netconf['ncam']
 
         self._images, self._verbose_worker = None, None
+        self._save_actions = None
 
+    def reset(self):
+        super(HumanCEMController, self).reset()
+        self._save_actions = None
+    
     def _default_hparams(self):
         default_dict = {
             "verbose_img_height": 128,
@@ -90,6 +95,14 @@ class HumanCEMController(CEMBaseController):
             goal_pix: in coordinates of small image
             desig_pix: in coordinates of small image
         """
+        if t <= 0 and 'y' == input_fn("restore traj?: "):
+            import cPickle as pkl
+            self._save_actions = pkl.load(open(input_fn('path:'), 'rb'))
+            import pdb; pdb.set_trace()
+        
+        if self._save_actions is not None and t < len(self._save_actions):
+            return {'actions': self._save_actions[t]['actions']}
+
         self._images = images
         self._verbose_worker = verbose_worker
 
