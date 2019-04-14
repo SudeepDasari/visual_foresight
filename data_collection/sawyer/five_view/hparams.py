@@ -11,6 +11,7 @@ current_dir = os.path.dirname(os.path.realpath(__file__))
 
 
 env_params = {
+    #'debug_email': True,
     'camera_topics': [IMTopic('/front/image_raw', flip=True),
                       IMTopic('/left/image_raw'),
                       IMTopic('/right_side/image_raw'),

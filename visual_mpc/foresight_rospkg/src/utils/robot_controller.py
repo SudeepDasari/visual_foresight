@@ -2,23 +2,22 @@
 
 import argparse
 import rospy
-
-import socket
+import smtplib
 import intera_interface
 import intera_external_devices
 from intera_interface import CHECK_VERSION
-
 import numpy as np
-import socket
 import pdb
 
+
 TOLERANCE = 0.01
+
+
 class RobotController(object):
-
-    def __init__(self):
+    def __init__(self, robot_name, send_email):
         """Initializes a controller for the robot"""
-
-        print("Initializing node... ")
+        self.robot_name = robot_name
+        print("Initializing node on {}... ".format(robot_name))
         rospy.init_node("sawyer_custom_controller")
         rospy.on_shutdown(self.clean_shutdown)
 
@@ -37,8 +36,16 @@ class RobotController(object):
             self.gripper.open()
 
         self.joint_names = self.limb.joint_names()
+
         print("Done initializing controller.")
 
+        self._is_email_setup = send_email
+        if send_email:
+            self._address = raw_input("enter email:")
+            assert 'gmail' in self._address, "only gmail addresses supported!"
+            self._password = raw_input("enter password:")
+            self._receiver = raw_input("receiver address:")
+            self._send_email("Collection on {} has begun!".format(self.robot_name))
 
     def set_joint_delta(self, joint_name, delta):
         """Move a single joint by a delta"""
@@ -97,11 +104,16 @@ class RobotController(object):
         # self.limb.move_to_neutral()
 
     def clean_shutdown(self):
+        self._send_email("Collection on {} has exited!".format(self.robot_name))
         print("\nExiting example.")
-        # if not init_state:
-        #     print("Disabling robot...")
-            # rs.disable()
 
+    def _send_email(self, message, smtp_server = "smtp.gmail.com"):
+        if not self._is_email_setup:
+            return
+        
+        server = smtplib.SMTP_SSL(smtp_server)
+        server.login(self._address, self._password)
+        server.sendmail(self._address, self._receiver, message)
 
 def distance_between_commands(j1, j2):
     a = []

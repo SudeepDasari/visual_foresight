@@ -25,13 +25,12 @@ RESET_SKIP = 800
 
 
 class ImpedanceWSGController(RobotController):
-    def __init__(self, control_rate, robot_name, print_debug, gripper_attached=True):
+    def __init__(self, control_rate, robot_name, print_debug, gripper_attached=True, send_email=False):
         self.max_release = 0
         self._print_debug = print_debug
-        RobotController.__init__(self)
+        RobotController.__init__(self, robot_name, send_email)
         self.sem_list = [Semaphore(value = 0)]
         self._status_mutex = Lock()
-        self.robot_name = robot_name
 
         self._desired_gpos = GRIPPER_OPEN
         self.gripper_speed = 300
@@ -233,6 +232,8 @@ class ImpedanceWSGController(RobotController):
             self.move_with_impedance([pos_arr])
 
     def clean_shutdown(self):
+        self._send_email("Collection on {} has exited!".format(self.robot_name))
+        
         pid = os.getpid()
         print('Exiting example w/ pid: {}'.format(pid))
         os.kill(-pid, 9)
