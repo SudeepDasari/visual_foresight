@@ -22,7 +22,7 @@ class BaseVideoDataset(object):
         raise NotImplementedError
 
     def _get_default_hparams(self):
-        default_dict = {'shuffle': True,
+        default_dict = {
                         'num_epochs': None,
                         'buffer_size': 512
                         }

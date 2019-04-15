@@ -132,7 +132,7 @@ class BaseSawyerEnv(BaseEnv):
             self._obs_tol = self._hp.OFFSET_TOL
 
         self._controller = ImpedanceWSGController(CONTROL_RATE, self._robot_name,
-                                                  self._hp.print_debug, self._hp.gripper_attached)
+                                                  self._hp.print_debug, self._hp.gripper_attached, self._hp.debug_email)
         self._limb_recorder = LimbWSGRecorder(self._controller)
         self._save_video = self._hp.save_video
         self._cameras = [CameraRecorder(t, self._hp.opencv_tracking, self._save_video) for t in self._hp.camera_topics]
@@ -165,6 +165,7 @@ class BaseSawyerEnv(BaseEnv):
 
     def _default_hparams(self):
         default_dict = {'robot_name': None,
+                        'debug_email': False,
                         'gripper_attached': True,
                         'camera_topics': [IMTopic('/camera0/image_raw', flip=True), IMTopic('/camera1/image_raw')],
                         'opencv_tracking': False,

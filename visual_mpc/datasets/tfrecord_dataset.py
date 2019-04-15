@@ -93,8 +93,7 @@ class TFRecordDataset(BaseVideoDataset):
 
             dataset = dataset.map(self._parse_record)
             dataset = dataset.repeat(self._hparams.num_epochs)
-            if self._hparams.shuffle:
-                dataset = dataset.shuffle(buffer_size=self._hparams.buffer_size)
+            dataset = dataset.shuffle(buffer_size=self._hparams.buffer_size)
             dataset = dataset.batch(self._batch_size)
             iterator = dataset.make_one_shot_iterator()
             next_element = iterator.get_next()
@@ -158,8 +157,7 @@ class TFRecordDataset(BaseVideoDataset):
 
         dataset = dataset.map(parse_record)
         dataset = dataset.repeat(self._hparams.num_epochs)
-        if self._hparams.shuffle:
-            dataset = dataset.shuffle(buffer_size=self._hparams.buffer_size)
+        dataset = dataset.shuffle(buffer_size=self._hparams.buffer_size)
         dataset = dataset.batch(self._batch_size)
         iterator = dataset.make_one_shot_iterator()
         return iterator
