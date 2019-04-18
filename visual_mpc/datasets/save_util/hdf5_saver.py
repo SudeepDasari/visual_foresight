@@ -42,7 +42,8 @@ def save_hdf5(filename, env_obs, policy_out, agent_data, meta_data):
         meta_data = copy.deepcopy(meta_data)
 
         meta_data_group = f.create_group('metadata')
-        for mandatory_key in ['calib_number', 'policy_desc', 'bounds', 'background', 'action_space']:
+        for mandatory_key in ['camera_calibration', 'policy_desc', 'environment_size', 'bin_type', 'bin_insert', 
+                                'robot', 'gripper', 'background', 'action_space', 'object_classes']:
             meta_data_group.attrs[mandatory_key] = meta_data.pop(mandatory_key)
         
         for k in meta_data.keys():
