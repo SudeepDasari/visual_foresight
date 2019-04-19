@@ -21,7 +21,8 @@ class BaseVideoDataset(object):
     def _init_dataset(self):
         raise NotImplementedError
 
-    def _get_default_hparams(self):
+    @staticmethod
+    def _get_default_hparams():
         default_dict = {
                         'num_epochs': None,
                         'buffer_size': 512

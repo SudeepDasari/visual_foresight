@@ -181,7 +181,12 @@ class TFRecordDataset(BaseVideoDataset):
 
 
 if __name__ == '__main__':
-    path = '/home/sudeep/Documents/ext_data/test'
+    import argparse
+    parser = argparse.ArgumentParser(description="converts dataset from pkl format to hdf5")
+    parser.add_argument('input_folder', type=str, help='folder containing hdf5 files')
+    args = parser.parse_args()
+
+    path = args.input_folder
     batch_size = 1
     dataset = TFRecordDataset(path, batch_size)
     images, actions = dataset['images'], dataset['actions']

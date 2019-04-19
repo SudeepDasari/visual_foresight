@@ -41,7 +41,7 @@ class HDF5VideoDataset(BaseVideoDataset):
                 self._valid_keys = ['actions', 'images']
                 self._parser_dtypes = [tf.float32, tf.string]
         
-        self._init_queues(dataset_contents)
+        self._mode_datasets = self._init_queues(dataset_contents)
     
     def _read_hdf5(self, filename):
         with h5py.File(filename, 'r') as hf:
@@ -86,7 +86,7 @@ class HDF5VideoDataset(BaseVideoDataset):
         for i, name in enumerate(self.MODES):
             splits[name] = hdf5_files[split_lengths[i]:split_lengths[i+1]]
 
-        self._mode_datasets = {}
+        mode_datasets = {}
         for name, files in splits.items():
             dataset = tf.data.Dataset.from_tensor_slices(files)
             dataset = dataset.repeat(self._hparams.num_epochs)
@@ -109,15 +109,17 @@ class HDF5VideoDataset(BaseVideoDataset):
                 output_element[k] = tf.reshape(next_element[k],
                                                [self._batch_size] + next_element[k].get_shape().as_list()[1:])
             
-            self._mode_datasets[name] = output_element
+            mode_datasets[name] = output_element
+        return mode_datasets
 
     def _get(self, key, mode):
         assert key in self._mode_datasets[mode], "Key {} is not recognized for mode {}".format(key, mode)
 
         return self._mode_datasets[mode][key]
     
-    def _get_default_hparams(self):
-        default_params = super(HDF5VideoDataset, self)._get_default_hparams()
+    @staticmethod
+    def _get_default_hparams():
+        default_params = super(HDF5VideoDataset, HDF5VideoDataset)._get_default_hparams()
         
         # set None if you want a random seed for dataset shuffling
         default_params.add_hparam('RNG', 11381294392481135266)
@@ -132,8 +134,12 @@ class HDF5VideoDataset(BaseVideoDataset):
 
 if __name__ == '__main__':
     import moviepy.editor as mpy
-    
-    path = '/home/sudeep/Desktop/test_dataset/test0'
+    import argparse
+    parser = argparse.ArgumentParser(description="converts dataset from pkl format to hdf5")
+    parser.add_argument('input_folder', type=str, help='folder containing hdf5 files')
+    args = parser.parse_args()
+
+    path = args.input_folder
     batch_size = 1
     # small shuffle buffer for testing
     dataset = HDF5VideoDataset(path, batch_size, hparams_dict={'buffer_size':10})
