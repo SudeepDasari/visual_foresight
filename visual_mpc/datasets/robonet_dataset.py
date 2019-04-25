@@ -45,7 +45,7 @@ class RoboNetDataset(HDF5VideoDataset):
         self._sub_batch_sizes = sub_batch_sizes
         self._source_views = hdf5_params.pop('source_views', [])
         self._ncams = hdf5_params.pop('ncams', -1)
-        self._dict_copy = hparams_dict
+        self._dict_copy = hdf5_params
 
         if self._filters:
             assert isinstance(self._sub_batch_sizes, list)
@@ -130,5 +130,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     path = args.input_folder
-    rn = RoboNetDataset(path, 16)
+    rn = RoboNetDataset(path, [16], {'filters': [{"metadata/bin_insert": "none"}]})
     images, states, actions = rn['images'], rn['states'], rn['actions']
