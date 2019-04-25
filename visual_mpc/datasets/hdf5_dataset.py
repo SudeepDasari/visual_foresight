@@ -12,7 +12,8 @@ from collections import OrderedDict
 class HDF5VideoDataset(BaseVideoDataset):
     def _init_dataset(self):
         # read hdf5 from base dir and check contents
-        dataset_contents = glob.glob(self._base_dir + '/*.hdf5')
+        dataset_contents = self._get_filenames()
+        
         assert len(dataset_contents), "No hdf5 files in dataset!"
 
         # consistent shuffling of dataset contents according to set RNG
@@ -131,6 +132,9 @@ class HDF5VideoDataset(BaseVideoDataset):
         
         return default_params
 
+    @property
+    def ncam(self):
+        return self._ncam
 
 if __name__ == '__main__':
     import moviepy.editor as mpy

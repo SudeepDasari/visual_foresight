@@ -56,6 +56,9 @@ class _StrHashDict:
     
     def keys(self):
         return self._dict.keys()
+    
+    def items(self):
+        return self._dict.items()
 
 
 def filter_hdf5_datasets(dataset_files):

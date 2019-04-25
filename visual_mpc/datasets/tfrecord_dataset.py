@@ -79,9 +79,11 @@ class TFRecordDataset(BaseVideoDataset):
         return return_dict
 
     def _initialize_batches(self):
+        assert isinstance(self._files, str), "must pass a folder path into this reader!"
+        
         self._raw_data = {}
         for m in self.MODES:
-            fnames = glob.glob('{}/{}/*.tfrecords'.format(self._base_dir, m))
+            fnames = glob.glob('{}/{}/*.tfrecords'.format(self._files, m))
             if len(fnames) == 0:
                 print('Warning dataset does not have files for mode: {}'.format(m))
                 continue

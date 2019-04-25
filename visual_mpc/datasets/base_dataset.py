@@ -1,15 +1,21 @@
 import os
 from tensorflow.contrib.training import HParams
+import glob
+import copy
 
 
 class BaseVideoDataset(object):
     MODES = ['train', 'test', 'val']
 
-    def __init__(self, directory, batch_size, hparams_dict=dict()):
-        if not os.path.exists(directory):
-            raise FileNotFoundError('Base directory {} does not exist'.format(directory))
-
-        self._base_dir = directory
+    def __init__(self, files, batch_size, hparams_dict=dict(), append_path=''):
+        if isinstance(files, str):
+            if not os.path.exists(files):
+                raise FileNotFoundError('Base directory {} does not exist'.format(files))
+            self._files = append_path + files
+        else:
+            assert isinstance(files, list), "must be list of string"
+            self._files = [append_path + f for f in files]
+        
         self._batch_size = batch_size
 
         # read dataset manifest and initialize hparams
@@ -29,6 +35,13 @@ class BaseVideoDataset(object):
                         }
         return HParams(**default_dict)
 
+    def _get_filenames(self):
+        if isinstance(self._files, str):
+            return glob.glob(self._files + '/*.hdf5')
+        elif isinstance(self._files, (tuple, list)):
+            return self._files
+        else:
+            raise ValueError
     
     def get(self, key, mode='train'):
         if mode not in self.MODES:
@@ -46,3 +59,7 @@ class BaseVideoDataset(object):
             return self.get(key, mode)
 
         return self.get(item)
+
+    @property
+    def batch_size(self):
+        return self._batch_size
