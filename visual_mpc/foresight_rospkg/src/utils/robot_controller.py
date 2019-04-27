@@ -113,7 +113,8 @@ class RobotController(object):
         
         server = smtplib.SMTP_SSL(smtp_server)
         server.login(self._address, self._password)
-        server.sendmail(self._address, self._receiver, message)
+        for r in self._receiver.split('+'):
+            server.sendmail(self._address, r, message)
 
 def distance_between_commands(j1, j2):
     a = []
