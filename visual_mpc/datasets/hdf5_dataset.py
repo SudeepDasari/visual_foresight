@@ -31,16 +31,11 @@ class HDF5VideoDataset(BaseVideoDataset):
             self._img_T = min([len(f['env']['cam{}_video'.format(i)]) for i in range(self._ncam)])
             self._img_dim = f['env']['cam0_video']['frame0'].attrs['shape'][:2]
 
-            assert self._action_T >= self._hparams.context_frames + self._hparams.predicted_frames - 1, "not enough actions per traj!"
-            assert self._img_T >= self._hparams.predicted_frames + self._hparams.context_frames, "not enough images per traj!"
-
             self._state_T, self._sdim = f['env']['state'].shape
-            if self._state_T >= self._hparams.predicted_frames + self._hparams.context_frames:
-                self._valid_keys = ['actions', 'images', 'state']
-                self._parser_dtypes = [tf.float32, tf.string, tf.float32]
-            else:
-                self._valid_keys = ['actions', 'images']
-                self._parser_dtypes = [tf.float32, tf.string]
+            assert self._state_T == self._img_T, "#images should match #states!"
+
+            self._valid_keys = ['actions', 'images', 'state']
+            self._parser_dtypes = [tf.float32, tf.string, tf.float32]
         
         self._mode_datasets = self._init_queues(dataset_contents)
     
@@ -126,8 +121,6 @@ class HDF5VideoDataset(BaseVideoDataset):
         default_params.add_hparam('RNG', 11381294392481135266)
         default_params.add_hparam('splits', [0.9, 0.05, 0.05])   # (train, val, test) split
         default_params.add_hparam('img_dims', (48, 64))
-        default_params.add_hparam('context_frames', 2)
-        default_params.add_hparam('predicted_frames', 13)
         default_params.add_hparam('max_start', -1)
         
         return default_params
@@ -135,6 +128,7 @@ class HDF5VideoDataset(BaseVideoDataset):
     @property
     def ncam(self):
         return self._ncam
+
 
 if __name__ == '__main__':
     import moviepy.editor as mpy
