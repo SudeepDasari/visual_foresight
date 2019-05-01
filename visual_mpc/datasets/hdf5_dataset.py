@@ -7,6 +7,28 @@ import glob
 import random
 import math
 from collections import OrderedDict
+import copy
+import multiprocessing
+
+
+def _load_batch(assignment):
+    filename, img_T, ncam, img_dims = assignment
+    height, width = img_dims
+    with h5py.File(filename, 'r') as hf:
+        images = np.zeros((img_T, ncam, height, width, 3), dtype=np.uint8)
+        for t in range(img_T):
+            for n in range(ncam):
+                img = cv2.imdecode(hf['env']['cam{}_video'.format(n)]['frame{}'.format(t)][:], cv2.IMREAD_COLOR)
+
+                method = cv2.INTER_CUBIC
+                if height * width < img.shape[0] * img.shape[1]:
+                    method = cv2.INTER_AREA
+                images[t, n] = cv2.resize(img, (width, height), interpolation=method)
+
+        actions = hf['policy']['actions'][:].astype(np.float32)
+        states = hf['env']['state'][:].astype(np.float32)
+
+    return actions, images, states 
 
 
 class HDF5VideoDataset(BaseVideoDataset):
@@ -18,7 +40,8 @@ class HDF5VideoDataset(BaseVideoDataset):
 
         # consistent shuffling of dataset contents according to set RNG
         dataset_contents.sort()
-        random.Random(self._hparams.RNG).shuffle(dataset_contents)
+        self._rand = random.Random(self._hparams.RNG)
+        self._rand.shuffle(dataset_contents)
 
         rand_file = dataset_contents[0]
         with h5py.File(rand_file, 'r') as f:
@@ -39,40 +62,29 @@ class HDF5VideoDataset(BaseVideoDataset):
         
         self._mode_datasets = self._init_queues(dataset_contents)
     
-    def _read_hdf5(self, filename):
-        with h5py.File(filename, 'r') as hf:
-            image_strs = []
-            for t in range(self._img_T):
-                for n in range(self._ncam):
-                    image_strs.append(hf['env']['cam{}_video'.format(n)]['frame{}'.format(t)][:].tostring())
-            actions = hf['policy']['actions'][:].astype(np.float32)
+    def _gen_hdf5(self, files, mode):
+        p = multiprocessing.Pool(min(multiprocessing.cpu_count(), self._batch_size))
+        files = copy.deepcopy(files)
+        i, n_epochs = 0, 0
 
-            if 'state' in self._valid_keys:
-                return actions, image_strs, hf['env']['state'][:].astype(np.float32)
-        return actions, image_strs
+        while True:
+            if i + self._batch_size > len(files):
+                i, n_epochs = 0, n_epochs + 1
+                if mode == 'train' and self._hparams.num_epochs is not None and n_epochs >= self._hparams.num_epochs:
+                    break
+                self._rand.shuffle(files)
+            batch_files = files[i:i+self._batch_size]
+            batch_files = [(f, self._img_T, self._ncam, self._img_dim) for f in batch_files]
+            i += self._batch_size
+            yield p.map(_load_batch, batch_files)
     
-    def _decode_act_img_state(self, actions, image_strs, states):
-        out_dict = self._decode_act_img(actions, image_strs)
-        out_dict['states'] = tf.reshape(states, [self._state_T, self._sdim])
+    def _get_dict_act_img_state(self, actions, images, states):
+        out_dict = self._decode_act_img(actions, images)
+        out_dict['states'] = states
         return out_dict
     
-    def _decode_act_img(self, actions, image_strs):
-        actions = tf.reshape(actions, [self._action_T, self._adim])
-        frames = []
-        i = 0
-        for t in range(self._img_T):
-            for n in range(self._ncam):
-                img_decoded = tf.image.decode_jpeg(image_strs[i], channels=3)
-                frames.append(tf.reshape(img_decoded, [self._img_dim[0], self._img_dim[1], 3]))
-                i += 1
-        
-        method = tf.image.ResizeMethod.BILINEAR
-        if any([self._hparams.img_dims[i] < self._img_dim[i] for i in range(2)]):
-            method = tf.image.ResizeMethod.AREA
-        
-        frames = tf.image.resize_images(frames, self._hparams.img_dims, method=method)
-        frames = tf.reshape(frames, [self._img_T, self._ncam, self._hparams.img_dims[0], self._hparams.img_dims[1], 3])
-        return {'actions': actions, 'images': frames}
+    def _get_dict_act_img(self, actions, images):
+        return {'actions': actions, 'images': tf.cast(images, tf.float32)}
     
     def _init_queues(self, hdf5_files):
         assert len(self.MODES) == len(self._hparams.splits), "len(splits) should be the same as number of MODES!"
@@ -84,19 +96,9 @@ class HDF5VideoDataset(BaseVideoDataset):
 
         mode_datasets = {}
         for name, files in splits.items():
-            dataset = tf.data.Dataset.from_tensor_slices(files)
-            dataset = dataset.repeat(self._hparams.num_epochs)
-            dataset = dataset.map(
-                                    lambda filename: tuple(tf.py_func(
-                                    self._read_hdf5, [filename], self._parser_dtypes))
-                                )
-            if 'state' in self._valid_keys:
-                dataset = dataset.map(self._decode_act_img_state)
-            else:
-                dataset = dataset.map(self._decode_act_img)
-            
-            dataset = dataset.shuffle(self._hparams.buffer_size)
-            dataset = dataset.batch(self._batch_size)
+            assert 'state' in self._valid_keys, "assume all records have state"
+            dataset = tf.data.Dataset.from_generator(self._gen_hdf5(files, name), (tf.float32, tf.uint8, tf.float32))
+            dataset = dataset.map(self._get_dict_act_img_state).prefetch(1)
             iterator = dataset.make_one_shot_iterator()
             next_element = iterator.get_next()
 
@@ -133,12 +135,14 @@ class HDF5VideoDataset(BaseVideoDataset):
 if __name__ == '__main__':
     import moviepy.editor as mpy
     import argparse
+    import time
     parser = argparse.ArgumentParser(description="converts dataset from pkl format to hdf5")
     parser.add_argument('input_folder', type=str, help='folder containing hdf5 files')
+    parser.add_argument('--N', type=int, help='number of timings', default=20)
     args = parser.parse_args()
 
     path = args.input_folder
-    batch_size = 1
+    batch_size = 16
     # small shuffle buffer for testing
     dataset = HDF5VideoDataset(path, batch_size, hparams_dict={'buffer_size':10})
 
@@ -147,7 +151,14 @@ if __name__ == '__main__':
     tf.train.start_queue_runners(sess)
     sess.run(tf.global_variables_initializer())
 
-    imgs, acts = sess.run([images[0], actions[0]])
+    timings = []
+    for i in range(args.N):
+        start = time.time()
+        imgs, acts = sess.run([images[0], actions[0]])
+        timings.append(time.time()- start)
+        print('batch {} took: {}'.format(i, timings[-1]))
+    print('avg time', sum(timings) / len(timings))
+    
     for i in range(imgs.shape[1]):
         mpy.ImageSequenceClip([fr for fr in imgs[:, i]], fps=5).write_gif('test{}.gif'.format(i))
     print(acts)
