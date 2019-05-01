@@ -28,7 +28,7 @@ def _load_batch(assignment):
         actions = hf['policy']['actions'][:].astype(np.float32)
         states = hf['env']['state'][:].astype(np.float32)
 
-    return actions, images, states 
+    return actions, images[:,:,:,:,::-1], states 
 
 
 class HDF5VideoDataset(BaseVideoDataset):
@@ -74,16 +74,25 @@ class HDF5VideoDataset(BaseVideoDataset):
                     break
                 self._rand.shuffle(files)
             batch_files = files[i:i+self._batch_size]
-            batch_files = [(f, self._img_T, self._ncam, self._img_dim) for f in batch_files]
+            batch_files = [(f, self._img_T, self._ncam, self._hparams.img_dims) for f in batch_files]
             i += self._batch_size
-            yield p.map(_load_batch, batch_files)
+            batches = p.map(_load_batch, batch_files)
+            actions, images, states = [], [], []
+            for b in batches:
+                for value, arr in zip(b, [actions, images, states]):
+                    arr.append(value[None])
+            actions, images, states = [np.concatenate(arr, axis=0) for arr in [actions, images, states]]
+            yield (actions, images, states)
     
     def _get_dict_act_img_state(self, actions, images, states):
-        out_dict = self._decode_act_img(actions, images)
+        out_dict = self._get_dict_act_img(actions, images)
+        states = tf.reshape(states, [self._batch_size, self._state_T, self._sdim])
         out_dict['states'] = states
         return out_dict
     
     def _get_dict_act_img(self, actions, images):
+        actions = tf.reshape(actions, [self._batch_size, self._action_T, self._adim])
+        images = tf.reshape(images, [self._batch_size, self._img_T, self._ncam, self._hparams.img_dims[0], self._hparams.img_dims[1], 3])
         return {'actions': actions, 'images': tf.cast(images, tf.float32)}
     
     def _init_queues(self, hdf5_files):
@@ -97,11 +106,11 @@ class HDF5VideoDataset(BaseVideoDataset):
         mode_datasets = {}
         for name, files in splits.items():
             assert 'state' in self._valid_keys, "assume all records have state"
-            dataset = tf.data.Dataset.from_generator(self._gen_hdf5(files, name), (tf.float32, tf.uint8, tf.float32))
-            dataset = dataset.map(self._get_dict_act_img_state).prefetch(1)
+            dataset = tf.data.Dataset.from_generator(lambda:self._gen_hdf5(files, name), (tf.float32, tf.uint8, tf.float32))
+            dataset = dataset.map(self._get_dict_act_img_state).prefetch(10)
             iterator = dataset.make_one_shot_iterator()
             next_element = iterator.get_next()
-
+            
             output_element = {}
             for k in list(next_element.keys()):
                 output_element[k] = tf.reshape(next_element[k],
