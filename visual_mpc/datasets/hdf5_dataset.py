@@ -86,17 +86,18 @@ class HDF5VideoDataset(BaseVideoDataset):
         for name, files in splits.items():
             dataset = tf.data.Dataset.from_tensor_slices(files)
             dataset = dataset.repeat(self._hparams.num_epochs)
+            dataset = dataset.shuffle(self._hparams.buffer_size)
+
             dataset = dataset.map(
                                     lambda filename: tuple(tf.py_func(
-                                    self._read_hdf5, [filename], self._parser_dtypes))
+                                    self._read_hdf5, [filename], self._parser_dtypes)), num_parallel_calls=self._batch_size
                                 )
             if 'state' in self._valid_keys:
-                dataset = dataset.map(self._decode_act_img_state)
+                dataset = dataset.map(self._decode_act_img_state, num_parallel_calls=self._batch_size)
             else:
-                dataset = dataset.map(self._decode_act_img)
+                dataset = dataset.map(self._decode_act_img, num_parallel_calls=self._batch_size)
             
-            dataset = dataset.shuffle(self._hparams.buffer_size)
-            dataset = dataset.batch(self._batch_size)
+            dataset = dataset.batch(self._batch_size).prefetch(1)
             iterator = dataset.make_one_shot_iterator()
             next_element = iterator.get_next()
 
@@ -133,12 +134,14 @@ class HDF5VideoDataset(BaseVideoDataset):
 if __name__ == '__main__':
     import moviepy.editor as mpy
     import argparse
+    import time
+
     parser = argparse.ArgumentParser(description="converts dataset from pkl format to hdf5")
     parser.add_argument('input_folder', type=str, help='folder containing hdf5 files')
     args = parser.parse_args()
 
     path = args.input_folder
-    batch_size = 1
+    batch_size = 16
     # small shuffle buffer for testing
     dataset = HDF5VideoDataset(path, batch_size, hparams_dict={'buffer_size':10})
 
@@ -147,7 +150,9 @@ if __name__ == '__main__':
     tf.train.start_queue_runners(sess)
     sess.run(tf.global_variables_initializer())
 
-    imgs, acts = sess.run([images[0], actions[0]])
-    for i in range(imgs.shape[1]):
-        mpy.ImageSequenceClip([fr for fr in imgs[:, i]], fps=5).write_gif('test{}.gif'.format(i))
-    print(acts)
+    timings = []
+    for _ in range(20):
+        start = time.time()
+        imgs, acts = sess.run([images, actions])
+        timings.append(time.time() - start)
+        print(timings[-1])
