@@ -10,7 +10,10 @@ import shutil
 class BenchmarkAgent(GeneralAgent):
     def __init__(self, hyperparams):
         self._start_goal_confs = hyperparams.get('start_goal_confs', None)
-        self.ncam = hyperparams['env'][1].get('ncam', hyperparams['env'][0].default_ncam()) # check if experiment has ncam set, otherwise get env default
+        if 'camera_topics' in hyperparams['env'][1]:
+            self.ncam = len(hyperparams['env'][1]['camera_topics'])
+        else:
+            self.ncam = hyperparams['env'][0].default_ncam()
         GeneralAgent.__init__(self, hyperparams)
 
         if not self._is_robot:

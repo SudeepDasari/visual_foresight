@@ -72,10 +72,11 @@ def filter_hdf5_datasets(dataset_files):
         with h5py.File(f, 'r') as hf:
             file_metadata['action_T'], file_metadata['adim'] = hf['policy']['actions'].shape
             file_metadata['state_T'], file_metadata['sdim'] = hf['env']['state'].shape
-
             file_metadata['ncam'] = hf['env'].attrs.get('n_cams', 0)
             file_metadata['img_T'] = min([len(hf['env']['cam{}_video'.format(i)]) for i in range(file_metadata['ncam'])])
             file_metadata['img_dim'] = hf['env']['cam0_video']['frame0'].attrs['shape'][:2]
+            if 'goal_reached' in hf['misc']:
+                file_metadata['goal_reached'] = hf['misc']['goal_reached'][()]
 
             for k in hf['metadata'].attrs.keys():
                 file_metadata['metadata/{}'.format(k)] = hf['metadata'].attrs[k]

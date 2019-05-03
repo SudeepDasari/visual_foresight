@@ -1,5 +1,5 @@
 import tensorflow as tf
-from video_prediction.models import MultiSAVPVideoPredictionModel, SAVPVideoPredictionModel
+from video_prediction.models import MultiSAVPVideoPredictionModel, SAVPVideoPredictionModel, IndepMultiSAVPVideoPredictionModel
 import json
 import os
 
@@ -50,7 +50,6 @@ class VPred_Model_Interface:
             targets = None
 
         if 'pred_model_class' in conf:
-            model_hparams_dict['num_views'] = 2
             self.m = conf['pred_model_class'](mode=mode, hparams_dict=model_hparams_dict, num_gpus=1)
         else:
             if ncam == 1:
@@ -59,7 +58,8 @@ class VPred_Model_Interface:
                 self.m = MultiSAVPVideoPredictionModel(mode=mode, hparams_dict=model_hparams_dict, num_gpus=1)
 
         inputs = {'actions':actions ,'images':images[:,:,0]}
-        if datatset_hparams_dict['use_state']:
+        use_state = datatset_hparams_dict.get('use_state', False)
+        if use_state:
             inputs['states'] = states
 
         if ncam == 2:
@@ -77,7 +77,7 @@ class VPred_Model_Interface:
             gen_images.append(self.m.outputs['gen_images1'])
         self.gen_images = tf.stack(gen_images, axis=2) #ouput  b, t, ncam, r, c, 3
 
-        if datatset_hparams_dict['use_state']:
+        if use_state:
             self.gen_states = self.m.outputs['gen_states']
         else: self.gen_states = None
 
