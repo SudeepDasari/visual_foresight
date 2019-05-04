@@ -194,6 +194,9 @@ class BaseSawyerEnv(BaseEnv):
         if self._robot_name == 'vestri':                                      # pull the cage a bit backward on vestri
             self._low_bound = np.array([0.47, -0.2, 0.176, low_angle, -1])
             self._high_bound = np.array([0.81, 0.2, 0.292, high_angle, 1])
+        elif self._robot_name == 'vestri_table':
+            self._low_bound = np.array([0.37, -0.34, 0.17, low_angle, -1])
+            self._high_bound = np.array([0.93, 0.32, 0.286, high_angle, 1])
         elif self._robot_name == 'sudri':
             self._low_bound = np.array([0.45, -0.18, 0.176, low_angle, -1])
             self._high_bound = np.array([0.79, 0.22, 0.292, high_angle, 1])
@@ -394,6 +397,7 @@ class BaseSawyerEnv(BaseEnv):
 
         if self._cleanup_rate > 0 and self._reset_counter % self._cleanup_rate == 0 and self._reset_counter > 0:
             self._controller.redistribute_objects()
+            self._goto_closest_neutral()
 
         self._controller.neutral_with_impedance()
         self._controller.open_gripper(False)

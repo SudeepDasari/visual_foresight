@@ -3,7 +3,7 @@ import random
 from tensorflow.contrib.training import HParams
 
 
-supported_robots = {'sudri', 'vestri', 'nordri'}
+supported_robots = {'sudri', 'vestri', 'vestri_table', 'nordri'}
 
 
 class BaseEnv:
