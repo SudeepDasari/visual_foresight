@@ -195,7 +195,7 @@ class BaseSawyerEnv(BaseEnv):
             self._low_bound = np.array([0.47, -0.2, 0.176, low_angle, -1])
             self._high_bound = np.array([0.81, 0.2, 0.292, high_angle, 1])
         elif self._robot_name == 'vestri_table':
-            self._low_bound = np.array([0.37, -0.34, 0.17, low_angle, -1])
+            self._low_bound = np.array([0.42, -0.34, 0.17, low_angle, -1])
             self._high_bound = np.array([0.93, 0.32, 0.286, high_angle, 1])
         elif self._robot_name == 'sudri':
             self._low_bound = np.array([0.45, -0.18, 0.176, low_angle, -1])

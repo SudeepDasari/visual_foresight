@@ -2,20 +2,22 @@ import rospy
 import visual_mpc.foresight_rospkg as foresight_rospkg
 from visual_mpc.foresight_rospkg.src.utils.robot_controller import RobotController
 from wsg_50_common.msg import Cmd, Status
-from threading import Semaphore, Lock
+from threading import Semaphore, Lock, Thread
 import numpy as np
 from visual_mpc.envs.util.interpolation import CSpline
 from intera_core_msgs.msg import JointCommand
 import cPickle as pkl
 import intera_interface
 import os
+import time
 
 
 # constants for robot control
 NEUTRAL_JOINT_ANGLES = np.array([0.412271, -0.434908, -1.198768, 1.795462, 1.160788, 1.107675, -1.11748145])
 NEUTRAL_JOINT_CMD = {k:a for k, a in zip(['right_j{}'.format(i) for i in range(7)], NEUTRAL_JOINT_ANGLES)}
-MAX_TIMEOUT = 30
+MAX_TIMEOUT = 5
 DURATION_PER_POINT = 0.01
+ROS_NODE_TIMEOUT = 120     # kill script if waiting for more than 120 seconds on gripper
 N_JOINTS = 7
 max_vel_mag = np.array([0.88, 0.678, 0.996, 0.996, 1.776, 1.776, 2.316])
 max_accel_mag = np.array([3.5, 2.5, 5, 5, 5, 5, 5])
@@ -37,6 +39,7 @@ class ImpedanceWSGController(RobotController):
 
         self._force_counter = 0
         self._integrate_gripper_force, self._last_integrate = 0., None
+        self._last_status_t = time.time()
         self.num_timeouts = 0
 
         self._cmd_publisher = rospy.Publisher('/robot/limb/right/joint_command', JointCommand, queue_size=100)
@@ -53,6 +56,16 @@ class ImpedanceWSGController(RobotController):
             self._navigator.register_callback(self._close_gripper_handler, 'right_button_ok')
 
         self.control_rate = rospy.Rate(control_rate)
+        self._bg = Thread(target=self._background_monitor)
+        self._bg.start()
+
+    def _background_monitor(self):
+        while True:
+            self._status_mutex.acquire()
+            if len(self.sem_list) > 0 and time.time() - self._last_status_t >= ROS_NODE_TIMEOUT:
+                self.clean_shutdown()
+            self._status_mutex.release()
+            time.sleep(30)
 
     def _close_gripper_handler(self, value):
         if value:
@@ -126,7 +139,6 @@ class ImpedanceWSGController(RobotController):
     def _gripper_callback(self, status):
         # print('callback! list-len {}, max_release {}'.format(len(self.sem_list), self.max_release))
         self._status_mutex.acquire()
-
         self._gripper_width, self._gripper_force = status.width, status.force
         self._integrate_gripper_force += status.force
         self._force_counter += 1
@@ -151,6 +163,7 @@ class ImpedanceWSGController(RobotController):
         else:
             self.max_release = 0
 
+        self._last_status_t = time.time()
         self._status_mutex.release()
 
     def neutral_with_impedance(self, duration=2):
