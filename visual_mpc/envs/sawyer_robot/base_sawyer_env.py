@@ -181,7 +181,8 @@ class BaseSawyerEnv(BaseEnv):
                         'print_debug': True,
                         'rand_drop_reset': True,
                         'normalize_actions': False,
-                        'reset_before_eval': False}
+                        'reset_before_eval': False,
+                        'wait_during_resetend': False}
 
         parent_params = BaseEnv._default_hparams(self)
         for k in default_dict.keys():
@@ -195,8 +196,8 @@ class BaseSawyerEnv(BaseEnv):
             self._low_bound = np.array([0.47, -0.2, 0.176, low_angle, -1])
             self._high_bound = np.array([0.81, 0.2, 0.292, high_angle, 1])
         elif self._robot_name == 'vestri_table':
-            self._low_bound = np.array([0.42, -0.34, 0.17, low_angle, -1])
-            self._high_bound = np.array([0.93, 0.32, 0.286, high_angle, 1])
+            self._low_bound = np.array([0.43, -0.34, 0.17, low_angle, -1])
+            self._high_bound = np.array([0.89, 0.32, 0.286, high_angle, 1])
         elif self._robot_name == 'sudri':
             self._low_bound = np.array([0.45, -0.18, 0.176, low_angle, -1])
             self._high_bound = np.array([0.79, 0.22, 0.292, high_angle, 1])
@@ -350,6 +351,9 @@ class BaseSawyerEnv(BaseEnv):
                 save_worker.put(('mov', 'recording{}/{}_clip.mp4'.format(i_traj, name), b, 30))
 
     def _end_reset(self):
+        if self._hp.wait_during_resetend:
+            _ = raw_input("PRESS ENTER TO CONINUE")
+    
         if self._hp.opencv_tracking:
             assert self._desig_pix is not None, "Designated pixels must be set (call get_obj_desig_goal)"
             track_desig = copy.deepcopy(self._desig_pix)
