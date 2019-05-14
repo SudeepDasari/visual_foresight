@@ -17,7 +17,7 @@ NEUTRAL_JOINT_ANGLES = np.array([0.412271, -0.434908, -1.198768, 1.795462, 1.160
 NEUTRAL_JOINT_CMD = {k:a for k, a in zip(['right_j{}'.format(i) for i in range(7)], NEUTRAL_JOINT_ANGLES)}
 MAX_TIMEOUT = 5
 DURATION_PER_POINT = 0.01
-ROS_NODE_TIMEOUT = 120     # kill script if waiting for more than 120 seconds on gripper
+ROS_NODE_TIMEOUT = 600     # kill script if waiting for more than 10 minutes on gripper
 N_JOINTS = 7
 max_vel_mag = np.array([0.88, 0.678, 0.996, 0.996, 1.776, 1.776, 2.316])
 max_accel_mag = np.array([3.5, 2.5, 5, 5, 5, 5, 5])
@@ -63,6 +63,7 @@ class ImpedanceWSGController(RobotController):
         while True:
             self._status_mutex.acquire()
             if len(self.sem_list) > 0 and time.time() - self._last_status_t >= ROS_NODE_TIMEOUT:
+                print('tripping monitor')
                 self.clean_shutdown()
             self._status_mutex.release()
             time.sleep(30)
