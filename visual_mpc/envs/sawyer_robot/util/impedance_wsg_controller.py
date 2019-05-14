@@ -180,7 +180,9 @@ class ImpedanceWSGController(RobotController):
         while not self._rs.state().enabled and i < 50:
             rospy.sleep(10)
             i += 1
-        assert self._rs.state().enabled, "Robot was disabled, please manually re-enable!"
+        if not self._rs.state().enabled:
+            print("Robot was disabled, please manually re-enable!")
+            self.clean_shutdown()
 
     def send_pos_command(self, pos):
         self._try_enable()
