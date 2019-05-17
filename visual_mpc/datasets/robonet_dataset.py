@@ -64,7 +64,7 @@ class RoboNetDataset(HDF5VideoDataset):
         assert len(dataset_files) > 0, "couldn't find dataset at {}".format(self._files)
 
         filtered_datasets = cached_filter_hdf5(dataset_files, '{}/filter_cache.pkl'.format(self._files))
-        
+        # in general should iterate on the filtering scheme here
         filt_by_ncam = {}
         for k in filtered_datasets.keys():
             k_ncams = k['ncam']
@@ -84,36 +84,16 @@ class RoboNetDataset(HDF5VideoDataset):
         
         dataset_batches = {}
         if self._filters:
-            for i, f in enumerate(self._filters):
-                chosen_k = [k for k in chosen_ncam if _check_filter(f, k)]
-
-                if not len(chosen_k):
-                    raise ValueError("No datasets match filter!")
-                elif len(chosen_k) > self._sub_batch_sizes[i]:
-                    raise ValueError("filter matches {} datasets but sub-batch is only {}".format(len(chosen_k), self._sub_batch_sizes[i]))
-                elif any([k in dataset_batches for k in chosen_k]):
-                    raise ValueError("Filters must be mutually exclusive!")
-                
-                chosen_lengths = [len(filtered_datasets[k]) for k in chosen_k]
-                batch_assignments = _create_assignments(self._sub_batch_sizes[i], chosen_lengths)
-                for k, b in zip(chosen_k, batch_assignments):
-                    dataset_batches[k] = HDF5VideoDataset(list(filtered_datasets[k]), b, self._dict_copy, append_path=self._files)
-                    _dataset_printout(k, b)
+            # should rework this section
+            raise NotImplementedError
         else:
-            if self._batch_size < len(chosen_ncam):
-                raise ValueError("there are {} datasets but sub-batch is only {}".format(len(chosen_ncam), self._batch_size))
-            
-            chosen_lengths = [len(filtered_datasets[k]) for k in chosen_ncam]
-            batch_assignments = _create_assignments(self._batch_size, chosen_lengths)
-            for k, b in zip(chosen_ncam, batch_assignments):
-                    dataset_batches[k] = HDF5VideoDataset(list(filtered_datasets[k]), b, self._dict_copy, append_path=self._files)
-                    _dataset_printout(k, b)
-        
-        self._batches = dataset_batches
+            chosen_files = []
+            [chosen_files.extend(filtered_datasets[k]) for k in chosen_ncam]
+            self._data_loaders = [HDF5VideoDataset(chosen_files, self._batch_size, self._dict_copy, append_path=self._files)]
     
     def _get(self, key, mode):
         ret_tensor = []
-        for k, dataset in self._batches.items():
+        for dataset in self._data_loaders:
             if key == 'images' and self._source_views:
                 cam_images = tf.transpose(dataset[key, mode], [2, 0, 1, 3, 4, 5])
                 chosen_cams = tf.gather(cam_images, self._source_views)
