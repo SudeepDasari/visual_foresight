@@ -16,7 +16,7 @@ if __name__ == '__main__':
 
     assert len(args.cam_order) == len(args.topic_names), "Number of providers should equal number of topics"
 
-    base_call = "roslaunch video_stream_opencv camera.launch video_stream_provider:={} camera_name:={} visualize:={} fps:=60 &"
+    base_call = "roslaunch foresight_rospkg camera.launch video_stream_provider:={} camera_name:={} visualize:={} fps:=60 &"
     visualize_str = "false"
     if args.visualize:
         visualize_str = "true"
