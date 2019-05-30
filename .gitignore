@@ -9,3 +9,4 @@
 *.out
 *.meta
 *.egg-info/
+.email_cred
