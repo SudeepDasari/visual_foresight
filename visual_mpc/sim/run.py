@@ -17,23 +17,7 @@ import ray
 import pdb
 import shutil
 import datetime
-
-
-class SynchCounter:
-    def __init__(self, manager):
-        self._lock, self._value = manager.Lock(), manager.Value('i', 0)
-
-    def ret_increment(self):
-        with self._lock:
-            ret_val = self._value.value
-            self._value.value += 1
-        return ret_val
-
-    @property
-    def value(self):
-        with self._lock:
-            ret_val = self._value.value
-        return ret_val
+from visual_mpc.utils.sync import ManagedSyncCounter
 
 
 def use_worker(conf, iex=-1, ngpu=1):
@@ -186,7 +170,7 @@ def main():
 
 def prepare_saver(hyperparams):
     m = Manager()
-    record_queue, synch_counter = m.Queue(), SynchCounter(m)
+    record_queue, synch_counter = m.Queue(), ManagedSyncCounter(m)
     save_dir, T = hyperparams['agent']['data_save_dir'] + '/records', hyperparams['agent']['T']
     if hyperparams.get('save_data', True) and not hyperparams.get('save_raw_images', False):
         seperate_good, traj_per_file = hyperparams.get('seperate_good', False), hyperparams.get('traj_per_file', 16)

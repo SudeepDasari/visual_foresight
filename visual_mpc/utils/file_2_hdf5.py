@@ -30,14 +30,14 @@ if __name__ == '__main__':
 
     datasets = []
     for f in args.input_folders.split(','):
-        datasets += glob.glob('{}/*'.format(f))
+        datasets += glob.glob('{}/*/*/*/traj_group*'.format(os.path.expanduser(f)))
 
     counter = args.counter
     for d in datasets:
         meta_data = json.load(open('{}/hparams.json'.format(d), 'r'))
         print('on dataset: {}'.format(d))
         d_save = 0
-        trajs = glob.glob('{}/*/traj*'.format(d))
+        trajs = glob.glob('{}/traj*'.format(d))
         has_cam, dataset_ncams, dataset_T, dataset_im_dim = None, None, None, None
 
         for t in trajs:

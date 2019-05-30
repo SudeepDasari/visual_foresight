@@ -5,16 +5,16 @@ import video_prediction
 
 base_dir = video_prediction.__file__
 base_dir = '/'.join(str.split(base_dir, '/')[:-2])
-modeldir = base_dir + '/robonet_experiments/sawyer/'
+modeldir = base_dir + '/robonet_experiments/sawyer/short_context'
 
 configuration = {
 'pred_model': VPred_Model_Interface,
 'pred_model_class': SAVPVideoPredictionModel,
 'setup_predictor':setup_predictor,
 'json_dir':  modeldir + '/model.savp.None',
-'pretrained_model':modeldir + '/model.savp.None/model-270000',   # 'filepath of a pretrained model to resume training from.' ,
-'sequence_length': 20,      # 'sequence length to load, including context frames.' ,
-'context_frames': 5,        # of frames before predictions.' ,
+'pretrained_model':modeldir + '/model.savp.None/model-190000',   # 'filepath of a pretrained model to resume training from.' ,
+'sequence_length': 13,      # 'sequence length to load, including context frames.' ,
+'context_frames': 2,        # of frames before predictions.' ,
 'model': 'appflow',            #'model architecture to use - CDNA, DNA, or STP' ,
 'batch_size': 200,
 'sdim':5,

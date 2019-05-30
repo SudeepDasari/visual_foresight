@@ -15,13 +15,13 @@ env_params = {
     'reset_before_eval': False,
     'rand_drop_reset': False,
     'save_video': True,
-    'camera_topics': [IMTopic('/left_side/image_raw')]
+    'camera_topics': [IMTopic('/test/image_raw')]
 }
 
 agent = {'type' : BenchmarkAgent,
          'env': (AutograspSawyerEnv, env_params),
          'data_save_dir': BASE_DIR,
-         'T': 20,  #number of commands per episodes (issued at control_rate / substeps HZ)
+         'T': 13,  #number of commands per episodes (issued at control_rate / substeps HZ)
          'image_height': 48,
          'image_width': 64,
          'current_dir': current_dir,
@@ -30,14 +30,14 @@ agent = {'type' : BenchmarkAgent,
 
 policy = {
     'type': PixelCostController,
-    'replan_interval': 20,
+    'replan_interval': 13,
     'num_samples': 600,
     'selection_frac': 0.05,
     'predictor_propagation': True,   # use the model get the designated pixel for the next step!
     'initial_std_lift': 0.2,  # std dev. in xy
     'initial_std_rot': np.pi / 10,
     'rejection_sampling': False,
-    'nactions': 20,
+    'nactions': 13,
     'repeat': 1
 }
 

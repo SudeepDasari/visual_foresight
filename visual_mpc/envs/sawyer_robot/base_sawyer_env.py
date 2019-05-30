@@ -192,6 +192,8 @@ class BaseSawyerEnv(BaseEnv):
     def _setup_robot(self):
         low_angle = np.pi / 2                  # chosen to maximize wrist rotation given start rotation
         high_angle = 265 * np.pi / 180
+        
+        # make a more extensible way to do this
         if self._robot_name == 'vestri':                                      # pull the cage a bit backward on vestri
             self._low_bound = np.array([0.47, -0.2, 0.176, low_angle, -1])
             self._high_bound = np.array([0.81, 0.2, 0.292, high_angle, 1])
@@ -204,6 +206,9 @@ class BaseSawyerEnv(BaseEnv):
         elif self._robot_name == 'nordri':
             self._low_bound = np.array([0.45, -0.3, 0.214, low_angle, -1])
             self._high_bound = np.array([0.75, 0.24, 0.33, high_angle, 1])
+        elif self._robot_name == 'test':
+            self._low_bound = np.array([0.47, -0.2, 0.1587, low_angle, -1])
+            self._high_bound = np.array([0.81, 0.2, 0.2747, high_angle, 1])
         else:
             raise ValueError("Supported robots are vestri/sudri")
 
@@ -386,7 +391,7 @@ class BaseSawyerEnv(BaseEnv):
             self._controller.open_gripper(True)
             self._goto_closest_neutral()
             return self._end_reset()
-
+    
         if self._hp.rand_drop_reset:
             rand_xyz = np.random.uniform(self._low_bound[:3], self._high_bound[:3])
             rand_xyz[2] = self._high_bound[2]

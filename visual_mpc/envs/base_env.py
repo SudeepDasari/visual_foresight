@@ -2,8 +2,8 @@ import numpy as np
 import random
 from tensorflow.contrib.training import HParams
 
-
-supported_robots = {'sudri', 'vestri', 'vestri_table', 'nordri'}
+# TODO: make this system better too
+supported_robots = {'sudri', 'vestri', 'vestri_table', 'nordri', 'test'}
 
 
 class BaseEnv:
