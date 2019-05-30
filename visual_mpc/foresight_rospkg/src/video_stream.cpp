@@ -35,7 +35,7 @@
  */
 
  /*
- * Modified by Sudeep Dasari with bug fixes for concurrency
+ * Modified by Sudeep Dasari with bug fixes to better handle disconnected cameras
  */
 
 #include <ros/ros.h>
