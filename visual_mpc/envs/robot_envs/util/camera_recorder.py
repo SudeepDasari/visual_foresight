@@ -6,6 +6,7 @@ import cv2
 from sensor_msgs.msg import Image as Image_msg
 import copy
 import hashlib
+import logging
 
 
 class LatestObservation(object):
@@ -52,9 +53,9 @@ class CameraRecorder:
         self._topic_data = topic_data
         self._image_dtype = topic_data.dtype
         rospy.Subscriber(topic_data.name, Image_msg, self.store_latest_im)
-        print('downing sema on topic: {}'.format(topic_data.name))
+        logging.debug('downing sema on topic: {}'.format(topic_data.name))
         self._status_sem.acquire()
-        print("Cameras {} subscribed: stream is {}x{}".format(self._topic_data.name, self._cam_width, self._cam_height))
+        logging.info("Cameras {} subscribed: stream is {}x{}".format(self._topic_data.name, self._cam_width, self._cam_height))
 
     def _cam_start_tracking(self, lt_ob, point):
         lt_ob.reset_tracker()

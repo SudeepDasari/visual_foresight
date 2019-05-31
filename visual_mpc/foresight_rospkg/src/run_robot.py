@@ -6,18 +6,10 @@ import cPickle as pkl
 import numpy as np
 import shutil
 import cv2
-from visual_mpc.envs.base_env import supported_robots
 
 
 class RobotEnvironment:
     def __init__(self, robot_name, conf, resume=False, ngpu=1, gpu_id=0, is_bench=False):
-        if robot_name not in supported_robots:
-            msg = "ROBOT {} IS NOT A SUPPORTED ROBOT (".format(robot_name)
-            for k in supported_robots:
-                msg = msg + "{} ".format(k)
-            msg = msg + ")"
-            raise NotImplementedError(msg)
-
         if 'override_{}'.format(robot_name) in conf:
             override_params = conf['override_{}'.format(robot_name)]
             conf['agent'].update(override_params.get('agent', {}))

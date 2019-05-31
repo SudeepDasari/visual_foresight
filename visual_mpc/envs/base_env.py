@@ -2,9 +2,6 @@ import numpy as np
 import random
 from tensorflow.contrib.training import HParams
 
-# TODO: make this system better too
-supported_robots = {'sudri', 'vestri', 'vestri_table', 'nordri', 'test'}
-
 
 class BaseEnv:
     def step(self, action):

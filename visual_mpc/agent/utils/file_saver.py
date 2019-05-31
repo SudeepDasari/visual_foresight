@@ -3,6 +3,7 @@ from multiprocessing import Manager, Process
 import cv2
 import imageio as io
 import numpy as np
+import logging
 
 
 def start_file_worker():
@@ -20,7 +21,7 @@ def _make_parent_if_needed(file_name):
 
 
 def _file_worker(file_queue):
-    print('started file saver with PID:', os.getpid())
+    logging.debug('started file saver with PID:', os.getpid())
     data = file_queue.get(True)
     prepend_path = './'
     while data is not None:

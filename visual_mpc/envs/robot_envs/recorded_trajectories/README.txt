@@ -1,0 +1,1 @@
+You may record and save trajectories in this file in order to have the robot automatically perform certain actiosn

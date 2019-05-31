@@ -13,14 +13,12 @@ else:
     input_fn = input
 
 
-class RobotController:
-    GRIPPER_OPEN=100
-    GRIPPER_CLOSE=0
-
-    def __init__(self, robot_name, print_debug, email_cred_file='', log_file=''):
+class RobotController(object):
+    def __init__(self, robot_name, print_debug, email_cred_file='', log_file='', control_rate=800, gripper_attached='wsg-50'):
         self._robot_name = robot_name
         rospy.init_node("foresight_robot_controller")
         rospy.on_shutdown(self.clean_shutdown)
+        self._control_rate = rospy.Rate(control_rate)
 
         log_level = logging.INFO
         if print_debug:
@@ -79,10 +77,10 @@ class RobotController:
             logging.error('email failed! check credentials (either incorrect or not supplied)')
 
     def clean_shutdown(self):
-        if self._log_file:
-            self._send_email("Collection on {} has exited!".format(self.robot_name), attachment=self._log_file)
-        else:
-            self._send_email("Collection on {} has exited!".format(self.robot_name))
+        if self._is_email_setup and self._log_file:
+            self._send_email("Collection on {} has exited!".format(self._robot_name), attachment=self._log_file)
+        elif self._is_email_setup:
+            self._send_email("Collection on {} has exited!".format(self._robot_name))
         
         pid = os.getpid()
         print('Exiting example w/ pid: {}'.format(pid))
@@ -91,20 +89,19 @@ class RobotController:
     def move_to_neutral(self, duration=2):
         raise NotImplementedError
 
-    def move_to_eep(self, waypoints, duration=1.5):
-       """
-       :param waypoints: List of cartesian poses (x,y,z, quat). If len(waypoints) == 1: then go directly to point.
-                                                                Otherwise: take trajectory that ends at waypoints[-1] and passes through each intermediate waypoint
-       :param duration: Total time trajectory will take before ending
-       """
+    def move_to_eep(self, target_pose, duration=1.5):
+        """
+        :param target_pose: Cartesian pose (x,y,z, quat).
+        :param duration: Total time trajectory will take before ending
+        """
         raise NotImplementedError
 
-   def move_to_ja(self, waypoints, duration=1.5):
-       """
-       :param waypoints: List of joint angle arrays. If len(waypoints) == 1: then go directly to point.
+    def move_to_ja(self, waypoints, duration=1.5):
+        """
+        :param waypoints: List of joint angle arrays. If len(waypoints) == 1: then go directly to point.
                                                      Otherwise: take trajectory that ends at waypoints[-1] and passes through each intermediate waypoint
-       :param duration: Total time trajectory will take before ending
-       """
+        :param duration: Total time trajectory will take before ending
+        """
         raise NotImplementedError
 
     def redistribute_objects(self):
@@ -113,16 +110,24 @@ class RobotController:
         """
         raise NotImplementedError
 
+    def quat_2_euler(self, quat):
+        # calculates and returns: yaw, pitch, roll from given quaternion
+        raise NotImplementedError
+
+    def euler_2_quat(self, yaw=0.0, pitch=0.0, roll=0.0):
+        # calculates and returns quaternion from given euler angles
+        raise NotImplementedError
+    
     def get_state(self):
         # return joint_angles, joint_velocities, eep
-        raise NotImplementedError
+        return self.get_joint_angles(), self.get_joint_angles_velocity(), self.get_cartesian_pose()
 
     def get_joint_angles(self):
         #returns current joint angles
         raise NotImplementedError
 
     def get_joint_angles_velocity(self):
-        #returns current joint angles
+        #returns current joint angle velocities
         raise NotImplementedError
 
     def get_cartesian_pose(self):
@@ -145,4 +150,20 @@ class RobotController:
         raise NotImplementedError
 
     def close_gripper(self, wait = False):                                      # should likely wrap separate gripper control class for max re-usability
+        raise NotImplementedError
+
+    @property
+    def GRIPPER_CLOSE(self):
+        raise NotImplementedError
+    
+    @property
+    def GRIPPER_OPEN(self):
+        raise NotImplementedError
+
+    def quat_2_euler(self, quat):
+        # calculates and returns: yaw, pitch, roll from given quaternion
+        raise NotImplementedError
+
+    def euler_2_quat(self, yaw=0.0, pitch=0.0, roll=0.0):
+        # converts yaw, pitch, roll to quaternion 
         raise NotImplementedError

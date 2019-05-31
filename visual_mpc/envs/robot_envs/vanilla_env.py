@@ -1,8 +1,8 @@
-from .base_sawyer_env import BaseSawyerEnv
+from .base_env import BaseRobotEnv
 import copy
 
 
-class VanillaSawyerEnv(BaseSawyerEnv):
+class VanillaEnv(BaseRobotEnv):
     def __init__(self, env_params, _=None):
         self._hyper = copy.deepcopy(env_params)
         BaseSawyerEnv.__init__(self, env_params)

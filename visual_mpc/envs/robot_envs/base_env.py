@@ -1,55 +1,14 @@
+from visual_mpc.envs.robot_envs import get_controller_class
 from visual_mpc.envs.base_env import BaseEnv
 import numpy as np
 import random
-from geometry_msgs.msg import Quaternion as Quaternion_msg
-from pyquaternion import Quaternion
 from visual_mpc.agent.general_agent import Image_Exception
-from .util.limb_recorder import LimbWSGRecorder
 from .util.camera_recorder import CameraRecorder
-from .util.impedance_wsg_controller import ImpedanceWSGController, NEUTRAL_JOINT_CMD
-from visual_mpc.foresight_rospkg.src.utils import inverse_kinematics
-from visual_mpc.envs.util.interpolation import QuinticSpline
 import copy
 import rospy
 from .util.user_interface import select_points
 from .util.topic_utils import IMTopic
-
-
-CONTROL_RATE = 800
-CONTROL_PERIOD = 1. / CONTROL_RATE
-INTERP_SKIP = 16
-
-
-def precalculate_interpolation(p1, p2, duration, last_pos, start_cmd, joint_names):
-    spline = QuinticSpline(p1, p2, duration)
-    num_queries = int(CONTROL_RATE * duration / INTERP_SKIP) + 1
-    jas = []
-    last_cmd = start_cmd
-    for t in np.linspace(0., duration, num_queries):
-        cart_pos = spline.get(t)[0][0]
-        interp_pose = state_to_pose(cart_pos[:3], zangle_to_quat(cart_pos[3]))
-
-        try:
-            interp_ja = pose_to_ja(interp_pose, last_cmd,
-                                   debug_z=cart_pos[3] * 180 / np.pi, retry_on_fail=True)
-            last_cmd = interp_ja
-            interp_ja = np.array([interp_ja[j] for j in joint_names])
-            jas.append(interp_ja)
-            last_pos = interp_ja
-        except EnvironmentError:
-            jas.append(last_pos)
-            print('ignoring IK failure')
-
-    interp_ja = []
-    for i in range(len(jas) - 1):
-        interp_ja.append(jas[i].tolist())
-        for j in range(1, INTERP_SKIP):
-            t = float(j) / INTERP_SKIP
-            interp_point = (1 - t) * jas[i] + t * jas[i + 1]
-            interp_ja.append(interp_point.tolist())
-    interp_ja.append(jas[-1].tolist())
-
-    return interp_ja
+import logging
 
 
 def pix_resize(pix, target_width, original_width):
@@ -57,66 +16,10 @@ def pix_resize(pix, target_width, original_width):
               target_width / float(original_width))).astype(np.int64)
 
 
-def quat_to_zangle(quat):
-    """
-    :param quat: robot rotation quaternion (assuming rotation around z-axis)
-    :return: Rotation angle in z-axis
-    """
-    angle = (Quaternion(axis=[0, 1, 0], angle=np.pi).inverse * Quaternion(quat)).angle
-    if angle < 0:     # pyquaternion calculates in range [-np.pi, np.pi], have to flip to robot range
-        return 2 * np.pi + angle
-    return angle
-
-
-def zangle_to_quat(zangle):
-    """
-    :param zangle in radians
-    :return: quaternion
-    """
-    return (Quaternion(axis=[0, 1, 0], angle=np.pi) * Quaternion(axis=[0, 0, 1], angle= zangle)).elements
-
-
-def state_to_pose(xyz, quat):
-    """
-    :param xyz: desired pose xyz
-    :param quat: quaternion around z angle in [w, x, y, z] format
-    :return: stamped pose
-    """
-    quat = Quaternion_msg(
-        w=quat[0],
-        x=quat[1],
-        y=quat[2],
-        z=quat[3]
-    )
-
-    desired_pose = inverse_kinematics.get_pose_stamped(xyz[0],
-                                                       xyz[1],
-                                                       xyz[2],
-                                                       quat)
-    return desired_pose
-
-
-def pose_to_ja(target_pose, start_joints, tolerate_ik_error=False, retry_on_fail = False, debug_z = None):
-    try:
-        return inverse_kinematics.get_joint_angles(target_pose, seed_cmd=start_joints,
-                                                        use_advanced_options=True)
-    except ValueError:
-        if retry_on_fail:
-            print 'retyring zangle was: {}'.format(debug_z)
-
-            return pose_to_ja(target_pose, NEUTRAL_JOINT_CMD)
-        elif tolerate_ik_error:
-            raise ValueError("IK failure")    # signals to agent it should reset
-        else:
-            print 'zangle was {}'.format(debug_z)
-            raise EnvironmentError("IK Failure")   # agent doesn't handle EnvironmentError
-
-
-class BaseSawyerEnv(BaseEnv):
+class BaseRobotEnv(BaseEnv):
     def __init__(self, env_params):
         self._hp = self._default_hparams()
         for name, value in env_params.items():
-            print('setting param {} to value {}'.format(name, value))
             if name == 'camera_topics':
                 self._hp.camera_topics = value
             else:
@@ -131,9 +34,14 @@ class BaseSawyerEnv(BaseEnv):
         else:
             self._obs_tol = self._hp.OFFSET_TOL
 
-        self._controller = ImpedanceWSGController(CONTROL_RATE, self._robot_name,
-                                                  self._hp.print_debug, self._hp.gripper_attached, self._hp.debug_email)
-        self._limb_recorder = LimbWSGRecorder(self._controller)
+        RobotController = get_controller_class(self._hp.robot_type)
+        self._controller = RobotController(self._robot_name, self._hp.print_debug, email_cred_file=self._hp.email_login_creds, 
+                                           log_file=self._hp.log_file, gripper_attached=self._hp.gripper_attached)
+        logging.info('---------------------------------------------------------------------------')
+        for name, value in self._hp.values().items():
+            logging.info('{}= {}'.format(name, value))
+        logging.info('---------------------------------------------------------------------------')
+
         self._save_video = self._hp.save_video
         self._cameras = [CameraRecorder(t, self._hp.opencv_tracking, self._save_video) for t in self._hp.camera_topics]
 
@@ -165,8 +73,10 @@ class BaseSawyerEnv(BaseEnv):
 
     def _default_hparams(self):
         default_dict = {'robot_name': None,
-                        'debug_email': False,
-                        'gripper_attached': True,
+                        'robot_type': 'sawyer',
+                        'email_login_creds': '',
+                        'log_file': '',
+                        'gripper_attached': 'wsg-50',
                         'camera_topics': [IMTopic('/camera0/image_raw', flip=True), IMTopic('/camera1/image_raw')],
                         'opencv_tracking': False,
                         'save_video': False,
@@ -266,37 +176,39 @@ class BaseSawyerEnv(BaseEnv):
         raise NotImplementedError
 
     def _get_state(self):
-        j_angles, j_vel, eep, gripper_state, force_sensor = self._limb_recorder.get_state()
+        eep = self._controller.get_cartesian_pose()
+        gripper_state = self._controller.get_gripper_state()[0]
+        
         state = np.zeros(self._base_sdim)
         state[:3] = (eep[:3] - self._low_bound[:3]) / (self._high_bound[:3] - self._low_bound[:3])
-        state[3] = quat_to_zangle(eep[3:])
+        state[3] = self._controller.quat_2_euler(eep[3:])[0]
         state[4] = gripper_state * self._low_bound[-1] + (1 - gripper_state) * self._high_bound[-1]
         return state
 
     def _get_obs(self):
         obs = {}
-        j_angles, j_vel, eep, gripper_state, force_sensor = self._limb_recorder.get_state()
+        j_angles, j_vel, eep = self._controller.get_state()
+        gripper_state, force_sensor = self._controller.get_gripper_state()
+
+        z_angle = self._controller.quat_2_euler(eep[3:])[0]
+
         obs['qpos'] = j_angles
         obs['qvel'] = j_vel
 
-        if self._hp.print_debug and self._previous_target_qpos is not None:
-            print 'xy delta: ', np.linalg.norm(eep[:2] - self._previous_target_qpos[:2])
-            print 'target z', self._previous_target_qpos[2], 'real z', eep[2]
-            print 'z dif', abs(eep[2] - self._previous_target_qpos[2])
-            print 'angle dif (degrees): ', abs(quat_to_zangle(eep[3:]) - self._previous_target_qpos[3]) * 180 / np.pi
-            print 'angle degree target {} vs real {}'.format(np.rad2deg(quat_to_zangle(eep[3:])),
-                                                             np.rad2deg(self._previous_target_qpos[3]))
+        if self._previous_target_qpos is not None:
+            logging.debug('xy delta: {}'.format(np.linalg.norm(eep[:2] - self._previous_target_qpos[:2])))
+            logging.debug('target z: {}       real z: {}'.format(self._previous_target_qpos[2], eep[2]))   
+            logging.debug('z dif {}'.format(abs(eep[2] - self._previous_target_qpos[2])))
+            logging.debug('angle dif (degrees): {}'.format(abs(z_angle - self._previous_target_qpos[3]) * 180 / np.pi))
+            logging.debug('angle degree target {} vs real {}'.format(np.rad2deg(z_angle),
+                                                             np.rad2deg(self._previous_target_qpos[3])))
 
-        state = np.zeros(self._base_sdim)
-        state[:3] = (eep[:3] - self._low_bound[:3]) / (self._high_bound[:3] - self._low_bound[:3])
-        state[3] = quat_to_zangle(eep[3:])
-        state[4] = gripper_state * self._low_bound[-1] + (1 - gripper_state) * self._high_bound[-1]
-        obs['state'] = state
+        obs['state'] = self._get_state()
         obs['finger_sensors'] = force_sensor
 
         self._last_obs = copy.deepcopy(obs)
         obs['images'] = self.render()
-        obs['high_bound'],obs['low_bound'] = copy.deepcopy(self._high_bound), copy.deepcopy(self._low_bound)
+        obs['high_bound'], obs['low_bound'] = copy.deepcopy(self._high_bound), copy.deepcopy(self._low_bound)
 
         if self._hp.opencv_tracking:
             track_desig = np.zeros((self.ncam, 1, 2), dtype=np.int64)
@@ -308,42 +220,16 @@ class BaseSawyerEnv(BaseEnv):
             obs['obj_image_locations'] = copy.deepcopy(self._desig_pix)
         return obs
 
-    def _get_xyz_angle(self):
-        cur_xyz, cur_quat = self._limb_recorder.get_xyz_quat()
-        return cur_xyz, quat_to_zangle(cur_quat)
-
     def _move_to_state(self, target_xyz, target_zangle, duration = None):
-        if duration is None:
-            duration = self._duration
-        p1 = np.zeros(4)
-        p1[:3], p1[3] = self._get_xyz_angle()
-        p2 = np.zeros(4)
-        p2[:3], p2[3] = target_xyz, target_zangle
-
-        last_pos = self._limb_recorder.get_joint_angles()
-        last_cmd = self._limb_recorder.get_joint_cmd()
-        joint_names = self._limb_recorder.get_joint_names()
-
-        interp_jas = precalculate_interpolation(p1, p2, duration, last_pos, last_cmd, joint_names)
-
-        i = 0
-        self._controller.control_rate.sleep()
-        start_time = rospy.get_time()
-        t = rospy.get_time()
-        while t - start_time < duration:
-            lookup_index = min(int(min((t - start_time), duration) / CONTROL_PERIOD), len(interp_jas) - 1)
-            self._controller.send_pos_command(interp_jas[lookup_index])
-            i += 1
-            self._controller.control_rate.sleep()
-            t = rospy.get_time()
-        if self._hp.print_debug:
-            print('Effective rate: {} Hz'.format(i / (rospy.get_time() - start_time)))
+        target_quat = self._controller.euler_2_quat(target_zangle)
+        self._controller.move_to_eep(np.concatenate((target_xyz, target_quat)))
 
     def _reset_previous_qpos(self):
-        eep = self._limb_recorder.get_state()[2]
+        xyz, quat = self._controller.get_xyz_quat()
+
         self._previous_target_qpos = np.zeros(self._base_sdim)
-        self._previous_target_qpos[:3] = eep[:3]
-        self._previous_target_qpos[3] = quat_to_zangle(eep[3:])
+        self._previous_target_qpos[:3] = xyz
+        self._previous_target_qpos[3] = self._controller.quat_2_euler(quat)[0]
         self._previous_target_qpos[4] = -1
 
     def save_recording(self, save_worker, i_traj):
@@ -370,7 +256,7 @@ class BaseSawyerEnv(BaseEnv):
         return self._get_obs(), None
 
     def _goto_closest_neutral(self):
-        self._controller.neutral_with_impedance()
+        self._controller.move_to_neutral()
         closest_netural = self._get_state()
 
         closest_netural[:3] = np.clip(closest_netural[:3], [0., 0., 0.], self._hp.start_box)
@@ -399,16 +285,16 @@ class BaseSawyerEnv(BaseEnv):
             self._move_to_state(rand_xyz, rand_zangle, 2.)
             self._controller.close_gripper(True)
             self._controller.open_gripper(True)
-            self._controller.neutral_with_impedance()
+            self._controller.move_to_neutral()
         else:
             self._controller.open_gripper(True)
-            self._controller.neutral_with_impedance()
+            self._controller.move_to_neutral()
 
         if self._cleanup_rate > 0 and self._reset_counter % self._cleanup_rate == 0 and self._reset_counter > 0:
             self._controller.redistribute_objects()
             self._goto_closest_neutral()
 
-        self._controller.neutral_with_impedance()
+        self._controller.move_to_neutral()
         self._controller.open_gripper(False)
         rospy.sleep(0.5)
         self._reset_previous_qpos()
@@ -515,7 +401,7 @@ class BaseSawyerEnv(BaseEnv):
 
         if self._hp.reset_before_eval:
             self._controller.open_gripper(True)
-            self._controller.neutral_with_impedance()
+            self._controller.move_to_neutral()
 
         final_pix = select_points(self.render(), ['front', 'left'], 'final',
                                  save_dir, clicks_per_desig=1, n_desig=ntasks)

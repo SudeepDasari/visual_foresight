@@ -1,15 +1,15 @@
-from visual_mpc.envs.sawyer_robot.base_sawyer_env import BaseSawyerEnv
+from visual_mpc.envs.robot_envs.base_env import BaseRobotEnv
 import copy
 from visual_mpc.envs.util.action_util import autograsp_dynamics
 import numpy as np
 
-class AutograspSawyerEnv(BaseSawyerEnv):
+class AutograspEnv(BaseRobotEnv):
     def __init__(self, env_params, _=None):
         assert 'mode_rel' not in env_params, "Autograsp sets mode_rel"
 
         self._hyper = copy.deepcopy(env_params)
 
-        BaseSawyerEnv.__init__(self, self._hyper)
+        BaseRobotEnv.__init__(self, self._hyper)
         self._adim, self._sdim = 4, self._base_sdim
 
     def _init_dynamics(self):
@@ -21,7 +21,7 @@ class AutograspSawyerEnv(BaseSawyerEnv):
                         'gripper_joint_thresh': -1.,   # anything <0 deactivates this check
                         'reopen': True}
 
-        parent_params = BaseSawyerEnv._default_hparams(self)
+        parent_params = BaseRobotEnv._default_hparams(self)
         for k in default_dict.keys():
             parent_params.add_hparam(k, default_dict[k])
         return parent_params
