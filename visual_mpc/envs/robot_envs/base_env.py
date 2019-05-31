@@ -19,9 +19,12 @@ def pix_resize(pix, target_width, original_width):
 class BaseRobotEnv(BaseEnv):
     def __init__(self, env_params):
         self._hp = self._default_hparams()
+        self._hp.start_state = []
         for name, value in env_params.items():
             if name == 'camera_topics':
                 self._hp.camera_topics = value
+            elif name == 'start_state':
+                self._hp.start_state = value
             else:
                 self._hp.set_hparam(name, value)
 
@@ -299,9 +302,14 @@ class BaseRobotEnv(BaseEnv):
         rospy.sleep(0.5)
         self._reset_previous_qpos()
 
-        rand_xyz = np.random.uniform(self._low_bound[:3], self._high_bound[:3])
-        rand_zangle = np.random.uniform(self._low_bound[3], self._high_bound[3])
-        self._move_to_state(rand_xyz, rand_zangle, 2.)
+        if self._hp.start_state:
+            xyz = np.array(self._hp.start_state[:3]) * (self._high_bound[:3] - self._low_bound[:3]) + self._low_bound[:3]
+            theta = self._hp.start_state[3]
+            self._move_to_state(xyz, theta, 2.)
+        else:
+            rand_xyz = np.random.uniform(self._low_bound[:3], self._high_bound[:3])
+            rand_zangle = np.random.uniform(self._low_bound[3], self._high_bound[3])
+            self._move_to_state(rand_xyz, rand_zangle, 2.)
 
         return self._end_reset()
 
