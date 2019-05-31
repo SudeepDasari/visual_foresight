@@ -10,3 +10,4 @@
 *.meta
 *.egg-info/
 .email_cred
+*.log
