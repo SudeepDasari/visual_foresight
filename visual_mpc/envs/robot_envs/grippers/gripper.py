@@ -3,7 +3,7 @@ import logging
 
 class GripperInterface(object):
     def __init__(self):
-        logging.info('Creating gripper object')
+        logging.getLogger('robot_logger').info('Creating gripper object')
 
     def get_gripper_state(self, integrate_force=False):
         # returns gripper joint angle, force reading (none if no force)

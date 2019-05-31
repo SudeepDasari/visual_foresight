@@ -30,9 +30,9 @@ class WSG50Gripper(GripperInterface):
 
         self.gripper_pub = rospy.Publisher('/wsg_50_driver/goal_position', Cmd, queue_size=10)
         rospy.Subscriber("/wsg_50_driver/status", Status, self._gripper_callback)
-        logging.info("waiting for first status")
+        logging.getLogger('robot_logger').info("waiting for first status")
         self.sem_list[0].acquire()
-        logging.info('gripper initialized!')
+        logging.getLogger('robot_logger').info('gripper initialized!')
 
         self._bg = Thread(target=self._background_monitor)
         self._bg.start()
@@ -41,7 +41,7 @@ class WSG50Gripper(GripperInterface):
         while True:
             self._status_mutex.acquire()
             if len(self.sem_list) > 0 and time.time() - self._last_status_t >= ROS_NODE_TIMEOUT:
-                logging.error('No gripper messages in {} seconds, maybe the node crashed?'.format(ROS_NODE_TIMEOUT))
+                logging.getLogger('robot_logger').error('No gripper messages in {} seconds, maybe the node crashed?'.format(ROS_NODE_TIMEOUT))
                 self.clean_shutdown()
             self._status_mutex.release()
             time.sleep(30)
@@ -56,7 +56,7 @@ class WSG50Gripper(GripperInterface):
         self._status_mutex.release()
 
         if integrate_force and cntr > 0:
-            logging.debug("integrating with {} readings, cumulative force: {}".format(cntr, cum_force))
+            logging.getLogger('robot_logger').debug("integrating with {} readings, cumulative force: {}".format(cntr, cum_force))
             self._last_integrate = cum_force / cntr
             return width, self._last_integrate
         elif integrate_force and self._last_integrate is not None:
@@ -79,9 +79,9 @@ class WSG50Gripper(GripperInterface):
             self._status_mutex.release()
 
             start = rospy.get_time()
-            logging.debug("gripper sem acquire, list len-{}".format(len(self.sem_list)))
+            logging.getLogger('robot_logger').debug("gripper sem acquire, list len-{}".format(len(self.sem_list)))
             sem.acquire()
-            logging.debug("waited on gripper for {} seconds".format(rospy.get_time() - start))
+            logging.getLogger('robot_logger').debug("waited on gripper for {} seconds".format(rospy.get_time() - start))
         else:
             self._status_mutex.release()
 

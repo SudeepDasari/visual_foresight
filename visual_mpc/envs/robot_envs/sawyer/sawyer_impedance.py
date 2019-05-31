@@ -10,6 +10,7 @@ import os
 from visual_mpc.envs.robot_envs import RobotController
 import logging
 from .control_util import precalculate_interpolation, LatestEEObs, CONTROL_PERIOD
+import visual_mpc.envs.robot_envs as robot_envs
 
 
 NEUTRAL_JOINT_ANGLES = np.array([0.412271, -0.434908, -1.198768, 1.795462, 1.160788, 1.107675, -1.11748145])
@@ -37,7 +38,7 @@ class SawyerImpedanceController(RobotController):
         # elif gripper_attached == 'default':
         #     self._gripper = # init default sawyer gripper
         else:
-            logging.error("Gripper not supported!")
+            logging.getLogger('robot_logger').error("Gripper not supported!")
             raise NotImplementedError
 
     def _close_gripper_handler(self, value):
@@ -60,7 +61,7 @@ class SawyerImpedanceController(RobotController):
             rospy.sleep(10)
             i += 1
         if not self._rs.state().enabled:
-            logging.error("Robot was disabled, please manually re-enable!")
+            logging.getLogger('robot_logger').error("Robot was disabled, please manually re-enable!")
             self.clean_shutdown()
     
     def move_to_neutral(self, duration=2):
@@ -91,7 +92,7 @@ class SawyerImpedanceController(RobotController):
             i += 1
             self._control_rate.sleep()
             t = rospy.get_time()
-        logging.debug('Effective rate: {} Hz'.format(i / (rospy.get_time() - start_time)))   
+        logging.getLogger('robot_logger').debug('Effective rate: {} Hz'.format(i / (rospy.get_time() - start_time)))   
 
     def move_to_ja(self, waypoints, duration=1.5):
         """
@@ -148,8 +149,8 @@ class SawyerImpedanceController(RobotController):
         """
         self._debug_print('redistribute...')
 
-        file = '/'.join(str.split(foresight_rospkg.__file__, "/")[
-                        :-1]) + '/src/utils/pushback_traj_{}.pkl'.format(self.robot_name)
+        file = '/'.join(str.split(robot_envs.__file__, "/")[
+                        :-1]) + '/recorded_trajectories/pushback_traj_{}.pkl'.format(self.robot_name)
 
         self.joint_pos = pkl.load(open(file, "rb"))
 
@@ -174,7 +175,7 @@ class SawyerImpedanceController(RobotController):
     def get_gripper_state(self, integrate_force=False):                         # should likely wrap separate gripper control class for max re-usability
         # returns gripper joint angle, force reading (none if no force)
         if self._gripper is None:
-            logging.warning("Attempting to get non-existent gripper's state!")
+            logging.getLogger('robot_logger').warning("Attempting to get non-existent gripper's state!")
             return 0.0, 0.0
         return self._gripper.get_gripper_state(integrate_force)
 
@@ -183,13 +184,13 @@ class SawyerImpedanceController(RobotController):
 
     def open_gripper(self, wait = False):                                       # should likely wrap separate gripper control class for max re-usability
         if self._gripper is None:
-            logging.warning('Calling open on non-existent gripper!')
+            logging.getLogger('robot_logger').warning('Calling open on non-existent gripper!')
             return
         return self._gripper.open_gripper(wait)
 
     def close_gripper(self, wait = False):                                      # should likely wrap separate gripper control class for max re-usability
         if self._gripper is None:
-            logging.warning('Calling open on non-existent gripper!')
+            logging.getLogger('robot_logger').warning('Calling open on non-existent gripper!')
             return
         return self._gripper.close_gripper(wait)
 

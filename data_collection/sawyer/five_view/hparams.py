@@ -11,7 +11,7 @@ current_dir = os.path.dirname(os.path.realpath(__file__))
 
 
 env_params = {
-    'email_login_creds': '',
+    'email_login_creds': '.email_cred',
     'camera_topics': [IMTopic('/front/image_raw', flip=True),
                       IMTopic('/left/image_raw'),
                       IMTopic('/right_side/image_raw'),

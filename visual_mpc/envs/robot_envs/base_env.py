@@ -25,7 +25,7 @@ class BaseRobotEnv(BaseEnv):
             else:
                 self._hp.set_hparam(name, value)
 
-        print('initializing environment for {}'.format(self._hp.robot_name))
+        logging.info('initializing environment for {}'.format(self._hp.robot_name))
         self._robot_name = self._hp.robot_name
         self._setup_robot()
 
@@ -37,10 +37,10 @@ class BaseRobotEnv(BaseEnv):
         RobotController = get_controller_class(self._hp.robot_type)
         self._controller = RobotController(self._robot_name, self._hp.print_debug, email_cred_file=self._hp.email_login_creds, 
                                            log_file=self._hp.log_file, gripper_attached=self._hp.gripper_attached)
-        logging.info('---------------------------------------------------------------------------')
+        logging.getLogger('robot_logger').info('---------------------------------------------------------------------------')
         for name, value in self._hp.values().items():
-            logging.info('{}= {}'.format(name, value))
-        logging.info('---------------------------------------------------------------------------')
+            logging.getLogger('robot_logger').info('{}= {}'.format(name, value))
+        logging.getLogger('robot_logger').info('---------------------------------------------------------------------------')
 
         self._save_video = self._hp.save_video
         self._cameras = [CameraRecorder(t, self._hp.opencv_tracking, self._save_video) for t in self._hp.camera_topics]
@@ -88,7 +88,7 @@ class BaseRobotEnv(BaseEnv):
                         'lower_bound_delta': [0., 0., 0., 0., 0.],
                         'upper_bound_delta': [0., 0., 0., 0., 0.],
                         'cleanup_rate': 25,
-                        'print_debug': True,
+                        'print_debug': False,
                         'rand_drop_reset': True,
                         'normalize_actions': False,
                         'reset_before_eval': False,
@@ -196,11 +196,11 @@ class BaseRobotEnv(BaseEnv):
         obs['qvel'] = j_vel
 
         if self._previous_target_qpos is not None:
-            logging.debug('xy delta: {}'.format(np.linalg.norm(eep[:2] - self._previous_target_qpos[:2])))
-            logging.debug('target z: {}       real z: {}'.format(self._previous_target_qpos[2], eep[2]))   
-            logging.debug('z dif {}'.format(abs(eep[2] - self._previous_target_qpos[2])))
-            logging.debug('angle dif (degrees): {}'.format(abs(z_angle - self._previous_target_qpos[3]) * 180 / np.pi))
-            logging.debug('angle degree target {} vs real {}'.format(np.rad2deg(z_angle),
+            logging.getLogger('robot_logger').debug('xy delta: {}'.format(np.linalg.norm(eep[:2] - self._previous_target_qpos[:2])))
+            logging.getLogger('robot_logger').debug('target z: {}       real z: {}'.format(self._previous_target_qpos[2], eep[2]))   
+            logging.getLogger('robot_logger').debug('z dif {}'.format(abs(eep[2] - self._previous_target_qpos[2])))
+            logging.getLogger('robot_logger').debug('angle dif (degrees): {}'.format(abs(z_angle - self._previous_target_qpos[3]) * 180 / np.pi))
+            logging.getLogger('robot_logger').debug('angle degree target {} vs real {}'.format(np.rad2deg(z_angle),
                                                              np.rad2deg(self._previous_target_qpos[3])))
 
         obs['state'] = self._get_state()
@@ -346,7 +346,7 @@ class BaseRobotEnv(BaseEnv):
         for recorder in self._cameras:
             stamp, image = recorder.get_image()
             if abs(stamp - cur_time) > 10 * self._obs_tol:    # no camera ping in half second => camera failure
-                print("DeSYNC!")
+                logging.getLogger('robot_logger').error("DeSYNC!")
                 raise Image_Exception
             time_stamps.append(stamp)
             cam_imgs.append(image)
@@ -354,7 +354,7 @@ class BaseRobotEnv(BaseEnv):
         for index, i in enumerate(time_stamps[:-1]):
             for j in time_stamps[index + 1:]:
                 if abs(i - j) > self._obs_tol:
-                    print('DeSYNC!')
+                    logging.getLogger('robot_logger').error('DeSYNC!')
                     raise Image_Exception
 
         images = np.zeros((self.ncam, self._height, self._width, 3), dtype=np.uint8)
@@ -412,9 +412,9 @@ class BaseRobotEnv(BaseEnv):
 
         final_dist, start_dist = np.linalg.norm(final_pix - goal_pix), np.linalg.norm(start_pix - goal_pix)
         improvement = start_dist - final_dist
-        print 'final_dist: {}'.format(final_dist)
-        print 'start dist: {}'.format(start_dist)
-        print 'improvement: {}'.format(improvement)
+        logging.getLogger('robot_logger').info('final_dist: {}'.format(final_dist))
+        logging.getLogger('robot_logger').info('start dist: {}'.format(start_dist))
+        logging.getLogger('robot_logger').info('improvement: {}'.format(improvement))
 
         if self._hp.opencv_tracking:
             [c.end_tracking() for c in self._cameras]
@@ -427,7 +427,7 @@ class BaseRobotEnv(BaseEnv):
         self._controller.open_gripper(True)
 
         if collect_goal_image:
-            print("PLACE OBJECTS IN GOAL POSITION")
+            logging.getLogger('robot_logger').info("PLACE OBJECTS IN GOAL POSITION")
             raw_input("When ready to annotate GOAL images press enter...")
             goal_imgs = self.render()
             goal_pix = select_points(goal_imgs, ['front', 'left'], 'goal',
@@ -437,7 +437,7 @@ class BaseRobotEnv(BaseEnv):
             self._goto_closest_neutral()
             self._controller.open_gripper(True)
 
-            print("PLACE OBJECTS IN START POSITION")
+            logging.getLogger('robot_logger').info("PLACE OBJECTS IN START POSITION")
             raw_input("When ready to annotate START images press enter...")
 
             self._start_pix = select_points(self.render(), ['front', 'left'], 'desig',
@@ -447,7 +447,7 @@ class BaseRobotEnv(BaseEnv):
 
             return goal_imgs, goal_pix
         else:
-            print("PLACE OBJECTS IN START POSITION")
+            logging.getLogger('robot_logger').info("PLACE OBJECTS IN START POSITION")
             raw_input("When ready to annotate START images press enter...")
 
             self._start_pix, self._goal_pix = select_points(self.render(), ['front', 'left'], 'desig_goal',

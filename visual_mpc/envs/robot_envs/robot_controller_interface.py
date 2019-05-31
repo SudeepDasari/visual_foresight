@@ -7,10 +7,12 @@ from email import Encoders
 import smtplib
 import os
 import sys
+import json
 if sys.version_info[0] < 3:
     input_fn = raw_input
 else:
     input_fn = input
+import datetime
 
 
 class RobotController(object):
@@ -20,12 +22,20 @@ class RobotController(object):
         rospy.on_shutdown(self.clean_shutdown)
         self._control_rate = rospy.Rate(control_rate)
 
+        logger = logging.getLogger('robot_logger')
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        logger.setLevel(logging.DEBUG)
+        
         log_level = logging.INFO
         if print_debug:
             log_level = logging.DEBUG
+        ch = logging.StreamHandler()
+        ch.setLevel(log_level)
+        ch.setFormatter(formatter)
+        logger.addHandler(ch)
         
         if email_cred_file and not log_file:
-            log_file = '{}_log.txt'.format(self._robot_name)
+            log_file = '{}_log.log'.format(self._robot_name)
         
         if log_file and os.path.exists(log_file):
             if input_fn('Log file exists. Okay deleting? (y/n):') == 'y':
@@ -36,25 +46,32 @@ class RobotController(object):
         self._log_file = log_file
 
         self._is_email_setup = bool(email_cred_file)
+        if self._is_email_setup or log_file:
+            fh = logging.FileHandler(self._log_file)
+            fh.setLevel(logging.DEBUG)
+            fh.setFormatter(formatter)
+            logger.addHandler(fh)
+        
         if self._is_email_setup:
             self._email_credentials = json.load(open(email_cred_file, 'r'))
-        
-        if self._is_email_setup or log_file:
-            logging.basicConfig(filename=self._log_file, level=log_level)
-        else:
-            logging.basicConfig(level=log_level)
+            self._start_str = datetime.datetime.now().strftime('%b %d, %Y - %H:%M:%S')
+            self._send_email("Data collection has started on {}!".format(self._robot_name))
 
-    def _send_email(self, message, attachment=None, subject='Data Collection Update'):
+    def _send_email(self, message, attachment=None, subject=None):
         try:
             # loads credentials and receivers
             assert self._is_email_setup, "no credentials"
-            address, password = self._credentials['address'], self._credentials['password']
+            address, password = self._email_credentials['address'], self._email_credentials['password']
             if 'gmail' in address:
                 smtp_server = "smtp.gmail.com"
             else:
                 raise NotImplementedError
-            receivers = self._credentials['receivers']
+            receivers = self._email_credentials['receivers']
 
+            # configure default subject
+            if subject is None:
+                subject = 'Data Collection Update: {} started on {}'.format(self._robot_name, self._start_str)
+            
             # constructs message
             msg = MIMEMultipart()
             msg['Subject'] = subject 
@@ -74,7 +91,7 @@ class RobotController(object):
             server.login(address, password)
             server.sendmail(address, receivers, msg.as_string())
         except:
-            logging.error('email failed! check credentials (either incorrect or not supplied)')
+            logging.getLogger('robot_logger').error('email failed! check credentials (either incorrect or not supplied)')
 
     def clean_shutdown(self):
         if self._is_email_setup and self._log_file:

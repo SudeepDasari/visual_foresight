@@ -35,7 +35,7 @@ def precalculate_interpolation(p1, q1, p2, q2, duration, last_pos, start_cmd, jo
             last_pos = interp_ja
         except EnvironmentError:
             jas.append(last_pos)
-            logging.error('ignoring IK failure')
+            logging.getLogger('robot_logger').error('ignoring IK failure')
 
     interp_ja = []
     for i in range(len(jas) - 1):
@@ -75,13 +75,13 @@ def pose_to_ja(target_pose, start_joints, tolerate_ik_error=False, retry_on_fail
                                                         use_advanced_options=True)
     except ValueError:
         if retry_on_fail:
-            logging.error('retyring zangle was: {}'.format(debug_z))
+            logging.getLogger('robot_logger').error('retyring zangle was: {}'.format(debug_z))
 
             return pose_to_ja(target_pose, NEUTRAL_JOINT_CMD)
         elif tolerate_ik_error:
             raise ValueError("IK failure")    # signals to agent it should reset
         else:
-            logging.error('zangle was {}'.format(debug_z))
+            logging.getLogger('robot_logger').error('zangle was {}'.format(debug_z))
             raise EnvironmentError("IK Failure")   # agent doesn't handle EnvironmentError
 
 
