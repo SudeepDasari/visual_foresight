@@ -98,9 +98,9 @@ def main():
 
 
 def comp_gripper():
-    import visual_mpc.foresight_rospkg as foresight_rospkg
+    import visual_mpc.envs.robot_envs.grippers.weiss as weiss_pkg
     urdf_frag = '/'.join(
-        str.split(foresight_rospkg.__file__, '/')[:-1]) + '/src/misc/wsg50/wsg_50_mod.urdf'
+        str.split(weiss_pkg.__file__, '/')[:-1]) + '/wsg50_xml/wsg_50_mod.urdf'
     rospy.init_node('rsdk_configure_urdf', anonymous=True)
     if not os.access(urdf_frag, os.R_OK):
         rospy.logerr("Cannot read file at '%s'" % (urdf_frag))
@@ -111,4 +111,3 @@ def comp_gripper():
 if __name__ == '__main__':
     # sys.exit(main())
     comp_gripper()
-
