@@ -9,6 +9,7 @@ import rospy
 from .util.user_interface import select_points
 from .util.topic_utils import IMTopic
 import logging
+import json
 
 
 def pix_resize(pix, target_width, original_width):
@@ -103,27 +104,16 @@ class BaseRobotEnv(BaseEnv):
         return parent_params
 
     def _setup_robot(self):
-        low_angle = np.pi / 2                  # chosen to maximize wrist rotation given start rotation
-        high_angle = 265 * np.pi / 180
-        
-        # make a more extensible way to do this
-        if self._robot_name == 'vestri':                                      # pull the cage a bit backward on vestri
-            self._low_bound = np.array([0.47, -0.2, 0.176, low_angle, -1])
-            self._high_bound = np.array([0.81, 0.2, 0.292, high_angle, 1])
-        elif self._robot_name == 'vestri_table':
-            self._low_bound = np.array([0.43, -0.34, 0.17, low_angle, -1])
-            self._high_bound = np.array([0.89, 0.32, 0.286, high_angle, 1])
-        elif self._robot_name == 'sudri':
-            self._low_bound = np.array([0.45, -0.18, 0.176, low_angle, -1])
-            self._high_bound = np.array([0.79, 0.22, 0.292, high_angle, 1])
-        elif self._robot_name == 'nordri':
-            self._low_bound = np.array([0.45, -0.3, 0.214, low_angle, -1])
-            self._high_bound = np.array([0.75, 0.24, 0.33, high_angle, 1])
-        elif self._robot_name == 'test':
-            self._low_bound = np.array([0.47, -0.2, 0.1587, low_angle, -1])
-            self._high_bound = np.array([0.81, 0.2, 0.2747, high_angle, 1])
-        else:
-            raise ValueError("Supported robots are vestri/sudri")
+        config_file_path = '/'.join(__file__.split('/')[:-2])
+        import pdb; pdb.set_trace()
+        try:
+            robot_configs = json.load(open(config_file_path, 'r'))
+            self._high_bound = np.array(robot_configs[self._robot_name][1])
+            self._high_bound = np.array(robot_configs[self._robot_name][0])
+        except ValueError:
+            logging.error("Did you fill out the config file (stored at {})?".format(config_file_path))
+        except KeyError:
+            logging.error("Robot {} not valid! Is it in the config file (stored at{})?".format(self._robot_name, config_file_path))   
 
         self._high_bound += np.array(self._hp.upper_bound_delta, dtype=np.float64)
         self._low_bound += np.array(self._hp.lower_bound_delta, dtype=np.float64)
