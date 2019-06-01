@@ -245,6 +245,7 @@ class BaseRobotEnv(BaseEnv):
                 save_worker.put(('mov', 'recording{}/{}_clip.mp4'.format(i_traj, name), b, 30))
 
     def _end_reset(self):
+        logging.getLogger('robot_logger').info('Finishing reset {}'.format(self._reset_counter))
         if self._hp.wait_during_resetend:
             _ = raw_input("PRESS ENTER TO CONINUE")
     
@@ -293,7 +294,7 @@ class BaseRobotEnv(BaseEnv):
             self._controller.open_gripper(True)
             self._controller.move_to_neutral()
 
-        if self._cleanup_rate > 0 and self._reset_counter % self._cleanup_rate == 0 and self._reset_counter > 0:
+        if self._cleanup_rate == 0 or (self._cleanup_rate > 0 and self._reset_counter % self._cleanup_rate == 0 and self._reset_counter > 0):
             self._controller.redistribute_objects()
             self._goto_closest_neutral()
 

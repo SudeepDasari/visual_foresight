@@ -5,7 +5,7 @@ import copy
 class VanillaEnv(BaseRobotEnv):
     def __init__(self, env_params, _=None):
         self._hyper = copy.deepcopy(env_params)
-        BaseSawyerEnv.__init__(self, env_params)
+        BaseRobotEnv.__init__(self, env_params)
         self._adim, self._sdim = self._base_adim, self._base_sdim
 
     def _next_qpos(self, action):

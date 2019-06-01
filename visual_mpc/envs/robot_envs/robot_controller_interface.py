@@ -13,10 +13,11 @@ if sys.version_info[0] < 3:
 else:
     input_fn = input
 import datetime
+from .grippers.gripper import GripperInterface
 
 
 class RobotController(object):
-    def __init__(self, robot_name, print_debug, email_cred_file='', log_file='', control_rate=800, gripper_attached='wsg-50'):
+    def __init__(self, robot_name, print_debug, email_cred_file='', log_file='', control_rate=800, gripper_attached='none'):
         self._robot_name = robot_name
         rospy.init_node("foresight_robot_controller")
         rospy.on_shutdown(self.clean_shutdown)
@@ -35,7 +36,7 @@ class RobotController(object):
         logger.addHandler(ch)
         
         if email_cred_file and not log_file:
-            log_file = '{}_log.log'.format(self._robot_name)
+            log_file = '{}_log.txt'.format(self._robot_name)
         
         if log_file and os.path.exists(log_file):
             if input_fn('Log file exists. Okay deleting? (y/n):') == 'y':
@@ -56,6 +57,12 @@ class RobotController(object):
             self._email_credentials = json.load(open(email_cred_file, 'r'))
             self._start_str = datetime.datetime.now().strftime('%b %d, %Y - %H:%M:%S')
             self._send_email("Data collection has started on {}!".format(self._robot_name))
+        
+        self._init_gripper(gripper_attached)
+    
+    def _init_gripper(self, gripper_attached):
+        assert gripper_attached == 'none'
+        self._gripper = GripperInterface()
 
     def _send_email(self, message, attachment=None, subject=None):
         try:
@@ -156,27 +163,6 @@ class RobotController(object):
         eep = self.get_cartesian_pose()
         return eep[:3], eep[3:]
 
-    def get_gripper_state(self, integrate_force=False):                         # should likely wrap separate gripper control class for max re-usability
-        # returns gripper joint angle, force reading (none if no force)
-        raise NotImplementedError
-
-    def get_gripper_limits(self):                                               # should likely wrap separate gripper control class for max re-usability
-        return self.GRIPPER_CLOSE, self.GRIPPER_OPEN
-
-    def open_gripper(self, wait = False):                                       # should likely wrap separate gripper control class for max re-usability
-        raise NotImplementedError
-
-    def close_gripper(self, wait = False):                                      # should likely wrap separate gripper control class for max re-usability
-        raise NotImplementedError
-
-    @property
-    def GRIPPER_CLOSE(self):
-        raise NotImplementedError
-    
-    @property
-    def GRIPPER_OPEN(self):
-        raise NotImplementedError
-
     def quat_2_euler(self, quat):
         # calculates and returns: yaw, pitch, roll from given quaternion
         raise NotImplementedError
@@ -184,3 +170,24 @@ class RobotController(object):
     def euler_2_quat(self, yaw=0.0, pitch=0.0, roll=0.0):
         # converts yaw, pitch, roll to quaternion 
         raise NotImplementedError
+
+    def get_gripper_state(self, integrate_force=False):                         # should likely wrap separate gripper control class for max re-usability
+        # returns gripper joint angle, force reading (none if no force)
+        return self._gripper.get_gripper_state(integrate_force)
+
+    def get_gripper_limits(self):                                               # should likely wrap separate gripper control class for max re-usability
+        return self.GRIPPER_CLOSE, self.GRIPPER_OPEN
+
+    def open_gripper(self, wait = False):                                       # should likely wrap separate gripper control class for max re-usability
+        return self._gripper.open_gripper(wait)
+
+    def close_gripper(self, wait = False):                                      # should likely wrap separate gripper control class for max re-usability
+        return self._gripper.close_gripper(wait)
+
+    @property
+    def GRIPPER_CLOSE(self):
+        return self._gripper.GRIPPER_CLOSE
+    
+    @property
+    def GRIPPER_OPEN(self):
+        return self._gripper.GRIPPER_OPEN

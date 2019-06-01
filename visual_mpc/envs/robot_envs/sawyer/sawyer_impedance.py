@@ -29,9 +29,11 @@ class SawyerImpedanceController(RobotController):
         self.joint_names = self._limb.joint_names()
         self._ep_handler = LatestEEObs()
         self._cmd_publisher = rospy.Publisher('/robot/limb/right/joint_command', JointCommand, queue_size=100)
-
+    
+    def _init_gripper(self, gripper_attached):
         if gripper_attached == 'none':
-            self._gripper = None
+            from visual_mpc.envs.robot_envs import GripperInterface
+            self._gripper = GripperInterface()
         elif gripper_attached == 'wsg-50':
             from visual_mpc.envs.robot_envs.grippers.weiss.wsg50_gripper import WSG50Gripper
             self._gripper = WSG50Gripper()
@@ -147,18 +149,16 @@ class SawyerImpedanceController(RobotController):
         """
         Play pre-recorded trajectory that sweeps objects into center of bin
         """
-        self._debug_print('redistribute...')
+        logging.getLogger('robot_logger').info('redistribute...')
 
         file = '/'.join(str.split(robot_envs.__file__, "/")[
-                        :-1]) + '/recorded_trajectories/pushback_traj_{}.pkl'.format(self.robot_name)
+                        :-1]) + '/recorded_trajectories/pushback_traj_{}.pkl'.format(self._robot_name)
 
-        self.joint_pos = pkl.load(open(file, "rb"))
+        joint_pos = pkl.load(open(file, "rb"))
 
-        for t in range(0, len(self.joint_pos), RESET_SKIP):
-            # print(self.joint_pos[t])
-            # self.set_joints(self.joint_pos[t])
-            pos_arr = np.array([self.joint_pos[t][j] for j in self.limb.joint_names()])
-            self.move_with_impedance([pos_arr])
+        for t in range(0, len(joint_pos), RESET_SKIP):
+            pos_arr = np.array([joint_pos[t][j] for j in self._limb.joint_names()])
+            self.move_to_ja([pos_arr])
 
     def get_joint_angles(self):
         #returns current joint angles
@@ -171,40 +171,6 @@ class SawyerImpedanceController(RobotController):
     def get_cartesian_pose(self):
         #Returns cartesian end-effector pose
         return self._ep_handler.get_eep()
-
-    def get_gripper_state(self, integrate_force=False):                         # should likely wrap separate gripper control class for max re-usability
-        # returns gripper joint angle, force reading (none if no force)
-        if self._gripper is None:
-            logging.getLogger('robot_logger').warning("Attempting to get non-existent gripper's state!")
-            return 0.0, 0.0
-        return self._gripper.get_gripper_state(integrate_force)
-
-    def get_gripper_limits(self):                                               # should likely wrap separate gripper control class for max re-usability
-        return self.GRIPPER_CLOSE, self.GRIPPER_OPEN
-
-    def open_gripper(self, wait = False):                                       # should likely wrap separate gripper control class for max re-usability
-        if self._gripper is None:
-            logging.getLogger('robot_logger').warning('Calling open on non-existent gripper!')
-            return
-        return self._gripper.open_gripper(wait)
-
-    def close_gripper(self, wait = False):                                      # should likely wrap separate gripper control class for max re-usability
-        if self._gripper is None:
-            logging.getLogger('robot_logger').warning('Calling open on non-existent gripper!')
-            return
-        return self._gripper.close_gripper(wait)
-
-    @property
-    def GRIPPER_CLOSE(self):
-        if self._gripper:
-            return self._gripper.GRIPPER_CLOSE
-        return 0
-    
-    @property
-    def GRIPPER_OPEN(self):
-        if self._gripper:
-            return self._gripper.GRIPPER_OPEN
-        return 0
 
     def quat_2_euler(self, quat):
         # calculates and returns: yaw, pitch, roll from given quaternion

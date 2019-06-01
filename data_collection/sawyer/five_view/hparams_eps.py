@@ -3,15 +3,15 @@
 import os.path
 from visual_mpc.policy.random.gaussian import GaussianAGEpsilonPolicy
 from visual_mpc.agent.general_agent import GeneralAgent
-from visual_mpc.envs.sawyer_robot.vanilla_sawyer_env import VanillaSawyerEnv
-from visual_mpc.envs.sawyer_robot.util.topic_utils import IMTopic
+from visual_mpc.envs.robot_envs.vanilla_env import VanillaEnv
+from visual_mpc.envs.robot_envs.util.topic_utils import IMTopic
 
 BASE_DIR = '/'.join(str.split(__file__, '/')[:-1])
 current_dir = os.path.dirname(os.path.realpath(__file__))
 
 
 env_params = {
-    #'debug_email': True,
+    'email_login_creds': '.email_cred',
     'camera_topics': [IMTopic('/front/image_raw', flip=True),
                       IMTopic('/left/image_raw'),
                       IMTopic('/right_side/image_raw'),
@@ -22,7 +22,7 @@ env_params = {
 
 agent = {
     'type': GeneralAgent,
-    'env': (VanillaSawyerEnv, env_params),
+    'env': (VanillaEnv, env_params),
     'data_save_dir': BASE_DIR,
     'T': 30,
     'image_height' : 240,

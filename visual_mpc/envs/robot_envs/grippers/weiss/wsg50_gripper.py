@@ -89,12 +89,6 @@ class WSG50Gripper(GripperInterface):
         assert command_pos >= GRIPPER_CLOSE and command_pos <= GRIPPER_OPEN, "Command pos must be in range [GRIPPER_CLOSE, GRIPPER_OPEN]"
         self._set_gripper(command_pos, wait = wait)
 
-    def open_gripper(self, wait = False):
-        self.set_gripper(GRIPPER_OPEN, wait=wait)
-
-    def close_gripper(self, wait = False):
-        self.set_gripper(GRIPPER_CLOSE, wait=wait)
-
     @property
     def GRIPPER_CLOSE(self):
         return GRIPPER_CLOSE
