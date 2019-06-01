@@ -12,6 +12,12 @@ from geometry_msgs.msg import Quaternion as Quaternion_msg
 CONTROL_RATE = 800
 CONTROL_PERIOD = 1. / CONTROL_RATE
 INTERP_SKIP = 16
+NEUTRAL_JOINT_ANGLES = np.array([0.412271, -0.434908, -1.198768, 1.795462, 1.160788, 1.107675, -1.11748145])
+NEUTRAL_JOINT_CMD = {k:a for k, a in zip(['right_j{}'.format(i) for i in range(7)], NEUTRAL_JOINT_ANGLES)}
+N_JOINTS = 7
+max_vel_mag = np.array([0.88, 0.678, 0.996, 0.996, 1.776, 1.776, 2.316])
+max_accel_mag = np.array([3.5, 2.5, 5, 5, 5, 5, 5])
+RESET_SKIP = 800
 
 
 def precalculate_interpolation(p1, q1, p2, q2, duration, last_pos, start_cmd, joint_names):
