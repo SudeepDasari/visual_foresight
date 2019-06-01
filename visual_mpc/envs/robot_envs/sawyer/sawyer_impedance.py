@@ -30,8 +30,9 @@ class SawyerImpedanceController(RobotController):
         elif gripper_attached == 'wsg-50':
             from visual_mpc.envs.robot_envs.grippers.weiss.wsg50_gripper import WSG50Gripper
             self._gripper = WSG50Gripper()
-        # elif gripper_attached == 'default':
-        #     self._gripper = # init default sawyer gripper
+        elif gripper_attached == 'sawyer_gripper':
+            from visual_mpc.envs.robot_envs.grippers.sawyer.default_sawyer_gripper import SawyerDefaultGripper
+            self._gripper = SawyerDefaultGripper()
         else:
             logging.getLogger('robot_logger').error("Gripper not supported!")
             raise NotImplementedError
