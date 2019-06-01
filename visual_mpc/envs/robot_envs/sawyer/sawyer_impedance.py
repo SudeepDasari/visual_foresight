@@ -9,16 +9,9 @@ import intera_interface
 import os
 from visual_mpc.envs.robot_envs import RobotController
 import logging
-from .control_util import precalculate_interpolation, LatestEEObs, CONTROL_PERIOD
+from .control_util import precalculate_interpolation, LatestEEObs, CONTROL_PERIOD, NEUTRAL_JOINT_ANGLES, NEUTRAL_JOINT_CMD, \
+                          N_JOINTS, max_accel_mag, max_vel_mag, RESET_SKIP
 import visual_mpc.envs.robot_envs as robot_envs
-
-
-NEUTRAL_JOINT_ANGLES = np.array([0.412271, -0.434908, -1.198768, 1.795462, 1.160788, 1.107675, -1.11748145])
-NEUTRAL_JOINT_CMD = {k:a for k, a in zip(['right_j{}'.format(i) for i in range(7)], NEUTRAL_JOINT_ANGLES)}
-N_JOINTS = 7
-max_vel_mag = np.array([0.88, 0.678, 0.996, 0.996, 1.776, 1.776, 2.316])
-max_accel_mag = np.array([3.5, 2.5, 5, 5, 5, 5, 5])
-RESET_SKIP = 800
 
 
 class SawyerImpedanceController(RobotController):
