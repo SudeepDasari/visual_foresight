@@ -49,7 +49,7 @@ class RobotController(object):
         self._is_email_setup = bool(email_cred_file)
         if self._is_email_setup or log_file:
             fh = logging.FileHandler(self._log_file)
-            fh.setLevel(logging.DEBUG)
+            fh.setLevel(log_level)                    # debug information rarely useful anyhow
             fh.setFormatter(formatter)
             logger.addHandler(fh)
         
@@ -101,13 +101,15 @@ class RobotController(object):
             logging.getLogger('robot_logger').error('email failed! check credentials (either incorrect or not supplied)')
 
     def clean_shutdown(self):
+        pid = os.getpid()
+        logging.getLogger('robot_logger').info('Exiting example w/ pid: {}'.format(pid))
+        logging.shutdown()
+
         if self._is_email_setup and self._log_file:
             self._send_email("Collection on {} has exited!".format(self._robot_name), attachment=self._log_file)
         elif self._is_email_setup:
             self._send_email("Collection on {} has exited!".format(self._robot_name))
         
-        pid = os.getpid()
-        print('Exiting example w/ pid: {}'.format(pid))
         os.kill(-pid, 9)
 
     def move_to_neutral(self, duration=2):
