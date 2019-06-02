@@ -200,6 +200,7 @@ class BaseRobotEnv(BaseEnv):
 
         self._last_obs = copy.deepcopy(obs)
         obs['images'] = self.render()
+        # TODO no need to return every timestep
         obs['high_bound'], obs['low_bound'] = copy.deepcopy(self._high_bound), copy.deepcopy(self._low_bound)
 
         if self._hp.opencv_tracking:

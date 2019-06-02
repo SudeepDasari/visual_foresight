@@ -6,16 +6,24 @@ import cPickle as pkl
 import numpy as np
 import shutil
 import cv2
+import datetime
+import glob
+import sys
+import json
 
 
+# TODO simplify this class
 class RobotEnvironment:
-    def __init__(self, robot_name, conf, resume=False, ngpu=1, gpu_id=0, is_bench=False):
+    def __init__(self, robot_name, conf, resume=False, ngpu=1, gpu_id=0, is_bench=False, env_metadata=None):
+        self._env_metadata, self._saved_metadata = env_metadata, False
+        self._start_time = datetime.datetime.now()
         if 'override_{}'.format(robot_name) in conf:
             override_params = conf['override_{}'.format(robot_name)]
             conf['agent'].update(override_params.get('agent', {}))
             conf['agent']['env'][1].update(override_params.get('env_params', {}))
             conf['policy'].update(override_params.get('policy', {}))
 
+        # sets maximum number of re-tries in case of failure in environment
         if 'imax' not in conf['agent']:
             conf['agent']['imax'] = 5
 
@@ -36,9 +44,6 @@ class RobotEnvironment:
         else:
             self.task_mode = '{}/{}'.format(robot_name, conf.get('mode', 'train'))
 
-        if 'register_gtruth' in self.policyparams:
-            assert 'register_gtruth' not in self.agentparams, "SHOULD BE IN POLICY PARAMS"
-            self.agentparams['register_gtruth'] = self.policyparams['register_gtruth']
         self._ngpu = ngpu
         self._gpu_id = gpu_id
 
@@ -96,11 +101,8 @@ class RobotEnvironment:
                 shutil.rmtree(traj_folder)
             os.makedirs(traj_folder)
         else:
-            ngroup = self._hyperparams['ngroup']
-            igrp = sample_index // ngroup
-            group_folder = data_save_dir + '/traj_group{}'.format(igrp)
-            if not os.path.exists(group_folder):
-                os.makedirs(group_folder)
+            start_str = self._start_time.strftime('%b_%d_%Y_%H:%M:%S')
+            group_folder = data_save_dir + '/collection_started_{}'.format(start_str)
 
             traj_folder = group_folder + '/traj{}'.format(sample_index)
             print("Collecting sample {}".format(sample_index))
@@ -122,6 +124,15 @@ class RobotEnvironment:
             if os.path.exists(traj_folder):
                 shutil.rmtree(traj_folder)
             os.makedirs(traj_folder)
+        
+        if self._env_metadata and not self._saved_metadata:
+            self._env_metadata['environment_size'] = (obs_dict['high_bound'][0] - obs_dict['low_bound'][0]).tolist()
+            self._env_metadata['low_bound'] = obs_dict['low_bound'][0].tolist()
+            self._env_metadata['high_bound'] = obs_dict['high_bound'][0].tolist()
+            save_path = '/'.join(traj_folder.split('/')[:-1]) + '/hparams.json'
+            assert not os.path.exists(save_path), "json already exists!"
+            json.dump(self._env_metadata, open(save_path, 'w'))
+            self._saved_metadata = True
 
         if 'images' in obs_dict:
             images = obs_dict.pop('images')
@@ -136,7 +147,7 @@ class RobotEnvironment:
             for n in range(goal_images.shape[0]):
                 cv2.imwrite('{}/goal_image{}.jpg'.format(traj_folder, n),
                             (goal_images[n, :, :, ::-1] * 255).astype(np.uint8))
-
+        
         with open('{}/agent_data.pkl'.format(traj_folder), 'wb') as file:
             pkl.dump(agent_data, file)
         with open('{}/obs_dict.pkl'.format(traj_folder), 'wb') as file:
@@ -160,5 +171,18 @@ if __name__ == '__main__':
     hyperparams = imp.load_source('hyperparams', args.experiment)
     conf = hyperparams.config
 
-    env = RobotEnvironment(args.robot_name, conf, args.resume, args.ngpu, args.gpu_id, args.benchmark)
+    env_data = None
+    possible_metadata = glob.glob('/'.join(args.experiment.split('/')[:-1]) + '/*.json')
+    if len(possible_metadata) == 1:
+        env_data = json.load(open(possible_metadata[0], 'r'))
+        print("METADATA LOADED")
+        for k, v in env_data.items():
+            print("{}= {}".format(k, v))
+        assert raw_input('Everything okay? (y to continue): ') == 'y'
+    else:
+        print("Can't load meta-data!")
+        import time
+        time.sleep(3.0)           # add annoying warning
+    
+    env = RobotEnvironment(args.robot_name, conf, args.resume, args.ngpu, args.gpu_id, args.benchmark, env_data)
     env.run()

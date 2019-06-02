@@ -1,0 +1,14 @@
+{
+    "camera_configuration": "vestri_table3",
+    "camera_type":"Logitech C920",
+    "policy_desc": "random policy, gaussian noise: std_xy=0.035, std_z=0.08, std_theta=pi/18, autograsp for gripper", 
+    "bin_type": "wooden_bin",
+    "bin_insert": "none",
+    "robot": "sawyer",
+    "gripper": "sawyer-2Finger",
+    "background": "lab",
+    "primitives": "autograsp",
+    "action_space": "x,y,z,theta",
+    "object_classes": "toys+cloth"
+}
+
