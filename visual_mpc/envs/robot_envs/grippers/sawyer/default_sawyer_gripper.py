@@ -7,7 +7,7 @@ class SawyerDefaultGripper(GripperInterface):
     def __init__(self):
         self._gripper_control = intera_interface.Gripper("right")
         self._gripper_control.calibrate()
-        self._gripper_control.set_velocity(self._gripper_control.MAX_VELOCITY)
+        self._gripper_control.set_velocity(self._gripper_control.MIN_VELOCITY)
         self._gripper_control.open()
     
     def get_gripper_state(self, integrate_force=False):

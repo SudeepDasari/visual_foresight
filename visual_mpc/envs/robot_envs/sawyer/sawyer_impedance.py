@@ -151,7 +151,12 @@ class SawyerImpedanceController(RobotController):
         joint_pos = pkl.load(open(file, "rb"))
 
         for t in range(0, len(joint_pos), RESET_SKIP):
-            pos_arr = np.array([joint_pos[t][j] for j in self._limb.joint_names()])
+            joint_t = joint_pos[t]
+            if isinstance(joint_t, np.ndarray):
+                pos_arr = joint_t
+            else:
+                pos_arr = np.array([joint_pos[t][j] for j in self._limb.joint_names()])
+            
             self.move_to_ja([pos_arr])
 
     def get_joint_angles(self):

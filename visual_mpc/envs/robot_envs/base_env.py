@@ -104,12 +104,11 @@ class BaseRobotEnv(BaseEnv):
         return parent_params
 
     def _setup_robot(self):
-        config_file_path = '/'.join(__file__.split('/')[:-2])
-        import pdb; pdb.set_trace()
+        config_file_path = '/'.join(__file__.split('/')[:-1]) + '/robot_configs.json'
         try:
             robot_configs = json.load(open(config_file_path, 'r'))
             self._high_bound = np.array(robot_configs[self._robot_name][1])
-            self._high_bound = np.array(robot_configs[self._robot_name][0])
+            self._low_bound = np.array(robot_configs[self._robot_name][0])
         except ValueError:
             logging.error("Did you fill out the config file (stored at {})?".format(config_file_path))
         except KeyError:
