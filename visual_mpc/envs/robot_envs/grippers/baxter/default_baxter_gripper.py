@@ -7,7 +7,7 @@ class BaxterDefaultGripper(GripperInterface):
     def __init__(self, arm="right"):
         self._gripper_control = baxter_interface.Gripper("right", CHECK_VERSION)
         self._gripper_control.calibrate()
-        self._gripper_control.set_velocity(self._gripper_control.MIN_VELOCITY)
+        self._gripper_control.set_velocity(50)
         self._gripper_control.open()
     
     def get_gripper_state(self, integrate_force=False):
