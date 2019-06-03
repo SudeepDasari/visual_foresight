@@ -31,11 +31,12 @@ class BaxterImpedanceController(RobotController):
                                                         gripper_attached)
         
         self._rs = baxter_interface.RobotEnable(baxter_interface.CHECK_VERSION)
+        self._rs.enable()
         self._limb_name = limb
         self._limb = baxter_interface.Limb(self._limb_name)
         self.joint_names = self._limb.joint_names()
         self._ep_handler = LatestEEObs(limb=self._limb_name)
-        self._cmd_publisher = rospy.Publisher('/robot/limb/{}/joint_command'.format(self._limb_name, JointCommand, queue_size=100)
+        self._cmd_publisher = rospy.Publisher('/robot/limb/{}/joint_command'.format(self._limb_name), JointCommand, queue_size=100)
     
     def _init_gripper(self, gripper_attached):
         if gripper_attached == 'none':
