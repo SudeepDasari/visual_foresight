@@ -31,7 +31,6 @@ class BaxterImpedanceController(RobotController):
                                                         gripper_attached)
         
         self._rs = baxter_interface.RobotEnable(baxter_interface.CHECK_VERSION)
-        self._rs.enable()
         self._limb_name = limb
         self._limb = baxter_interface.Limb(self._limb_name)
         self.joint_names = self._limb.joint_names()
@@ -46,7 +45,7 @@ class BaxterImpedanceController(RobotController):
             from visual_mpc.envs.robot_envs.grippers.baxter.default_baxter_gripper import BaxterDefaultGripper
             self._gripper = BaxterDefaultGripper()
         else:
-            logging.getLogger('robot_logger').error("Gripper not supported!")
+            logging.getLogger('robot_logger').error("Gripper type '{}' not supported!".format(gripper_attached))
             raise NotImplementedError
 
     def _close_gripper_handler(self, value):
