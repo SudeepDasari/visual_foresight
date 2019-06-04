@@ -54,22 +54,23 @@ def get_joint_angles(pose, seed_cmd = None, use_advanced_options = False, limb="
 
         ikreq.seed_angles.append(seed)
 
-        # Once the primary IK task is solved, the solver will then try to bias the
-        # the joint angles toward the goal joint configuration. The null space is
-        # the extra degrees of freedom the joints can move without affecting the
-        # primary IK task.
-        ikreq.use_nullspace_goal.append(True)
-        # The nullspace goal can either be the full set or subset of joint angles
-        goal = JointState()
-        goal.name = ['right_j0', 'right_j1', 'right_j2', 'right_j3']
-        goal.position = [0.409, -0.43, -1.2, 1.79]
+        # Null space goals are not supported on the baxter
+        ## Once the primary IK task is solved, the solver will then try to bias the
+        ## the joint angles toward the goal joint configuration. The null space is
+        ## the extra degrees of freedom the joints can move without affecting the
+        ## primary IK task.
+        #ikreq.use_nullspace_goal.append(True)
+        ## The nullspace goal can either be the full set or subset of joint angles
+        #goal = JointState()
+        #goal.name = ['right_j0', 'right_j1', 'right_j2', 'right_j3']
+        #goal.position = [0.409, -0.43, -1.2, 1.79]
 
-        ikreq.nullspace_goal.append(goal)
-        # # The gain used to bias toward the nullspace goal. Must be [0.0, 1.0]
-        # # If empty, the default gain of 0.4 will be used
-        # ikreq.nullspace_gain.append(0.5)
-        # else:
-        # rospy.loginfo("Running Simple IK Service Client example.")
+        #ikreq.nullspace_goal.append(goal)
+        ## # The gain used to bias toward the nullspace goal. Must be [0.0, 1.0]
+        ## # If empty, the default gain of 0.4 will be used
+        ## ikreq.nullspace_gain.append(0.5)
+        ## else:
+        ## rospy.loginfo("Running Simple IK Service Client example.")
     done, i = False, 0
     while not done and i < 100:
         try:

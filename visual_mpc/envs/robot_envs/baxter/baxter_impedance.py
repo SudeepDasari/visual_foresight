@@ -124,9 +124,9 @@ class BaxterImpedanceController(RobotController):
             command = JointCommand()
             command.mode = JointCommand.POSITION_MODE
             command.names = jointnames
-            command.position = pos
-            command.velocity = np.clip(velocity, -max_vel_mag, max_vel_mag)
-            command.acceleration = np.clip(acceleration, -max_accel_mag, max_accel_mag)
+            command.command = pos
+            #command.velocity = np.clip(velocity, -max_vel_mag, max_vel_mag)
+            #command.acceleration = np.clip(acceleration, -max_accel_mag, max_accel_mag)
             self._cmd_publisher.publish(command)
 
             self._control_rate.sleep()
@@ -136,7 +136,8 @@ class BaxterImpedanceController(RobotController):
             command = JointCommand()
             command.mode = JointCommand.POSITION_MODE
             command.names = jointnames
-            command.position = waypoints[-1]
+            #command.position = waypoints[-1]
+            command.command = waypoints[-1]
             self._cmd_publisher.publish(command)
 
             self._control_rate.sleep()
@@ -147,7 +148,8 @@ class BaxterImpedanceController(RobotController):
         command = JointCommand()
         command.mode = JointCommand.POSITION_MODE
         command.names = self._limb.joint_names()
-        command.position = pos
+        #command.position = pos
+        command.command = pos
         self._cmd_publisher.publish(command)
 
     def redistribute_objects(self):
