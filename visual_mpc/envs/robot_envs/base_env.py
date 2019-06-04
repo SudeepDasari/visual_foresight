@@ -185,7 +185,9 @@ class BaseRobotEnv(BaseEnv):
         z_angle = self._controller.quat_2_euler(eep[3:])[0]
 
         obs['qpos'] = j_angles
-        obs['qvel'] = j_vel
+        # add support for widow_x which does not have velocity readings on ja
+        if j_vel is not None:
+            obs['qvel'] = j_vel
 
         if self._previous_target_qpos is not None:
             logging.getLogger('robot_logger').debug('xy delta: {}'.format(np.linalg.norm(eep[:2] - self._previous_target_qpos[:2])))
@@ -196,7 +198,8 @@ class BaseRobotEnv(BaseEnv):
                                                              np.rad2deg(self._previous_target_qpos[3])))
 
         obs['state'] = self._get_state()
-        obs['finger_sensors'] = force_sensor
+        if force_sensor is not None:
+            obs['finger_sensors'] = force_sensor
 
         self._last_obs = copy.deepcopy(obs)
         obs['images'] = self.render()
@@ -345,16 +348,17 @@ class BaseRobotEnv(BaseEnv):
         for recorder in self._cameras:
             stamp, image = recorder.get_image()
             if abs(stamp - cur_time) > 10 * self._obs_tol:    # no camera ping in half second => camera failure
-                logging.getLogger('robot_logger').error("DeSYNC!")
+                logging.getLogger('robot_logger').error("DeSYNC - no ping in more than {} seconds!".format(10 * self._obs_tol))
                 raise Image_Exception
             time_stamps.append(stamp)
             cam_imgs.append(image)
 
-        for index, i in enumerate(time_stamps[:-1]):
-            for j in time_stamps[index + 1:]:
-                if abs(i - j) > self._obs_tol:
-                    logging.getLogger('robot_logger').error('DeSYNC!')
-                    raise Image_Exception
+        if self.ncam > 1:
+            for index, i in enumerate(time_stamps[:-1]):
+                for j in time_stamps[index + 1:]:
+                    if abs(i - j) > self._obs_tol:
+                        logging.getLogger('robot_logger').error('DeSYNC- Cameras are out of sync!')
+                        raise Image_Exception
 
         images = np.zeros((self.ncam, self._height, self._width, 3), dtype=np.uint8)
         for c, img in enumerate(cam_imgs):
