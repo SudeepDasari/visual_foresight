@@ -1,6 +1,5 @@
 {
     # json file that maps robot names to action space configs 
-    "bot": [[0., 0., 0.], [1., 1., 1.]]     # specifies a both with 3-D action space which ranges from 0-1 in each dimension
-
+    "bot": [[0., 0., 0., 0., 0,], [1., 1., 1., 1., 1.]]     # specifies a both with 5-D action space which ranges from 0-1 in each dimension
     # THIS IS NOT A VALID JSON FILE. PLEASE FILL OUT WITH YOUR OWN VALUES MANUALLY USING GET_POINTS
 }

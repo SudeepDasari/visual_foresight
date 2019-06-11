@@ -13,7 +13,7 @@ class GripperInterface(object):
     def get_gripper_state(self, integrate_force=False):
         # returns gripper joint angle, force reading (none if no force)
         logging.getLogger('robot_logger').warning("Attempting to get non-existent gripper's state!")
-        return 0.0, 0.0
+        return 0.0, None
 
     def get_gripper_limits(self):
         return self.GRIPPER_CLOSE, self.GRIPPER_OPEN
