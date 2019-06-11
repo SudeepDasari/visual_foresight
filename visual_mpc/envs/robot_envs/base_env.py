@@ -29,6 +29,7 @@ class BaseRobotEnv(BaseEnv):
             else:
                 self._hp.set_hparam(name, value)
 
+        assert self._hp.action_space == 'xyz_yaw_gripper', "environment only supports xyz_yaw_gripper action spaces at the moment"
         logging.info('initializing environment for {}'.format(self._hp.robot_name))
         self._robot_name = self._hp.robot_name
         self._setup_robot()
@@ -73,6 +74,7 @@ class BaseRobotEnv(BaseEnv):
         self._reset_counter, self._previous_target_qpos = 0, None
 
         self._start_pix, self._desig_pix, self._goal_pix = None, None, None
+
         self._goto_closest_neutral()
 
     def _default_hparams(self):
@@ -96,6 +98,7 @@ class BaseRobotEnv(BaseEnv):
                         'rand_drop_reset': True,
                         'normalize_actions': False,
                         'reset_before_eval': False,
+                        'action_space': 'xyz_yaw_gripper',
                         'wait_during_resetend': False}
 
         parent_params = BaseEnv._default_hparams(self)
@@ -171,10 +174,14 @@ class BaseRobotEnv(BaseEnv):
         eep = self._controller.get_cartesian_pose()
         gripper_state = self._controller.get_gripper_state()[0]
         
+        GRIPPER_LOW, GRIPPER_HIGH = self._controller.get_gripper_limits()
+        if GRIPPER_HIGH - GRIPPER_LOW > 0:
+            gripper_state = (gripper_state - GRIPPER_LOW) / (GRIPPER_HIGH - GRIPPER_LOW)
+
         state = np.zeros(self._base_sdim)
         state[:3] = (eep[:3] - self._low_bound[:3]) / (self._high_bound[:3] - self._low_bound[:3])
         state[3] = self._controller.quat_2_euler(eep[3:])[0]
-        state[4] = gripper_state * self._low_bound[-1] + (1 - gripper_state) * self._high_bound[-1]
+        state[4] = (1 - gripper_state) * self._low_bound[-1] + gripper_state * self._high_bound[-1]
         return state
 
     def _get_obs(self):

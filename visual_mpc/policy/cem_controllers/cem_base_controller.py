@@ -43,6 +43,7 @@ class CEMBaseController(Policy):
             'verbose': True,
             'verbose_every_iter': False,
             'logging_dir': '',
+            'zeros_for_start_frames': True,
             'replan_interval': 0,
             'sampler': GaussianCEMSampler,
             'T': 15,                       # planning horizon
@@ -59,20 +60,21 @@ class CEMBaseController(Policy):
         return parent_params
 
     def _override_defaults(self, policyparams):
-        for name, value in policyparams.get('sampler', GaussianCEMSampler).get_default_hparams().items():
+        sampler_class = policyparams.get('sampler', GaussianCEMSampler)
+        for name, value in sampler_class.get_default_hparams().items():
             if name in self._hp:
                 print('Warning default value for {} already set!'.format(name))
                 self._hp.set_hparam(name, value)
             else:
                 self._hp.add_hparam(name, value)
 
-        return super(CEMBaseController, self)._override_defaults(policyparams)
+        super(CEMBaseController, self)._override_defaults(policyparams)
+        self._hp.sampler = sampler_class
 
     def reset(self):
         self._best_indices = None
         self._best_actions = None
         self._t_since_replan = None
-
         self._sampler = self._hp.sampler(self._hp, self._adim, self._sdim)
         self.plan_stat = {} #planning statistics
 
@@ -120,7 +122,11 @@ class CEMBaseController(Policy):
         self._t = t
 
         if t < self._hp.start_planning:
-            action = np.zeros(self.agentparams['adim'])
+            if self._hp.zeros_for_start_frames:
+                action = np.zeros(self.agentparams['adim'])
+            else:
+                initial_sampler = self._hp.sampler(self._hp, self._adim, self._sdim)
+                action = initial_sampler.sample_initial_actions(t, 1, state[-1])[0, 0]
         else:
             if self._hp.replan_interval:
                 if self._t_since_replan is None or self._t_since_replan + 1 >= self._hp.replan_interval:
