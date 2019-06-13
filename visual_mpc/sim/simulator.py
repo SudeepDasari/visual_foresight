@@ -1,6 +1,5 @@
 import cv2
 import shutil
-from visual_mpc.utils.logger import Logger
 import pickle as pkl
 import os
 import os.path
@@ -16,10 +15,7 @@ class Sim(object):
         self.agent = config['agent']['type'](config['agent'])
         self.agentparams = config['agent']
         self.policyparams = config['policy']
-        if logger == None:
-            self.logger = Logger(printout=True)
-        else: self.logger = logger
-        self.logger.log('started sim')
+
         self.agentparams['gpu_id'] = gpu_id
 
         self.policy = config['policy']['type'](self.agent._hyperparams, config['policy'], gpu_id, ngpu)
