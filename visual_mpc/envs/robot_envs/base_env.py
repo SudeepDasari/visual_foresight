@@ -138,12 +138,13 @@ class BaseRobotEnv(BaseEnv):
         if np.linalg.norm(target_qpos - self._previous_target_qpos) < 1e-3:
             return self._get_obs()
 
-        wait_change = (target_qpos[-1] > 0) != (self._previous_target_qpos[-1] > 0)
+        gripper_midpoint = (self._low_bound[-1] + self._high_bound[-1]) / 2.0
+        wait_change = (target_qpos[-1] > gripper_midpoint) != (self._previous_target_qpos[-1] > gripper_midpoint)
 
         if self._save_video:
             [c.start_recording() for c in self._cameras]
 
-        if target_qpos[-1] > 0:
+        if target_qpos[-1] > gripper_midpoint:
             self._controller.close_gripper(wait_change)
         else:
             self._controller.open_gripper(wait_change)
