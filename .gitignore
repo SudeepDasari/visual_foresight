@@ -11,3 +11,4 @@
 *.egg-info/
 .email_cred
 *_log.txt
+__pycache__/*
