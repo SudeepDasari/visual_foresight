@@ -38,6 +38,13 @@ class CEMSampler(object):
         """
         self._chosen_actions.append(action.copy())
         self._best_action_plans.append(best_action_plans)
+    
+    @property
+    def chosen_actions(self):
+        """
+        :return: actions chosen by policy thus far
+        """
+        return self._chosen_actions
 
     @staticmethod
     def get_default_hparams():

@@ -8,9 +8,11 @@ import io
 from multiprocessing import Pool, Manager
 from visual_mpc.utils.sync import ManagedSyncCounter
 import random
+import functools
+from tqdm import tqdm
 
 
-MANDATORY_KEYS = ['camera_configuration', 'policy_desc', 'environment_size', 'bin_type', 'bin_insert', 'contains_annotation',
+MANDATORY_KEYS = ['camera_configuration', 'policy_desc', 'bin_type', 'bin_insert', 'contains_annotation',
                                 'robot', 'gripper', 'background', 'action_space', 'object_classes', 'primitives', 'camera_type']
 
 
@@ -78,8 +80,6 @@ def save_hdf5(filename, env_obs, policy_out, agent_data, meta_data, video_encodi
             policy_dict[k] = np.concatenate([p[k][None] for p in policy_out], axis=0)
         save_dict(policy_dict, f.create_group('policy'), video_encoding, t_index)
 
-        meta_data = copy.deepcopy(meta_data)
-
         meta_data_group = f.create_group('metadata')
         for mandatory_key in MANDATORY_KEYS:
             meta_data_group.attrs[mandatory_key] = meta_data.pop(mandatory_key)
@@ -88,30 +88,37 @@ def save_hdf5(filename, env_obs, policy_out, agent_data, meta_data, video_encodi
             meta_data_group.attrs[k] = meta_data[k]
             
 
-def save_worker(assigned_trajs):
-    cntr, t_index, trajs = assigned_trajs
+def save_worker(traj_data, cntr):
+    t_index = random.randint(0, 9999999)
+    t, meta_data = traj_data
 
-    for t, meta_data in trajs:
-        try:
-            env_obs = pkl.load(open('{}/obs_dict.pkl'.format(t), 'rb'), encoding='latin1')
-            n_cams = len(glob.glob('{}/images*'.format(t)))
-            if n_cams:
-                T = min([len(glob.glob('{}/images{}/*.jpg'.format(t, i))) for i in range(n_cams)])
-                height, width = cv2.imread('{}/images0/im_0.jpg'.format(t)).shape[:2]
-                env_obs['images'] = np.zeros((T, n_cams, height, width, 3), dtype=np.uint8)
+    try:
+        env_obs = pkl.load(open('{}/obs_dict.pkl'.format(t), 'rb'), encoding='latin1')
+        if meta_data['contains_annotation']:
+            env_obs['bbox_annotations'] = pkl.load(open('{}/annotation_array.pkl'.format(t), 'rb'), encoding='latin1')
+        n_cams = len(glob.glob('{}/images*'.format(t)))
+        if n_cams:
+            T = min([len(glob.glob('{}/images{}/*.jpg'.format(t, i))) for i in range(n_cams)])
+            height, width = cv2.imread('{}/images0/im_0.jpg'.format(t)).shape[:2]
+            env_obs['images'] = np.zeros((T, n_cams, height, width, 3), dtype=np.uint8)
 
-                for n in range(n_cams):
-                    for time in range(T):
-                        env_obs['images'][time, n] = cv2.imread('{}/images{}/im_{}.jpg'.format(t, n, time))
+            for n in range(n_cams):
+                for time in range(T):
+                    env_obs['images'][time, n] = cv2.imread('{}/images{}/im_{}.jpg'.format(t, n, time))
 
-            policy_out = pkl.load(open('{}/policy_out.pkl'.format(t), 'rb'), encoding='latin1')
-            agent_data = pkl.load(open('{}/agent_data.pkl'.format(t), 'rb'), encoding='latin1')
+        policy_out = pkl.load(open('{}/policy_out.pkl'.format(t), 'rb'), encoding='latin1')
+        agent_data = pkl.load(open('{}/agent_data.pkl'.format(t), 'rb'), encoding='latin1')
 
-            c = cntr.ret_increment
-            print('cntr-{}: saving traj {}'.format(c, t))
-            save_hdf5('{}/traj{}.hdf5'.format(args.output_folder, c), env_obs, policy_out, agent_data, meta_data, video_encoding, t_index)
-        except FileNotFoundError:
-            print('traj {} DNE!'.format(t))
+        def store_in_metadata_if_exists(key):  
+            if key in agent_data:
+                meta_data[key] = agent_data.pop(key)
+        [store_in_metadata_if_exists(k) for k in ['goal_reached', 'term_t']]
+
+        c = cntr.ret_increment
+        save_hdf5('{}/traj{}.hdf5'.format(args.output_folder, c), env_obs, policy_out, agent_data, meta_data, video_encoding, t_index)
+        return True
+    except FileNotFoundError:
+        return False
 
 
 if __name__ == '__main__':
@@ -142,9 +149,7 @@ if __name__ == '__main__':
     args.input_folder, args.output_folder = [os.path.expanduser(x) for x in (args.input_folder, args.output_folder)]
     if not os.path.exists(args.output_folder):
         os.makedirs(args.output_folder)
-    elif input_fn('path {} exists okay to overwrite? (y/n)'.format(args.output_folder)) != 'y':
-        exit(0)
-    else:
+    elif input_fn('path {} exists, should folder be deleted? (y/n): '.format(args.output_folder)) == 'y':
         shutil.rmtree(args.output_folder)
         os.makedirs(args.output_folder)   
     
@@ -156,22 +161,38 @@ if __name__ == '__main__':
             print("Please delete all temp*.mp4 files! (needed for saving)")
             raise EnvironmentError
     
-    traj_groups = glob.glob(args.input_folder + "*/*/*/traj_group*")
-    trajs = []
+    traj_groups = glob.glob(args.input_folder + "*/*/*/*")
+    trajs, annotations_loaded = [], 0
     for group in traj_groups:
         meta_data_dict = json.load(open('{}/hparams.json'.format(group), 'r'))
-        group_trajs = glob.glob('{}/traj*'.format(group))
-        [trajs.append((t, meta_data_dict)) for t in group_trajs]
-    random.shuffle(trajs)
+        group_trajs = glob.glob('{}/*'.format(group))
+        for t in group_trajs:
+            traj_meta_data = copy.deepcopy(meta_data_dict)
+            if os.path.exists('{}/annotation_array.pkl'.format(t)):
+                traj_meta_data['contains_annotation'] = True
+                annotations_loaded += 1
+            else:
+                traj_meta_data['contains_annotation'] = False
+            
+            if isinstance(traj_meta_data['object_classes'], str):
+                traj_meta_data['object_classes'] = traj_meta_data['object_classes'].split("+")
+            
+            assert all([k in traj_meta_data for k in MANDATORY_KEYS]), 'metadata for {} is missing keys!'.format(t)
+            assert isinstance(traj_meta_data['object_classes'], list), "did not split object classes!"
+            assert all([isinstance(x, str) for x in traj_meta_data['object_classes']]), 'object classes is not a string!'
 
+            trajs.append((t, traj_meta_data))
+    random.shuffle(trajs)
+    
+    print('Loaded {} trajectories with {} annotations!'.format(len(trajs), annotations_loaded))
     cntr = ManagedSyncCounter(Manager(), args.counter)
     if args.n_workers == 1:
-        save_worker((cntr, 0, trajs))
+        saved = 0
+        for t in tqdm(trajs):
+            saved += save_worker(t, cntr)
+        
+        print('saved {} total trajs'.format(saved))
     else:
-        jobs, n_per_job = [], int(math.ceil(float(len(trajs)) / args.n_workers))
-        for j in range(args.n_workers):
-            job = trajs[j * n_per_job: (j + 1) * n_per_job]
-            jobs.append((cntr, j, job))
-
+        map_fn = functools.partial(save_worker, cntr=cntr)
         p = Pool(args.n_workers)
-        p.map(save_worker, jobs)
+        print('saved {} total trajs'.format(sum(tqdm(p.imap_unordered(map_fn, trajs), total=len(trajs)))))

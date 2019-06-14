@@ -81,11 +81,14 @@ class ClassifierController(CEMBaseController):
         return parent_params
 
     def evaluate_rollouts(self, actions, cem_itr):
-        import pdb; pdb.set_trace()
+        previous_actions = np.concatenate([x[None] for x in self._sampler.chosen_actions[-self._net_context:]], axis=0)
+        previous_actions = np.tile(previous_actions, [actions.shape[0], 1, 1])
+        input_actions = np.concatenate((previous_actions, actions), axis=1)[:, :self._seqlen]
+
         last_frames, last_states = get_context(self._net_context, self._t,
                                                self._state, self._images, self._hp)
 
-        gen_images = rollout_predictions(self._predictor, self._vpred_bsize, actions,
+        gen_images = rollout_predictions(self._predictor, self._vpred_bsize, input_actions,
                                          last_frames, last_states, logger=self._logger)[0]
 
         gen_images = np.concatenate(gen_images, 0) * 255.
@@ -93,7 +96,9 @@ class ClassifierController(CEMBaseController):
         raw_scores = np.zeros((self._n_cam, actions.shape[0], self._n_pred))
         for c in range(self._n_cam):
             input_images = gen_images[:, :, c].reshape((-1, self._img_height, self._img_width, 3)) / 255
-            logits = self._scoring_func(input_images)['logits'].reshape((actions.shape[0], self._n_pred, 2))
+            logits = self._scoring_func(input_images)['logits']
+            logits = logits.reshape((actions.shape[0], self._n_pred, 2))
+            import pdb; pdb.set_trace()
             raw_scores[c] = -np.log(logits[:, :, 1] + LOG_SHIFT)
 
         raw_scores = np.sum(raw_scores, axis=0)
