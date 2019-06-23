@@ -20,6 +20,7 @@ class AutograspEnv(BaseRobotEnv):
 
     def _default_hparams(self):
         default_dict = {'zthresh': 0.15,
+                        'gripper_joint_grasp_min': 0.0,
                         'gripper_joint_thresh': -1.,   # anything <0 deactivates this check
                         'reopen': True,
                         'robot_upside_down': False}
@@ -38,7 +39,7 @@ class AutograspEnv(BaseRobotEnv):
         
         z_thresh = self._hp.zthresh
 
-        joint_test = self._last_obs['state'][-1] > 0 and \
+        joint_test = self._last_obs['state'][-1] > self._hp.gripper_joint_grasp_min and \
                      np.abs(self._last_obs['state'][-1]) < self._hp.gripper_joint_thresh
         touch_test = joint_test or np.amax(self._last_obs.get('finger_sensors', 0)) > 0
         logging.getLogger('robot_logger').debug('joint is {} and test is {}'.format(self._last_obs['state'][-1], joint_test))
