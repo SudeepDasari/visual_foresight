@@ -285,7 +285,7 @@ class BaseRobotEnv(BaseEnv):
             self._controller.move_to_neutral()
 
         if self._cleanup_rate == 0 or (self._cleanup_rate > 0 and self._reset_counter % self._cleanup_rate == 0 and self._reset_counter > 0):
-            self._controller.redistribute_objects()
+            # self._controller.redistribute_objects()
             self._goto_closest_neutral()
 
         self._controller.move_to_neutral()
@@ -352,7 +352,7 @@ class BaseRobotEnv(BaseEnv):
 
         for index, i in enumerate(time_stamps[:-1]):
             for j in time_stamps[index + 1:]:
-                if abs(i - j) > self._obs_tol:
+                if abs(i - j) > self._obs_tol * 10:
                     logging.getLogger('robot_logger').error('DeSYNC!')
                     raise Image_Exception
 

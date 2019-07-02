@@ -25,6 +25,21 @@ class Pushback_Recorder(object):
             self._navigator = intera_interface.Navigator()
             self.start_callid = self._navigator.register_callback(self.start_recording, 'right_button_ok')
             self.stop_callid = self._navigator.register_callback(self.stop_recording, 'right_button_square')
+
+        elif robot_type == 'baxter':
+            from pynput import mouse
+            from pynput import keyboard
+            import baxter_interface
+            from visual_mpc.envs.robot_envs.baxter.baxter_impedance import BaxterImpedanceController
+            self._controller = BaxterImpedanceController('baxter', False, gripper_attached='none',limb = 'right')
+            self._controller.move_to_neutral()
+            # Navigator Rethink button press
+            self._navigator = baxter_interface.Navigator('right')
+            self.start_callid = self._navigator.button0_changed.connect(self.start_recording)
+            self.stop_callid = self._navigator.button1_changed.connect(self.stop_recording)
+
+            # self.start_callid = self._navigator.register_callback(self.start_recording, 'right_button_ok')
+            # self.stop_callid = self._navigator.register_callback(self.stop_recording, 'right_button_square')
         else:
             raise NotImplementedError
         
@@ -35,29 +50,36 @@ class Pushback_Recorder(object):
 
         logging.getLogger('robot_logger').info('ready for recording!')
         rospy.spin()
+        
+    # def button0(self,key):
+    #     self.val = 0
+    #     print("button0")
+    # def button1(self,x,y,button,pressed):
+    #     while(True):
+    #         print(self.val)
 
     def stop_recording(self, data):
+        # print("something happened")
         if data < 0:
             return
         logging.getLogger('robot_logger').info('stopped recording')
-        self._collect_active = False
-
-    def start_recording(self, data):
-        if data < 0:
-            return
-        logging.getLogger('robot_logger').info('started recording')
-        
-        self._collect_active = True
-        self._joint_pos = []
-        while(self._collect_active):
-            self._control_rate.sleep()
-            self._joint_pos.append(self._controller.get_joint_angles())
-
         with open(self._file, 'wb') as f:
             pkl.dump(self._joint_pos, f)
 
         logging.getLogger('robot_logger').info('saved file to {}'.format(self._file))
         self._controller.clean_shutdown()
+
+    def start_recording(self, data):
+
+        # print("first thing happened")
+        if data < 0:
+            return
+        logging.getLogger('robot_logger').info('Recorded angles')
+        
+        self._control_rate.sleep()
+        self._joint_pos.append(self._controller.get_joint_angles())
+
+        
 
 
 if __name__ == '__main__':
