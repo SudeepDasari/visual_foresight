@@ -19,7 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
   camera_info_manager
   sensor_msgs
 )
-find_package(OpenCV)
+find_package(OpenCV 3.0 REQUIRED)
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 

@@ -46,7 +46,7 @@ class BaseRobotEnv(BaseEnv):
         for name, value in self._hp.values().items():
             logging.getLogger('robot_logger').info('{}= {}'.format(name, value))
         logging.getLogger('robot_logger').info('---------------------------------------------------------------------------')
-
+    
         self._save_video = self._hp.save_video
         self._cameras = [CameraRecorder(t, self._hp.opencv_tracking, self._save_video) for t in self._hp.camera_topics]
 

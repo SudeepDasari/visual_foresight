@@ -46,7 +46,8 @@ class AutograspEnv(BaseRobotEnv):
 
         target, self._gripper_closed = autograsp_dynamics(self._previous_target_qpos, action,
                                                           self._gripper_closed, norm_gripper_z, z_thresh,
-                                                          self._hp.reopen, touch_test or self._prev_touch)
+                                                          self._hp.reopen, touch_test or self._prev_touch,
+                                                          self._low_bound[-1], self._high_bound[-1])
         logging.getLogger('robot_logger').debug('norm_gripper_z is {} and close command is {}'.format(norm_gripper_z, self._gripper_closed))
         self._prev_touch = touch_test
         return target
