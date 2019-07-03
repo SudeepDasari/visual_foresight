@@ -35,11 +35,12 @@ class Pushback_Recorder(object):
             self._controller.move_to_neutral()
             # Navigator Rethink button press
             self._navigator = baxter_interface.Navigator('right')
-            self.start_callid = self._navigator.button0_changed.connect(self.start_recording)
-            self.stop_callid = self._navigator.button1_changed.connect(self.stop_recording)
+            self._navigator1 = baxter_interface.Navigator('left')
 
-            # self.start_callid = self._navigator.register_callback(self.start_recording, 'right_button_ok')
-            # self.stop_callid = self._navigator.register_callback(self.stop_recording, 'right_button_square')
+
+            self.start_callid = self._navigator.button0_changed.connect(self.start_recording)
+            self.stop_callid = self._navigator1.button0_changed.connect(self.stop_recording)
+
         else:
             raise NotImplementedError
         
@@ -50,7 +51,7 @@ class Pushback_Recorder(object):
 
         logging.getLogger('robot_logger').info('ready for recording!')
         rospy.spin()
-        
+
     # def button0(self,key):
     #     self.val = 0
     #     print("button0")
@@ -59,25 +60,32 @@ class Pushback_Recorder(object):
     #         print(self.val)
 
     def stop_recording(self, data):
-        # print("something happened")
+        print("something happened")
         if data < 0:
             return
+        self._collect_active = False
         logging.getLogger('robot_logger').info('stopped recording')
+        
+
+    def start_recording(self, data):
+
+        self._collect_active = True
+
+        print("first thing happened")
+        if data < 0:
+            return
+        logging.getLogger('robot_logger').info('recording')
+        
+        while(self._collect_active):
+            self._joint_pos.append(self._controller.get_joint_angles())
+            self._control_rate.sleep()
+        
+        logging.getLogger('robot_logger').info('Saving {} joing angles'.format(len(self._joint_pos)))
         with open(self._file, 'wb') as f:
             pkl.dump(self._joint_pos, f)
 
         logging.getLogger('robot_logger').info('saved file to {}'.format(self._file))
         self._controller.clean_shutdown()
-
-    def start_recording(self, data):
-
-        # print("first thing happened")
-        if data < 0:
-            return
-        logging.getLogger('robot_logger').info('Recorded angles')
-        
-        self._control_rate.sleep()
-        self._joint_pos.append(self._controller.get_joint_angles())
 
         
 
