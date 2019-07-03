@@ -296,7 +296,7 @@ class BaseRobotEnv(BaseEnv):
             self._controller.move_to_neutral()
 
         if self._cleanup_rate == 0 or (self._cleanup_rate > 0 and self._reset_counter % self._cleanup_rate == 0 and self._reset_counter > 0):
-            self._controller.redistribute_objects()
+            # self._controller.redistribute_objects()
             self._goto_closest_neutral()
 
         self._controller.move_to_neutral()
@@ -361,12 +361,20 @@ class BaseRobotEnv(BaseEnv):
             time_stamps.append(stamp)
             cam_imgs.append(image)
 
+<<<<<<< HEAD
         if self.ncam > 1:
             for index, i in enumerate(time_stamps[:-1]):
                 for j in time_stamps[index + 1:]:
                     if abs(i - j) > self._obs_tol:
                         logging.getLogger('robot_logger').error('DeSYNC- Cameras are out of sync!')
                         raise Image_Exception
+=======
+        for index, i in enumerate(time_stamps[:-1]):
+            for j in time_stamps[index + 1:]:
+                if abs(i - j) > self._obs_tol * 10:
+                    logging.getLogger('robot_logger').error('DeSYNC!')
+                    raise Image_Exception
+>>>>>>> add_baxter
 
         images = np.zeros((self.ncam, self._height, self._width, 3), dtype=np.uint8)
         for c, img in enumerate(cam_imgs):

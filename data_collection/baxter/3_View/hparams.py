@@ -12,7 +12,8 @@ current_dir = os.path.dirname(os.path.realpath(__file__))
 
 env_params = {
     'email_login_creds': '/home/server/catkin_ws/src/private_visual_foresight/visual_mpc/envs/robot_envs/email_cred_baxter.json',
-    'camera_topics': [IMTopic('/cameras/head_camera/image')],
+    'camera_topics': [IMTopic('/cam_sync/cam0/image_raw'),IMTopic('/cam_sync/cam1/image_raw'),IMTopic('/cam_sync/cam2/image_raw')],
+    # 'camera_topics': [IMTopic('/camera2/pg_16466237/image_raw')],
     'robot_type': 'baxter',
     'gripper_attached': 'baxter_gripper',
     'print_debug': True

@@ -39,9 +39,9 @@ def precalculate_interpolation(p1, q1, p2, q2, duration, last_pos, start_cmd, jo
             interp_ja = np.array([interp_ja[j] for j in joint_names])
             jas.append(interp_ja)
             last_pos = interp_ja
-        except EnvironmentError:
+        except (EnvironmentError,KeyError) as error:
             jas.append(last_pos)
-            logging.getLogger('robot_logger').error('ignoring IK failure')
+            logging.getLogger('robot_logger').error('ignoring IK failure or dictionary key not present error')
 
     interp_ja = []
     for i in range(len(jas) - 1):
