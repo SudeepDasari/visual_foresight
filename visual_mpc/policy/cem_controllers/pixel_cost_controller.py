@@ -20,10 +20,9 @@ class PixelCostController(CEMBaseController):
         :param ngpu: number of gpus to use
         """
         CEMBaseController.__init__(self, ag_params, policyparams)
-
-        params = imp.load_source('params', ag_params['current_dir'] + '/conf.py')
-        netconf = params.configuration
-        self.predictor = netconf['setup_predictor'](ag_params, netconf, gpu_id, ngpu, self._logger)
+        >> fill out test_hparams
+        self.predictor = self._hp.predictor_class(self._hp.model_hparams_path, test_hparams, n_gpus=ngpu, first_gpu=gpu_id)
+        self.predictor.restore(self._hp.model_restore_path)
 
         self._net_bsize = netconf['batch_size']
         self._net_seqlen = netconf['sequence_length']
@@ -45,6 +44,10 @@ class PixelCostController(CEMBaseController):
 
     def _default_hparams(self):
         default_dict = {
+            'predictor_class': None
+            'model_params_path': '',
+            'model_restore_path': '',
+
             "verbose_img_height": 128,
             'predictor_propagation':False,
             'only_take_first_view':False,
@@ -74,6 +77,9 @@ class PixelCostController(CEMBaseController):
         return one_hot_images
 
     def evaluate_rollouts(self, actions, cem_itr):
+        context = {
+            ""
+        }
         last_frames, last_states = get_context(self._net_context, self._t,
                                                self._state, self._images, self._hp)
         input_distrib = self._make_input_distrib(cem_itr)
