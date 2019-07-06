@@ -41,8 +41,8 @@ policy = {
     'nactions': 13,
     'repeat': 1,
 
-    "model_params_path": "~/models/run_lr1e-4/experiment_state-2019-07-04_21-59-09.json",
-    "model_restore_path": "~/models/run_lr1e-4/checkpoint_80000/model-80000",
+    "model_params_path": "~/models/BatchmixingVPredTrainable_0_batch_size=16,max_steps=300000,robot=,train_fraction=0.9,val_fraction=0.05_27c39fb0_2019-07-04_23-26-31hrwskbbd/experiment_state-2019-07-04_23-26-31.json",
+    "model_restore_path": "~/models/BatchmixingVPredTrainable_0_batch_size=16,max_steps=300000,robot=,train_fraction=0.9,val_fraction=0.05_27c39fb0_2019-07-04_23-26-31hrwskbbd/checkpoint_110000/model-270000",
 
     "sampler": AutograspSampler,
     'action_norm_factor': 714.285714286,
@@ -52,7 +52,7 @@ policy = {
 }
 
 config = {
-    'experiment_name': 'baxter_scratch',
+    'experiment_name': 'baxter_fine_tune',
     'traj_per_file':128,
     'current_dir' : current_dir,
     'save_data': True,

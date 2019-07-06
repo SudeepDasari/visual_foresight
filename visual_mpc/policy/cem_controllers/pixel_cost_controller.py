@@ -36,7 +36,7 @@ class PixelCostController(CEMBaseController):
         self.predictor.restore(self._hp.model_restore_path)
 
         self._net_context = self.predictor.n_context
-        self._hp.start_planning = self._net_context
+        self._hp.start_planning = self._net_context - 1
 
         self._n_desig = self._hp.designated_pixel_count
         self._img_height, self._img_width = [ag_params['image_height'], ag_params['image_width']]
@@ -84,7 +84,7 @@ class PixelCostController(CEMBaseController):
                 one_hot_images[:, :, icam, desig[icam, p, 0], desig[icam, p, 1], p] = 1.
                 self._logger.log('using desig pix', desig[icam, p, 0], desig[icam, p, 1])
 
-        return one_hot_images
+        return one_hot_images[0]
 
     def evaluate_rollouts(self, actions, cem_itr):
         context = {
@@ -96,9 +96,6 @@ class PixelCostController(CEMBaseController):
 
         prediction_dict = self.predictor(context, {'actions': actions})
         gen_images, gen_distrib = [prediction_dict[k] for k in  ['predicted_frames', 'predicted_pixel_distributions']]
-
-        gen_images = np.concatenate(gen_images, 0)
-        gen_distrib = np.concatenate(gen_distrib, 0)
 
         scores = self._eval_pixel_cost(cem_itr, gen_distrib, gen_images)
         
