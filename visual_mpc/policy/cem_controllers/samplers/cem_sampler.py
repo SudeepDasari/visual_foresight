@@ -1,6 +1,8 @@
 """
 Implements a custom sampler for the CEM controller
 """
+import numpy as np
+
 
 class CEMSampler(object):
     def __init__(self, hp, adim, sdim, **kwargs):
@@ -44,7 +46,7 @@ class CEMSampler(object):
         """
         :return: actions chosen by policy thus far
         """
-        return self._chosen_actions
+        return np.array(self._chosen_actions)
 
     @staticmethod
     def get_default_hparams():

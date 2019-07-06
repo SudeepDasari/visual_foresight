@@ -1,11 +1,16 @@
 import numpy as np
 import imp
+import os
 from .cem_base_controller import CEMBaseController
 from .visualizer.construct_html import save_gifs, save_html, save_img, fill_template
 import matplotlib.pyplot as plt
 from collections import OrderedDict
 from visual_mpc.video_prediction.pred_util import get_context, rollout_predictions
-
+try:
+    from robonet.video_prediction.testing import VPredEvaluation
+    DefaultPredClass = VPredEvaluation
+except ImportError:
+    DefaultPredClass = None
 
 class PixelCostController(CEMBaseController):
     """
@@ -20,20 +25,23 @@ class PixelCostController(CEMBaseController):
         :param ngpu: number of gpus to use
         """
         CEMBaseController.__init__(self, ag_params, policyparams)
-        >> fill out test_hparams
-        self.predictor = self._hp.predictor_class(self._hp.model_hparams_path, test_hparams, n_gpus=ngpu, first_gpu=gpu_id)
+        predictor_hparams = {}
+        predictor_hparams['adim'] = self._adim
+        predictor_hparams['sdim'] = self._sdim
+        predictor_hparams['designated_pixel_count'] = self._hp.designated_pixel_count
+        predictor_hparams['run_batch_size'] = self._hp.vpred_batch_size
+        predictor_hparams['img_dims'] = [ag_params['image_height'], ag_params['image_width']]
+
+        self.predictor = self._hp.predictor_class(self._hp.model_params_path, predictor_hparams, n_gpus=ngpu, first_gpu=gpu_id)
         self.predictor.restore(self._hp.model_restore_path)
 
-        self._net_bsize = netconf['batch_size']
-        self._net_seqlen = netconf['sequence_length']
-
-        self._net_context = netconf['context_frames']
+        self._net_context = self.predictor.n_context
         self._hp.start_planning = self._net_context
 
-        self._n_desig = netconf.get('ndesig', None)
-        self._img_height, self._img_width = netconf['orig_size']
+        self._n_desig = self._hp.designated_pixel_count
+        self._img_height, self._img_width = [ag_params['image_height'], ag_params['image_width']]
 
-        self._n_cam = netconf['ncam']
+        self._n_cam = 1 #self.predictor.n_cam
 
         self._desig_pix = None
         self._goal_pix = None
@@ -44,9 +52,11 @@ class PixelCostController(CEMBaseController):
 
     def _default_hparams(self):
         default_dict = {
-            'predictor_class': None
+            'predictor_class': DefaultPredClass,
             'model_params_path': '',
             'model_restore_path': '',
+            'vpred_batch_size': 200,
+            'designated_pixel_count': 1,
 
             "verbose_img_height": 128,
             'predictor_propagation':False,
@@ -78,14 +88,14 @@ class PixelCostController(CEMBaseController):
 
     def evaluate_rollouts(self, actions, cem_itr):
         context = {
-            ""
+            "context_frames": self._images,
+            "context_actions": self._sampler.chosen_actions,
+            "context_pixel_distributions": self._make_input_distrib(cem_itr),
+            "context_states": self._state
         }
-        last_frames, last_states = get_context(self._net_context, self._t,
-                                               self._state, self._images, self._hp)
-        input_distrib = self._make_input_distrib(cem_itr)
 
-        gen_images, gen_distrib = rollout_predictions(self.predictor, self._net_bsize, actions,
-                                                      last_frames, last_states, input_distrib, logger=self._logger)[:2]
+        prediction_dict = self.predictor(context, {'actions': actions})
+        gen_images, gen_distrib = [prediction_dict[k] for k in  ['predicted_frames', 'predicted_pixel_distributions']]
 
         gen_images = np.concatenate(gen_images, 0)
         gen_distrib = np.concatenate(gen_distrib, 0)
@@ -173,7 +183,7 @@ class PixelCostController(CEMBaseController):
         :return:
         """
         assert len(gen_distrib.shape) == 4
-        t_mult = np.ones([self._net_seqlen - self._net_context])
+        t_mult = np.ones([self.predictor.sequence_length - self._net_context])
         t_mult[-1] = self._hp.finalweight
 
         gen_distrib = gen_distrib.copy()
