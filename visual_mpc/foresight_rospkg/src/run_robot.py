@@ -39,7 +39,7 @@ class RobotEnvironment:
         self.envparams['robot_name'] = self.agentparams['robot_name'] = robot_name
         self._is_bench = is_bench
         if is_bench:
-            self.task_mode = '{}/exp'.format(robot_name)
+            self.task_mode = '{}/{}'.format(robot_name, conf.get('experiment_name', 'exp'))
             self.agentparams['env'][1]['start_at_neutral'] = True     # robot should start at neutral during benchmarks
         else:
             self.task_mode = '{}/{}'.format(robot_name, conf.get('mode', 'train'))
