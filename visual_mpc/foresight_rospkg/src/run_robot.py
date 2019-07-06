@@ -28,7 +28,6 @@ class RobotEnvironment:
             conf['agent']['imax'] = 5
 
         if 'RESULT_DIR' in os.environ:
-            import pdb; pdb.set_trace()
             exp_path = exp_path.split('/')
             exp_index = min(max([i for i, v in enumerate(exp_path) if v == 'experiments'] + [0]) + 1, len(exp_path) - 1)
             exp_name = '/'.join(exp_path[exp_index:])
