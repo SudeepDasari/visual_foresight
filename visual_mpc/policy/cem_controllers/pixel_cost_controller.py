@@ -50,7 +50,7 @@ class PixelCostController(CEMBaseController):
         self._images = None
 
         if self._hp.predictor_propagation:
-            self._rec_input_distrib = []  # record the input distributions
+            self._chosen_distrib = None  # record the input distributions
 
     def _default_hparams(self):
         default_dict = {
@@ -75,18 +75,7 @@ class PixelCostController(CEMBaseController):
     def reset(self):
         super(PixelCostController, self).reset()
         if self._hp.predictor_propagation:
-            self._rec_input_distrib = []  # record the input distributions
-
-    def switch_on_pix(self, desig):
-        one_hot_images = np.zeros((1, self._net_context, self._n_cam, self._img_height, self._img_width, self._n_desig), dtype=np.float32)
-        desig = np.clip(desig, np.zeros(2).reshape((1, 2)), np.array([self._img_height, self._img_width]).reshape((1, 2)) - 1).astype(np.int)
-        # switch on pixels
-        for icam in range(self._n_cam):
-            for p in range(self._n_desig):
-                one_hot_images[:, :, icam, desig[icam, p, 0], desig[icam, p, 1], p] = 1.
-                self._logger.log('using desig pix', desig[icam, p, 0], desig[icam, p, 1])
-
-        return one_hot_images[0]
+            self._chosen_distrib = None  # record the input distributions
 
     def evaluate_rollouts(self, actions, cem_itr):
         context = {
@@ -95,7 +84,6 @@ class PixelCostController(CEMBaseController):
             "context_pixel_distributions": self._make_input_distrib(cem_itr),
             "context_states": self._state
         }
-
         prediction_dict = self.predictor(context, {'actions': actions})
         gen_images, gen_distrib = [prediction_dict[k] for k in  ['predicted_frames', 'predicted_pixel_distributions']]
 
@@ -178,9 +166,7 @@ class PixelCostController(CEMBaseController):
             if cem_itr == (self._hp.iterations - 1):
                 # pick the prop distrib from the action actually chosen after the last iteration (i.e. self.indices[0])
                 bestind = scores.argsort()[0]
-                best_gen_distrib = gen_distrib[bestind, self._net_context].reshape(1, self._n_cam, self._img_height,
-                                                                                   self._img_width, self._n_desig)
-                self._rec_input_distrib.append(best_gen_distrib)
+                self._chosen_distrib = gen_distrib[bestind]
         return scores
 
     def _expected_distance(self, icam, idesig, gen_distrib, distance_grid, normalize=True):
@@ -215,22 +201,22 @@ class PixelCostController(CEMBaseController):
         return distance_grid
 
     def _make_input_distrib(self, itr):
-        if self._hp.predictor_propagation:  # using the predictor's DNA to propagate, no correction
-            input_distrib = self._get_recinput(itr, self._rec_input_distrib, self._desig_pix)
+        if self._hp.predictor_propagation and self._chosen_distrib is not None:  # using the predictor's DNA to propagate, no correction
+            input_distrib = self._chosen_distrib[-self._net_context:]
         else:
-            input_distrib = self.switch_on_pix(self._desig_pix)
+            input_distrib = self._switch_on_pix(self._desig_pix)
         return input_distrib
+    
+    def _switch_on_pix(self, desig):
+        one_hot_images = np.zeros((1, self._net_context, self._n_cam, self._img_height, self._img_width, self._n_desig), dtype=np.float32)
+        desig = np.clip(desig, np.zeros(2).reshape((1, 2)), np.array([self._img_height, self._img_width]).reshape((1, 2)) - 1).astype(np.int)
+        # switch on pixels
+        for icam in range(self._n_cam):
+            for p in range(self._n_desig):
+                one_hot_images[:, :, icam, desig[icam, p, 0], desig[icam, p, 1], p] = 1.
+                self._logger.log('using desig pix', desig[icam, p, 0], desig[icam, p, 1])
 
-    def _get_recinput(self, itr, rec_input_distrib, desig):
-        ctxt = self._net_context
-        if len(rec_input_distrib) < ctxt:
-            input_distrib = self.switch_on_pix(desig)
-            if itr == 0:
-                rec_input_distrib.append(input_distrib[:, 0])
-        else:
-            input_distrib = [rec_input_distrib[c] for c in range(-ctxt, 0)]
-            input_distrib = np.stack(input_distrib, axis=1)
-        return input_distrib
+        return one_hot_images[0]
 
     def act(self, t=None, i_tr=None, desig_pix=None, goal_pix=None, images=None, state=None, verbose_worker=None):
         """
