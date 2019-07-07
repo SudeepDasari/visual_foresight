@@ -37,12 +37,14 @@ class CEMBaseController(Policy):
         self._best_indices, self._best_actions = None, None
 
         self._state = None
+        assert self._hp.minimum_selection > 0, "must take at least 1 sample for refitting"
 
     def _default_hparams(self):
         default_dict = {
             'verbose': True,
             'verbose_every_iter': False,
             'logging_dir': '',
+            'context_action_weight': [0.5, 0.5, 0.05, 1],
             'zeros_for_start_frames': True,
             'replan_interval': 0,
             'sampler': GaussianCEMSampler,
@@ -51,7 +53,7 @@ class CEMBaseController(Policy):
             'num_samples': 200,
             'selection_frac': 0., # specifcy which fraction of best samples to use to compute mean and var for next CEM iteration
             'start_planning': 0,
-            'default_k': 10
+            'minimum_selection': 10
         }
 
         parent_params = super(CEMBaseController, self)._default_hparams()
@@ -82,9 +84,9 @@ class CEMBaseController(Policy):
         self._logger.log('starting cem at t{}...'.format(self._t))
         self._logger.log('------------------------------------------------')
 
-        K = self._hp.default_k
+        K = self._hp.minimum_selection
         if self._hp.selection_frac:
-            K = max(int(self._hp.selection_frac * self._hp.num_samples), self._hp.default_k)
+            K = max(int(self._hp.selection_frac * self._hp.num_samples), self._hp.minimum_selection)
         actions = self._sampler.sample_initial_actions(self._t, self._hp.num_samples, state[-1])
         for itr in range(self._n_iter):
             self._logger.log('------------')
@@ -98,8 +100,9 @@ class CEMBaseController(Policy):
 
             self.plan_stat['scores_itr{}'.format(itr)] = scores
             if itr < self._n_iter - 1:
-                actions = self._sampler.sample_next_actions(self._hp.num_samples, self._best_actions)
+                actions = self._sampler.sample_next_actions(self._hp.num_samples, self._best_actions.copy(), scores[self._best_indices].copy())
 
+      
         self._t_since_replan = 0
 
     def evaluate_rollouts(self, actions, cem_itr):
@@ -126,7 +129,7 @@ class CEMBaseController(Policy):
                 action = np.zeros(self.agentparams['adim'])
             else:
                 initial_sampler = self._hp.sampler(self._hp, self._adim, self._sdim)
-                action = initial_sampler.sample_initial_actions(t, 1, state[-1])[0, 0]
+                action = initial_sampler.sample_initial_actions(t, 1, state[-1])[0, 0] * self._hp.context_action_weight
         else:
             if self._hp.replan_interval:
                 if self._t_since_replan is None or self._t_since_replan + 1 >= self._hp.replan_interval:
