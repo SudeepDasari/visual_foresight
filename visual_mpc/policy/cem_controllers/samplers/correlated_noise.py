@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 class CorrelatedNoiseSampler(CEMSampler):
     def __init__(self, hp, adim, sdim, **kwargs):
         self._hp = hp
-        self._adim, self._sdim = adim, sdim
+        self._adim, self._sdim = len(self._hp.initial_std), sdim
         self._chosen_actions = []
         self._best_action_plans = []
     
