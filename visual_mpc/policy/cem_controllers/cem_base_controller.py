@@ -44,6 +44,7 @@ class CEMBaseController(Policy):
             'verbose': True,
             'verbose_every_iter': False,
             'logging_dir': '',
+            'context_action_weight': [0.5, 0.5, 0.05, 1],
             'zeros_for_start_frames': True,
             'replan_interval': 0,
             'sampler': GaussianCEMSampler,
@@ -101,7 +102,7 @@ class CEMBaseController(Policy):
             if itr < self._n_iter - 1:
                 actions = self._sampler.sample_next_actions(self._hp.num_samples, self._best_actions.copy(), scores[self._best_indices].copy())
 
-        import pdb; pdb.set_trace()
+      
         self._t_since_replan = 0
 
     def evaluate_rollouts(self, actions, cem_itr):
@@ -128,7 +129,7 @@ class CEMBaseController(Policy):
                 action = np.zeros(self.agentparams['adim'])
             else:
                 initial_sampler = self._hp.sampler(self._hp, self._adim, self._sdim)
-                action = initial_sampler.sample_initial_actions(t, 1, state[-1])[0, 0]
+                action = initial_sampler.sample_initial_actions(t, 1, state[-1])[0, 0] * self._hp.context_action_weight
         else:
             if self._hp.replan_interval:
                 if self._t_since_replan is None or self._t_since_replan + 1 >= self._hp.replan_interval:

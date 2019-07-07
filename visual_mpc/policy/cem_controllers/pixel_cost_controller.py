@@ -1,6 +1,7 @@
 import numpy as np
 import imp
 import os
+import cv2
 from .cem_base_controller import CEMBaseController
 from .visualizer.construct_html import save_gifs, save_html, save_img, fill_template
 import matplotlib.pyplot as plt
@@ -108,7 +109,15 @@ class PixelCostController(CEMBaseController):
             # start images
             for c in range(self._n_cam):
                 name = 'cam_{}_start'.format(c)
-                save_path = save_img(self._verbose_worker, verbose_folder, name, self._images[-1, c])
+                start_img = self._images[-1, c].copy()
+
+                for p in range(self._n_desig):
+                    h, w = self._desig_pix[c, p]
+                    cv2.circle(start_img,(w,h), 1, (255,0,0), -1)
+                    h, w = self._goal_pix[c, p]
+                    cv2.circle(start_img,(w,h), 1, (0,0,255), -1)
+
+                save_path = save_img(self._verbose_worker, verbose_folder, name, start_img)
                 content_dict[name] = [save_path for _ in visualize_indices]
 
             # render distributions
