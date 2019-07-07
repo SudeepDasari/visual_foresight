@@ -38,8 +38,8 @@ policy = {
     'predictor_propagation': True,   # use the model get the designated pixel for the next step!
     'nactions': 13,
 
-    "model_params_path": "~/models/widowxheldout_cloth/experiment_state-2019-07-06_02-53-41.json",
-    "model_restore_path": "~/models/widowxheldout_cloth/checkpoint_100000/model-170000",
+    "model_params_path": "~/models/baxterheldout_cloth/experiment_state-2019-07-06_02-46-20.json",
+    "model_restore_path": "~/models/baxterheldout_cloth/checkpoint_160000/model-250000",
 
     "sampler": CorrelatedNoiseSampler
     # "sampler": AutograspSampler,
@@ -50,7 +50,7 @@ policy = {
 }
 
 config = {
-    'experiment_name': 'baxter_fine_tune',
+    'experiment_name': 'baxter_fine_tune_household',
     'traj_per_file':128,
     'save_data': True,
     'save_raw_images' : True,
