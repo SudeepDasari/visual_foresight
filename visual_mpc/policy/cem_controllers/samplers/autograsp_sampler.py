@@ -22,7 +22,7 @@ class AutograspSampler(GaussianCEMSampler):
         self._current_state = current_state
         return self._sample_gripper(super(AutograspSampler, self).sample_initial_actions(t, nsamples, current_state), nsamples)
     
-    def sample_next_actions(self, n_samples, best_actions):
+    def sample_next_actions(self, n_samples, best_actions, scores):
         default_actions = super(AutograspSampler, self).sample_next_actions(n_samples, best_actions[:, :, :-1])
         if self._hp.no_refit:
             return self._sample_gripper(default_actions, n_samples)

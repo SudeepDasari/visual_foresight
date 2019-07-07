@@ -21,7 +21,7 @@ class CEMSampler(object):
 
         raise NotImplementedError
 
-    def sample_next_actions(self, n_samples, best_actions):
+    def sample_next_actions(self, n_samples, best_actions, scores):
         """
         Samples actions for CEM iterations, given BEST last actions
         :param nsamples: number of samples
