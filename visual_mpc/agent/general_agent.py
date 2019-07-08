@@ -71,7 +71,7 @@ class GeneralAgent(object):
             try:
                 agent_data, obs_dict, policy_outs = self.rollout(policy, i_trial, i_traj)
                 traj_ok = agent_data['traj_ok']
-            except Image_Exception:
+            except Image_Exception, Environment_Exception:
                 traj_ok = False
 
         if not traj_ok:
@@ -204,11 +204,7 @@ class GeneralAgent(object):
             pi_t = policy.act(**get_policy_args(policy, obs, t, i_traj, agent_data))
             policy_outputs.append(pi_t)
 
-            try:
-                obs = self._post_process_obs(self.env.step(copy.deepcopy(pi_t['actions'])), agent_data)
-            except Environment_Exception as e:
-                print(e)
-                return {'traj_ok': False}, None, None
+            obs = self._post_process_obs(self.env.step(copy.deepcopy(pi_t['actions'])), agent_data)
 
             if 'rejection_sample' in self._hyperparams and 'rejection_end_early' in self._hyperparams:
                 print('traj rejected!')
