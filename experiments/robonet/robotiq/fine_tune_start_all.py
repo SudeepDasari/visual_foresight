@@ -33,13 +33,13 @@ policy = {
     'nactions': 13,
     'repeat': 1,
 
-    "model_params_path": "~/models/sawyer_only_fine_tune_robotiq/experiment_state-2019-07-06_03-56-19.json",
-    "model_restore_path": "~/models/sawyer_only_fine_tune_robotiq/checkpoint_50000/model-260000",
+    "model_params_path": "~/robotiq_models/robotiq_startall/experiment_state-2019-07-07_00-00-26.json",
+    "model_restore_path": "~/robotiq_models/robotiq_startall/start_all/checkpoint_70000/model-190000",
 
 }
 
 config = {
-    "experiment_name": "fine_tune",
+    "experiment_name": "fine_tune_start_all",
     'traj_per_file':128,
     'save_data': True,
     'save_raw_images' : True,

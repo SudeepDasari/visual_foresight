@@ -19,7 +19,7 @@ class CorrelatedNoiseSampler(CEMSampler):
         if cov is None:
             noise = noise * np.array(self._hp.initial_std).reshape((1, 1, -1))
         else:
-            noise = np.matmul(noise.reshape((n_samples, -1)), cov)
+            noise = np.matmul(noise.reshape((n_samples, -1)), cov).reshape((n_samples, self._hp.nactions, self._adim))
 
         final_actions = noise.copy()
         for i in range(self._hp.nactions):
@@ -56,7 +56,6 @@ class CorrelatedNoiseSampler(CEMSampler):
         cov = None
         if self._hp.refit_cov:
             cov = np.cov(np.transpose(best_actions.reshape(best_actions.shape[0], -1)))
-            cov = np.transpose(cov)
         
         return self._sample_noise(n_samples, cov) + mean_act.reshape((1, best_actions.shape[1], self._adim))
 
