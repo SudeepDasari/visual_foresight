@@ -32,22 +32,27 @@ policy = {
     'type': PixelCostController,
     'verbose_every_iter': True,
     'replan_interval': 13,
+    # 'iterations': 3,
     'num_samples': 600,
     'start_planning': 2,
     'selection_frac': 2./3,
     'predictor_propagation': True,   # use the model get the designated pixel for the next step!
     'nactions': 13,
 
-    "model_params_path": "~/models/baxter_only/experiment_state-2019-07-06_22-22-55.json",
-    "model_restore_path": "~/models/baxter_only/household/checkpoint_70000/model-70000",
-    # "model_restore_path": "~/models/baxter_only/baxter_cloth/checkpoint_60000/model-60000",
+
+    "model_params_path": "~/models/train_sawyer_baxter_finetune/experiment_state-2019-07-06_21-50-54.json",
+    "model_restore_path": "~/models/train_sawyer_baxter_finetune/cloth/checkpoint_70000/model-280000",
 
     "sampler": CorrelatedNoiseSampler
+    # "sampler": AutograspSampler,
+    # 'action_norm_factor': 714.285714286,
+    # 'gripper_close_cmd': 100,
+    # 'gripper_open_cmd': 0
 
 }
 
 config = {
-    'experiment_name': 'household',
+    'experiment_name': 'sawyer_baxter_finetune',
     'traj_per_file':128,
     'save_data': True,
     'save_raw_images' : True,
