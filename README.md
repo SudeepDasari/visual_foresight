@@ -19,7 +19,7 @@ git clone https://github.com/febert/video_prediction-1.git && cd video_predictio
 git clone https://github.com/anxie/meta_classifier.git
 #install visual-MPC
 git clone https://github.com/SudeepDasari/visual_foresight.git
-pip install -r requirements.txt
+pip install -r visual_foresight/requirements.txt
 ```
 ### Docker Installation
 Docker allows a cleaner way to get started with our code. Since we heavily use the GPU, you will have to install [nvidia-docker](https://github.com/NVIDIA/nvidia-docker) and all related dependencies. After that run:
