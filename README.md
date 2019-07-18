@@ -19,7 +19,7 @@ git clone https://github.com/febert/video_prediction-1.git && cd video_predictio
 git clone https://github.com/anxie/meta_classifier.git
 #install visual-MPC
 git clone https://github.com/SudeepDasari/visual_foresight.git
-pip install -r requirements.txt
+pip install -r visual_foresight/requirements.txt
 ```
 ### Docker Installation
 Docker allows a cleaner way to get started with our code. Since we heavily use the GPU, you will have to install [nvidia-docker](https://github.com/NVIDIA/nvidia-docker) and all related dependencies. After that run:
@@ -90,8 +90,8 @@ Again pass in the python config file to the corresponding entry point. This time
 ### Robot
 * For Registration Experiments: `rosrun foresight_rospkg run_robot.py <robot name/id> experiments/sawyer/registration_experiments/hparams.py --benchmark`
 * For Mixed Object Experiments (one model which handles both deformable and rigid objects)
-  - Rigid: `rosrun foresight_rospkg run_robot.py <robot name/id> experiments/sawyer/mixed_objects/hparams_deformable_objects.py --benchmark`
-  - Deformable: `rosrun foresight_rospkg run_robot.py <robot name/id> experiments/sawyer/mixed_objects/hparams_hardobjects.py --benchmark`
+  - Rigid: `rosrun foresight_rospkg run_robot.py <robot name/id> experiments/sawyer/mixed_objects/hparams_hardobjects.py --benchmark`
+  - Deformable: `rosrun foresight_rospkg run_robot.py <robot name/id> experiments/sawyer/mixed_objects/hparams_deformable_objects.py --benchmark`
 * **Meta-classifier experiments are coming soon**
 ### Sim
 **Coming soon!**
