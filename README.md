@@ -90,8 +90,8 @@ Again pass in the python config file to the corresponding entry point. This time
 ### Robot
 * For Registration Experiments: `rosrun foresight_rospkg run_robot.py <robot name/id> experiments/sawyer/registration_experiments/hparams.py --benchmark`
 * For Mixed Object Experiments (one model which handles both deformable and rigid objects)
-  - Rigid: `rosrun foresight_rospkg run_robot.py <robot name/id> experiments/sawyer/mixed_objects/hparams_hardobjects_objects.py --benchmark`
-  - Deformable: `rosrun foresight_rospkg run_robot.py <robot name/id> experiments/sawyer/mixed_objects/hparams_deformable.py --benchmark`
+  - Rigid: `rosrun foresight_rospkg run_robot.py <robot name/id> experiments/sawyer/mixed_objects/hparams_hardobjects.py --benchmark`
+  - Deformable: `rosrun foresight_rospkg run_robot.py <robot name/id> experiments/sawyer/mixed_objects/hparams_deformable_objects.py --benchmark`
 * **Meta-classifier experiments are coming soon**
 ### Sim
 **Coming soon!**
