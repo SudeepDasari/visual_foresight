@@ -1,0 +1,14 @@
+{
+    "camera_configuration": "vestri_table_correlated",
+    "camera_type":"Logitech C920",
+    "policy_desc": "random policy, with correlated noise ",
+    "bin_type": "wooden_bin",
+    "bin_insert": "none",
+    "robot": "sawyer",
+    "gripper": "sawyer-2Finger",
+    "background": "lab",
+    "primitives": "autograsp",
+    "action_space": "x,y,z,theta",
+    "object_classes": "toys+cloth"
+}
+

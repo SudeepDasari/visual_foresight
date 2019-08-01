@@ -17,7 +17,7 @@ class CorrelatedNoiseSampler(CEMSampler):
     def _sample_noise(self, n_samples, cov=None):
         noise = np.random.normal(size=(n_samples, self._hp.nactions, self._adim))
         if cov is None:
-            noise = noise * np.array(self._hp.initial_std).reshape((1, 1, -1))
+            noise = noise * np.array(self._hp.initial_std).reshape((1, 1, -1)) + self._hp.mean_bias
         else:
             noise = np.matmul(noise.reshape((n_samples, -1)), cov).reshape((n_samples, self._hp.nactions, self._adim))
 
@@ -64,6 +64,7 @@ class CorrelatedNoiseSampler(CEMSampler):
         hparams_dict = {
             'nactions': 15,
             'initial_std': [0.05, 0.05, 0.2, np.pi / 10],
+            'mean_bias': np.zeros(4),
             'kappa': 1,
             'beta_0': 0.5,
             'beta_1': 0.5,
