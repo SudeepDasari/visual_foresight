@@ -46,7 +46,7 @@ class BaseRobotEnv(BaseEnv):
         for name, value in self._hp.values().items():
             logging.getLogger('robot_logger').info('{}= {}'.format(name, value))
         logging.getLogger('robot_logger').info('---------------------------------------------------------------------------')
-
+    
         self._save_video = self._hp.save_video
         self._cameras = [CameraRecorder(t, self._hp.opencv_tracking, self._save_video) for t in self._hp.camera_topics]
 
@@ -260,7 +260,7 @@ class BaseRobotEnv(BaseEnv):
         self._reset_counter += 1
         return self._get_obs(), None
 
-    def _goto_closest_neutral(self, duration=1.0):
+    def _goto_closest_neutral(self, duration=2.):
         self._controller.move_to_neutral(duration)
         closest_neutral = self._get_state()
 
@@ -297,7 +297,7 @@ class BaseRobotEnv(BaseEnv):
 
         if self._cleanup_rate == 0 or (self._cleanup_rate > 0 and self._reset_counter % self._cleanup_rate == 0 and self._reset_counter > 0):
             self._controller.redistribute_objects()
-            self._goto_closest_neutral()
+            self._goto_closest_neutral(5.)
 
         self._controller.move_to_neutral()
         self._controller.open_gripper(False)
