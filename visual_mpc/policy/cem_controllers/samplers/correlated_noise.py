@@ -16,8 +16,14 @@ class CorrelatedNoiseSampler(CEMSampler):
     
     def _sample_noise(self, n_samples, cov=None):
         noise = np.random.normal(size=(n_samples, self._hp.nactions, self._adim))
+        if self._hp.mean_bias is not None:
+            mean_bias = self._hp.mean_bias
+            print('mean bias', mean_bias)
+        else: mean_bias = 0.
+
         if cov is None:
-            noise = noise * np.array(self._hp.initial_std).reshape((1, 1, -1)) + self._hp.mean_bias
+            noise = noise * np.array(self._hp.initial_std).reshape((1, 1, -1)) + mean_bias[None, None]
+
         else:
             noise = np.matmul(noise.reshape((n_samples, -1)), cov).reshape((n_samples, self._hp.nactions, self._adim))
 

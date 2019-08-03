@@ -54,7 +54,7 @@ class Policy(object):
                 continue      # type corresponds to policy class
 
             print('overriding param {} to value {}'.format(name, value))
-            if value == getattr(self._hp, name):
+            if np.all(value == getattr(self._hp, name)):
                 raise ValueError("attribute is {} is identical to default value!!".format(name))
 
             if name in self._hp and self._hp.get(name) is None:   # don't do a type check for None default values

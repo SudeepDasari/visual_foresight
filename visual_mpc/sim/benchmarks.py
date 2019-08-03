@@ -3,7 +3,6 @@ import os
 import numpy as np
 import pickle
 from collections import OrderedDict
-from visual_mpc.utils.traj_util import make_traj_name_list
 from .util.combine_score import write_scores
 
 
@@ -49,8 +48,6 @@ def perform_benchmark(conf=None, iex=-1, gpu_id=None, ngpu=1):
         if 'VMPC_DATA_DIR' in os.environ:
             datapath = conf['source_basedirs'][0].partition('pushing_data')[2]
             conf['source_basedirs'] = [os.environ['VMPC_DATA_DIR'] + datapath]
-        traj_names = make_traj_name_list({'source_basedirs': conf['source_basedirs'],
-                                                  'ngroup': conf['ngroup']}, shuffle=False)
 
     result_file = result_dir + '/results_{}to{}.txt'.format(conf['start_index'], conf['end_index'])
     final_dist_pkl_file = result_dir + '/scores_{}to{}.pkl'.format(conf['start_index'], conf['end_index'])
