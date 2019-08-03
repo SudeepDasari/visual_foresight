@@ -5,7 +5,7 @@ Implements a custom sampler for the CEM controller
 class CEMSampler(object):
     def __init__(self, hp, adim, sdim, **kwargs):
         self._hp = hp
-        self._adim, self._sdim = adim, sdim
+        self._adim, self.b_sdim = adim, sdim
         self._chosen_actions = []
         self._best_action_plans = []
 

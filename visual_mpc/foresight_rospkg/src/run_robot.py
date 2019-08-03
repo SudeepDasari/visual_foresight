@@ -120,6 +120,8 @@ class RobotEnvironment:
         print("CHECKPOINTED")
 
     def _save_raw_images(self, traj_folder, agent_data, obs_dict, policy_outputs):
+
+
         if not self._is_bench:
             if os.path.exists(traj_folder):
                 shutil.rmtree(traj_folder)
@@ -134,6 +136,7 @@ class RobotEnvironment:
             json.dump(self._env_metadata, open(save_path, 'w'))
             self._saved_metadata = True
 
+        print('saving data to ', traj_folder)
         if 'images' in obs_dict:
             images = obs_dict.pop('images')
             T, n_cams = images.shape[:2]
