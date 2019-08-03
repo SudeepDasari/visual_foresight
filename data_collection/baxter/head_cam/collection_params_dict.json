@@ -1,0 +1,14 @@
+{
+    "camera_configuration": "baxter_head",
+    "camera_type":"baxter_head",
+    "policy_desc": "random policy, gaussian noise: std_xy=0.035, std_z=0.08, std_theta=pi/18, autograsp for gripper", 
+    "bin_type": "wooden_bin",
+    "bin_insert": "none",
+    "robot": "baxter",
+    "gripper": "baxter_gripper",
+    "background": "lab",
+    "primitives": "autograsp",
+    "action_space": "x,y,z,theta",
+    "object_classes": "toys"
+}
+

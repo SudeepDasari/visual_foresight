@@ -3,38 +3,49 @@ from pyquaternion import Quaternion
 from visual_mpc.envs.robot_envs import RobotController
 import numpy as np
 from visual_mpc.envs.util.interpolation import CSpline
-from intera_core_msgs.msg import JointCommand
+from baxter_core_msgs.msg import JointCommand
 import cPickle as pkl
-import intera_interface
+import baxter_interface
 import os
-from visual_mpc.envs.robot_envs import RobotController
 import logging
 from .control_util import precalculate_interpolation, LatestEEObs, CONTROL_PERIOD, NEUTRAL_JOINT_ANGLES, NEUTRAL_JOINT_CMD, \
                           N_JOINTS, max_accel_mag, max_vel_mag, RESET_SKIP
 import visual_mpc.envs.robot_envs as robot_envs
 
 
-class SawyerImpedanceController(RobotController):
-    def __init__(self, robot_name='sawyer', print_debug=False, email_cred_file='', log_file='', control_rate=800, gripper_attached='wsg-50'):
-        super(SawyerImpedanceController, self).__init__(robot_name, print_debug, email_cred_file, log_file, control_rate, gripper_attached)
-        self._rs = intera_interface.RobotEnable(intera_interface.CHECK_VERSION)
-        self._limb = intera_interface.Limb("right")
+class BaxterImpedanceController(RobotController):
+    def __init__(self,
+                 robot_name='baxter',
+                 print_debug=False,
+                 email_cred_file='',
+                 log_file='',
+                 control_rate=800,
+                 gripper_attached='baxter_gripper',
+                 limb='right'):
+
+        super(BaxterImpedanceController, self).__init__(robot_name,
+                                                        print_debug,
+                                                        email_cred_file,
+                                                        log_file,
+                                                        control_rate,
+                                                        gripper_attached)
+        
+        self._rs = baxter_interface.RobotEnable(baxter_interface.CHECK_VERSION)
+        self._limb_name = limb
+        self._limb = baxter_interface.Limb(self._limb_name)
         self.joint_names = self._limb.joint_names()
-        self._ep_handler = LatestEEObs()
-        self._cmd_publisher = rospy.Publisher('/robot/limb/right/joint_command', JointCommand, queue_size=100)
+        self._ep_handler = LatestEEObs(limb=self._limb_name)
+        self._cmd_publisher = rospy.Publisher('/robot/limb/{}/joint_command'.format(self._limb_name), JointCommand, queue_size=100)
     
     def _init_gripper(self, gripper_attached):
         if gripper_attached == 'none':
             from visual_mpc.envs.robot_envs import GripperInterface
             self._gripper = GripperInterface()
-        elif gripper_attached == 'wsg-50':
-            from visual_mpc.envs.robot_envs.grippers.weiss.wsg50_gripper import WSG50Gripper
-            self._gripper = WSG50Gripper()
-        elif gripper_attached == 'sawyer_gripper':
-            from visual_mpc.envs.robot_envs.grippers.sawyer.default_sawyer_gripper import SawyerDefaultGripper
-            self._gripper = SawyerDefaultGripper()
+        elif gripper_attached == 'baxter_gripper':
+            from visual_mpc.envs.robot_envs.grippers.baxter.default_baxter_gripper import BaxterDefaultGripper
+            self._gripper = BaxterDefaultGripper()
         else:
-            logging.getLogger('robot_logger').error("Gripper not supported!")
+            logging.getLogger('robot_logger').error("Gripper type '{}' not supported!".format(gripper_attached))
             raise NotImplementedError
 
     def _close_gripper_handler(self, value):
@@ -60,7 +71,7 @@ class SawyerImpedanceController(RobotController):
             logging.getLogger('robot_logger').error("Robot was disabled, please manually re-enable!")
             self.clean_shutdown()
     
-    def move_to_neutral(self, duration=2):
+    def move_to_neutral(self, duration=4):
         waypoints = [NEUTRAL_JOINT_ANGLES]
         self.move_to_ja(waypoints, duration)
 
@@ -113,9 +124,9 @@ class SawyerImpedanceController(RobotController):
             command = JointCommand()
             command.mode = JointCommand.POSITION_MODE
             command.names = jointnames
-            command.position = pos
-            command.velocity = np.clip(velocity, -max_vel_mag, max_vel_mag)
-            command.acceleration = np.clip(acceleration, -max_accel_mag, max_accel_mag)
+            command.command = pos
+            #command.velocity = np.clip(velocity, -max_vel_mag, max_vel_mag)
+            #command.acceleration = np.clip(acceleration, -max_accel_mag, max_accel_mag)
             self._cmd_publisher.publish(command)
 
             self._control_rate.sleep()
@@ -125,7 +136,8 @@ class SawyerImpedanceController(RobotController):
             command = JointCommand()
             command.mode = JointCommand.POSITION_MODE
             command.names = jointnames
-            command.position = waypoints[-1]
+            #command.position = waypoints[-1]
+            command.command = waypoints[-1]
             self._cmd_publisher.publish(command)
 
             self._control_rate.sleep()
@@ -136,7 +148,8 @@ class SawyerImpedanceController(RobotController):
         command = JointCommand()
         command.mode = JointCommand.POSITION_MODE
         command.names = self._limb.joint_names()
-        command.position = pos
+        #command.position = pos
+        command.command = pos
         self._cmd_publisher.publish(command)
 
     def redistribute_objects(self):

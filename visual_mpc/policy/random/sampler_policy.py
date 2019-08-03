@@ -15,7 +15,6 @@ class SamplerPolicy(Policy):
         self.agentparams = agentparams
         self.adim = len(self._hp.initial_std)
         self._hp.nactions = agentparams['T']
-
         self._sampler = self._hp.sampler(self._hp, self.adim, None)
         self._actions = None
 
@@ -32,6 +31,7 @@ class SamplerPolicy(Policy):
             'refit_cov': False
         }
         parent_params = super(SamplerPolicy, self)._default_hparams()
+
         for k in default_dict.keys():
             parent_params.add_hparam(k, default_dict[k])
         return parent_params
@@ -39,6 +39,7 @@ class SamplerPolicy(Policy):
     def act(self, t):
         if t == 0:
             self._actions = self._sampler.sample_initial_actions(t, n_samples=1, current_state=None).squeeze()
+
         return {'actions': self._actions[t]}
 
 

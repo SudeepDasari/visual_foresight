@@ -48,7 +48,6 @@ def save_dict(data_container, dict_group, video_encoding, t_index):
                         dict_group.attrs['n_cams'] = n_cams
 
                         for n in range(n_cams):
-                            dict_group.attrs['cam_encoding'] = video_encoding
                             cam_group = dict_group.create_group("cam{}_video".format(n))
                             if video_encoding == 'mp4':
                                 data = cam_group.create_dataset("frames", data=serialize_video(d[:, n], t_index))
@@ -59,7 +58,6 @@ def save_dict(data_container, dict_group, video_encoding, t_index):
                                 for t in range(T):
                                     data = cam_group.create_dataset("frame{}".format(t), data=serialize_image(d[t, n]))
                                     data.attrs['shape'] = d[t, n].shape
-                                    data.attrs['image_format'] = 'RGB'
                             else:
                                 raise ValueError
                     elif 'image' in k:
@@ -74,7 +72,6 @@ def save_hdf5(filename, env_obs, policy_out, agent_data, meta_data, video_encodi
         t_index = random.randint(0, 9999999)
     # meta-data includes calibration "number", policy "type" descriptor, environment bounds
     with h5py.File(filename, 'w') as f:
-        f.create_dataset('file_version', data='0.1.0')
         [save_dict(data_container, f.create_group(name), video_encoding, t_index) for data_container, name in zip([env_obs, agent_data], ['env', 'misc'])]
 
         policy_dict = {}
@@ -166,7 +163,7 @@ if __name__ == '__main__':
             print("Please delete all temp*.mp4 files! (needed for saving)")
             raise EnvironmentError
     
-    traj_groups = glob.glob(args.input_folder + "/*")
+    traj_groups = glob.glob(args.input_folder + "*/*/*/*")
     print('found {} traj groups!'.format(len(traj_groups)))
 
     trajs, annotations_loaded = [], 0
