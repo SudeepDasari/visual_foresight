@@ -2,7 +2,7 @@ from visual_mpc.envs.robot_envs import get_controller_class
 from visual_mpc.envs.base_env import BaseEnv
 import numpy as np
 import random
-from visual_mpc.agent.general_agent import Image_Exception
+from visual_mpc.agent import Image_Exception
 from .util.camera_recorder import CameraRecorder
 import copy
 import rospy
@@ -46,7 +46,7 @@ class BaseRobotEnv(BaseEnv):
         for name, value in self._hp.values().items():
             logging.getLogger('robot_logger').info('{}= {}'.format(name, value))
         logging.getLogger('robot_logger').info('---------------------------------------------------------------------------')
-
+    
         self._save_video = self._hp.save_video
         self._cameras = [CameraRecorder(t, self._hp.opencv_tracking, self._save_video) for t in self._hp.camera_topics]
 
@@ -296,7 +296,7 @@ class BaseRobotEnv(BaseEnv):
             self._controller.move_to_neutral()
 
         if self._cleanup_rate == 0 or (self._cleanup_rate > 0 and self._reset_counter % self._cleanup_rate == 0 and self._reset_counter > 0):
-            self._controller.redistribute_objects()
+            # self._controller.redistribute_objects()
             self._goto_closest_neutral()
 
         self._controller.move_to_neutral()

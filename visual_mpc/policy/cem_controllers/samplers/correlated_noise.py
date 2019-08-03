@@ -23,6 +23,7 @@ class CorrelatedNoiseSampler(CEMSampler):
 
         if cov is None:
             noise = noise * np.array(self._hp.initial_std).reshape((1, 1, -1)) + mean_bias[None, None]
+
         else:
             noise = np.matmul(noise.reshape((n_samples, -1)), cov).reshape((n_samples, self._hp.nactions, self._adim))
 

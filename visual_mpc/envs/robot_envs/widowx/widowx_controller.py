@@ -12,6 +12,7 @@ from pyquaternion import Quaternion
 from geometry_msgs.msg import Quaternion as Quaternion_msg
 from std_msgs.msg import Float64
 from sensor_msgs.msg import JointState
+from visual_mpc.agent import Environment_Exception
 from threading import Lock
 import pybullet as p
 import time
@@ -23,8 +24,8 @@ MAX_TORQUE_L = 14
 TORQUE_LIMIT = 34
 GRIPPER_WAIT = 1.5
 CONTROL_TOL = 1e-3
-MAX_FINAL_ERR = 0.2
-MAX_ERRORS=10
+MAX_FINAL_ERR = 1
+MAX_ERRORS=20
 
 
 class WidowXController(RobotController):
@@ -64,7 +65,10 @@ class WidowXController(RobotController):
             pub.publish(Float64(value))
 
     def move_to_neutral(self, duration=2):
+        self._n_errors = 0
         self._lerp_joints(np.array(NEUTRAL_VALUES), duration)
+        self._gripper_pub.publish(Float64(GRIPPER_DROP[0]))
+        time.sleep(GRIPPER_WAIT)
     
     def _reset_pybullet(self): 
         for i, angle in enumerate(self.get_joint_angles()):
@@ -90,7 +94,7 @@ class WidowXController(RobotController):
             self._n_errors += 1
         if self._n_errors > MAX_ERRORS:
             logging.getLogger('robot_logger').error('More than {} errors! WidowX probably crashed.'.format(MAX_ERRORS))
-            self.clean_shutdown()
+            raise Environment_Exception
         
         logging.getLogger('robot_logger').debug('Delta at end of lerp is {}'.format(delta))
         
@@ -214,6 +218,7 @@ class WidowXController(RobotController):
 
 
 if __name__ == '__main__':
+    import pdb; pdb.set_trace()
     controller = WidowXController('widowx', True)
     controller.move_to_neutral()
     controller.redistribute_objects()
