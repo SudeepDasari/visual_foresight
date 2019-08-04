@@ -14,6 +14,7 @@ import cv2
 from cv_bridge import CvBridge, CvBridgeError
 from os.path import join
 import os
+import random
 
 class KukaInterface ():
 
@@ -47,8 +48,8 @@ class KukaInterface ():
         #     print(self.scene.get_attached_objects())
         # exit()
 
-        self.group.set_max_velocity_scaling_factor(0.01)
-        self.group.set_max_acceleration_scaling_factor(0.01)
+        self.group.set_max_velocity_scaling_factor(0.05)
+        self.group.set_max_acceleration_scaling_factor(0.05)
         current_pose = self.group.get_current_pose(end_effector_link='iiwa_link_ee').pose
 
         self._joint_efforts = 0
@@ -86,6 +87,7 @@ class KukaInterface ():
 
         self.traj_num = -1
         self.im_num = 0
+        self.MAX_PATH_LENGTH = 15
 
 
         
@@ -105,21 +107,124 @@ class KukaInterface ():
         self._joint_name = data.name
         self._header = data.header
 
+    def _calc_plan_statistics(self, plan, print_stats=False):
+        if len(plan.joint_trajectory.points) == 0:
+            rospy.logerr("Plan is empty. No statistics will be calculated")
+            return
+
+        total_distances = [0] * len(plan.joint_trajectory.points[0].positions)
+        max_distances = [0] * len(plan.joint_trajectory.points[0].positions)
+        max_vels = [0] * len(plan.joint_trajectory.points[0].positions)
+        max_accels = [0] * len(plan.joint_trajectory.points[0].positions)
+
+        for i, point in enumerate(plan.joint_trajectory.points):
+
+            # Ignore wrist joint
+            for j in range(len(point.positions) - 1):
+                max_vels[j] = max(max_vels[j], abs(point.velocities[j]))
+                max_accels[j] = max(max_accels[j], abs(point.accelerations[j]))
+
+                if i > 0:
+                    diff = abs(point.positions[j] - plan.joint_trajectory.points[i-1].positions[j])
+                    max_distances[j] = max(max_distances[j], diff)
+                    total_distances[j] += diff
+
+            if print_stats:
+                if abs(point.positions[0]) > np.pi / 2:
+                    rospy.logerr("joint 0 to pos %f", point.positions[0])
+
+                print "Positions:", point.positions
+
+
+        if print_stats:
+            print "\n\n\n\n\n\n\n"
+
+            print "Total_distances:", total_distances
+            print "Total distance:", sum(total_distances)
+            print "max distance:", max_distances
+            print "max of max_distances:", max(max_distances)
+            print "max_vels:", max_vels
+            print "max of vels:", max(max_vels)
+            print "max_accels:", max_accels
+            print "max of max_accels:", max(max_accels)
+            print "\n\n\n\n\n\n\n"
+
+        if max(max_distances) > 0.1:
+            rospy.logerr("Max distance: %f", max(max_distances))
+        if sum(total_distances) > 1.5:
+            rospy.logerr("total move: %f", sum(total_distances))
+
+
+        return sum(total_distances)
+
+
+    def _plan_to_position(self, position):
+        pose = [position[0],
+                position[1],
+                position[2],
+                np.pi,
+                0.0,
+                0.0]
+
+        replan_count = 0
+        self.group.set_pose_target(pose, end_effector_link='iiwa_link_ee')
+        plan = self.group.plan()
+
+        move_distance = self._calc_plan_statistics(plan)
+        print("plan length is", len(plan.joint_trajectory.points) )
+
+
+        while len(plan.joint_trajectory.points) > self.MAX_PATH_LENGTH:
+            print("Replan after plan length:", len(plan.joint_trajectory.points))
+            print("replanned", replan_count, "times")
+            pose[5] = 2 * np.pi * random.random()
+            self.group.set_pose_target(pose, end_effector_link='iiwa_link_ee')
+            plan = self.group.plan()
+            replan_count += 1
+
+            # if replan_count > 20 and len(plan.joint_trajectory.points) < 20:
+            #     rospy.logerr("Exiting with lower standards.  This make break")
+            #     break
+
+            move_distance = self._calc_plan_statistics(plan)
+
+            if replan_count > 20:
+                rospy.logerr("Planning failed.  Attempting to reset position")
+                self.move_kuka_to_neutral()
+                replan_count = 0
+
+
+
+        self._calc_plan_statistics(plan, print_stats=True)
+
+        return plan
 
     def move_kuka_to_neutral(self):
-        NEUTRAL_POSE= [0.6,-0.05,0.4,3.14159, 0.0, 0.0]
-        current_pose = self.group.get_current_pose(end_effector_link='iiwa_link_ee').pose
-        # print(self.group.get_current_joint_values())
+        plan = self._plan_to_position([0.6,-0.05,0.4])
+        # NEUTRAL_POSE= [0.6,-0.05,0.4,3.14159, 0.0, 0.0]
+        # current_pose = self.group.get_current_pose(end_effector_link='iiwa_link_ee').pose
+        # # print(self.group.get_current_joint_values())
 
-        # self.group.set_position_target(NEUTRAL_POSE[:3], end_effector_link='iiwa_link_ee')
-        self.group.set_pose_target(NEUTRAL_POSE, end_effector_link='iiwa_link_ee')
-        plan = self.group.plan()    
+        # # self.group.set_position_target(NEUTRAL_POSE[:3], end_effector_link='iiwa_link_ee')
+        # self.group.set_pose_target(NEUTRAL_POSE, end_effector_link='iiwa_link_ee')
+        # plan = self.group.plan()
+
+        # print("Plan length:", len(plan.joint_trajectory.points))
+
+        # while len(plan.joint_trajectory.points) > 15:
+        #     print("Trying new random orientation")
+        #     print("Plan length:", len(plan.joint_trajectory.points))
+        #     NEUTRAL_POSE = [NEUTRAL_POSE[0], NEUTRAL_POSE[1], NEUTRAL_POSE[2], NEUTRAL_POSE[3], NEUTRAL_POSE[4], 2 * np.pi * random.random()]
+        #     self.group.set_pose_target(NEUTRAL_POSE, end_effector_link='iiwa_link_ee')
+        #     plan = self.group.plan()
+
+
         # print(self.group.get_current_joint_values())
-       
+        print("plan length executed is", len(plan.joint_trajectory.points) )
         if not plan.joint_trajectory.points:
             print "[ERROR] No trajectory found"
         else:
-            print(self.group.get_joint_value_target())
+            # print(self.group.get_joint_value_target())
             self.group.go(wait=True)
 
         self.traj_num = self.traj_num + 1 
@@ -144,18 +249,29 @@ class KukaInterface ():
             p[2] = 0.15
 
 
-
-        goal_pose = [p[0],p[1],p[2],3.14159, 0.0, 0.0]
+        plan = self._plan_to_position(p)
+        # goal_pose = [p[0], p[1], p[2], 3.14159, 0.0, 2 * np.pi * random.random()]
 
         current_pose = self.group.get_current_pose(end_effector_link='iiwa_link_ee').pose.position
 
-        # print(current_pose.position)
-        # print(current_pose.orientation) 
+        # # print(current_pose.position)
+        # # print(current_pose.orientation) 
 
-        self.group.set_pose_target(goal_pose, end_effector_link='iiwa_link_ee')
-        # self.group.set_position_target(goal_pose[:3], end_effector_link='iiwa_link_ee')
+        # self.group.set_pose_target(goal_pose, end_effector_link='iiwa_link_ee')
+        # # self.group.set_position_target(goal_pose[:3], end_effector_link='iiwa_link_ee')
 
-        plan = self.group.plan()
+        # plan = self.group.plan()
+
+        # print("Plan length:", len(plan.joint_trajectory.points))
+
+        # while len(plan.joint_trajectory.points) > self.MAX_PATH_LENGTH:
+        #     print("Trying new random orientation")
+        #     print("Plan length:", len(plan.joint_trajectory.points))
+        #     goal_pose = [p[0], p[1], p[2], 3.14159, 0.0, 2 * np.pi * random.random()]
+        #     self.group.set_pose_target(goal_pose, end_effector_link='iiwa_link_ee')
+        #     plan = self.group.plan()
+
+        print("plan length executed is", len(plan.joint_trajectory.points) )
 
         if not plan.joint_trajectory.points:
             print "[ERROR] No trajectory found"
@@ -227,10 +343,10 @@ class KukaInterface ():
 
             plan = self.group.plan()
 
-            # if not plan.joint_trajectory.points:
-            #     print "[ERROR] No trajectory found"
-            # else:
-            #     self.group.go(wait=True)
+            if not plan.joint_trajectory.points:
+                print "[ERROR] No trajectory found"
+            else:
+                self.group.go(wait=True)
 
             current_pos = self.group.get_current_pose(end_effector_link='iiwa_link_ee').pose.position
             current_position = np.asarray([current_pos.x,current_pos.y,current_pos.z])
@@ -243,7 +359,7 @@ class KukaInterface ():
                 print("position difference is = ", np.sum(current_position-target_position))
                 counter = counter + 1
                 if counter>10000000:
-                    break
+                    return
 
 
 

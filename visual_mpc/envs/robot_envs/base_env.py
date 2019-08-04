@@ -10,6 +10,12 @@ from .util.user_interface import select_points
 from .util.topic_utils import IMTopic
 import logging
 import json
+from sensor_msgs.msg import Image
+import cv2
+from cv_bridge import CvBridge, CvBridgeError
+from os.path import join
+import os 
+import time
 
 
 def pix_resize(pix, target_width, original_width):
@@ -19,6 +25,11 @@ def pix_resize(pix, target_width, original_width):
 
 class BaseRobotEnv(BaseEnv):
     def __init__(self, env_params):
+        self.traj_num = 0
+        self.im_num = 0
+        self.curr_date = time.strftime("%d-%m-%Y")
+        self.curr_time = time.strftime("%I:%M:%S")
+        self.bridge = CvBridge()
         self._hp = self._default_hparams()
         self._hp.start_state = []
         for name, value in env_params.items():
@@ -132,6 +143,10 @@ class BaseRobotEnv(BaseEnv):
 
         target_qpos = np.clip(self._next_qpos(action), self._low_bound, self._high_bound)
 
+        # logging.getLogger('robot_logger').debug('Target position: {}'.format(target_qpos))
+
+
+
         if np.linalg.norm(target_qpos - self._previous_target_qpos) < 1e-3:
             return self._get_obs()
 
@@ -170,7 +185,11 @@ class BaseRobotEnv(BaseEnv):
     def _get_state(self):
         eep = self._controller.get_cartesian_pose()
         gripper_state = self._controller.get_gripper_state()[0]
+        logging.getLogger('robot_logger').debug('Current Cartesian position: {}'.format(eep))
         
+        
+        # print(eep)
+
         state = np.zeros(self._base_sdim)
         state[:3] = (eep[:3] - self._low_bound[:3]) / (self._high_bound[:3] - self._low_bound[:3])
         state[3] = self._controller.quat_2_euler(eep[3:])[0]
@@ -187,15 +206,60 @@ class BaseRobotEnv(BaseEnv):
         obs['qpos'] = j_angles
         obs['qvel'] = j_vel
 
-        if self._previous_target_qpos is not None:
-            logging.getLogger('robot_logger').debug('xy delta: {}'.format(np.linalg.norm(eep[:2] - self._previous_target_qpos[:2])))
-            logging.getLogger('robot_logger').debug('target z: {}       real z: {}'.format(self._previous_target_qpos[2], eep[2]))   
-            logging.getLogger('robot_logger').debug('z dif {}'.format(abs(eep[2] - self._previous_target_qpos[2])))
-            logging.getLogger('robot_logger').debug('angle dif (degrees): {}'.format(abs(z_angle - self._previous_target_qpos[3]) * 180 / np.pi))
-            logging.getLogger('robot_logger').debug('angle degree target {} vs real {}'.format(np.rad2deg(z_angle),
-                                                             np.rad2deg(self._previous_target_qpos[3])))
+        # if self._previous_target_qpos is not None:
+            # logging.getLogger('robot_logger').debug('xy delta: {}'.format(np.linalg.norm(eep[:2] - self._previous_target_qpos[:2])))
+            # logging.getLogger('robot_logger').debug('target z: {}       real z: {}'.format(self._previous_target_qpos[2], eep[2]))   
+            # logging.getLogger('robot_logger').debug('z dif {}'.format(abs(eep[2] - self._previous_target_qpos[2])))
+            # logging.getLogger('robot_logger').debug('angle dif (degrees): {}'.format(abs(z_angle - self._previous_target_qpos[3]) * 180 / np.pi))
+            # logging.getLogger('robot_logger').debug('angle degree target {} vs real {}'.format(np.rad2deg(z_angle),
+                                                             # np.rad2deg(self._previous_target_qpos[3])))
 
         obs['state'] = self._get_state()
+        # logging.getLogger('robot_logger').debug('Current Cartesian position normalized is : {}'.format(obs['state']))
+
+        ##**************************** Saving images *****************########################
+
+        
+        path = "/home/server/Desktop/traj_images/" +self.curr_date+ "__" + self.curr_time +"/traj" + str(self.traj_num)
+        folders = ['Image0','Image1','Image2']
+        for folder in folders:
+            base_path = os.path.join(path,folder)
+            if not os.path.exists(base_path):
+                os.makedirs(base_path)
+
+        
+        data0 = rospy.wait_for_message('/camera1/usb_cam/image_raw', Image)
+        data1 = rospy.wait_for_message('/camera2/usb_cam/image_raw', Image)
+        data2 = rospy.wait_for_message('/camera3/usb_cam/image_raw', Image)
+        # print("wait_for_message stamp of camera 1:", data0.header.stamp,"\n")
+        # print("wait_for_message stamp of camera 2:", data1.header.stamp,"\n")
+        # print("wait_for_message stamp of camera 3:", data2.header.stamp,"\n")
+
+        try:
+            cv_image0 = self.bridge.imgmsg_to_cv2(data0, "passthrough")
+            cv_image1 = self.bridge.imgmsg_to_cv2(data1, "passthrough")
+            cv_image2 = self.bridge.imgmsg_to_cv2(data2, "passthrough")
+        except CvBridgeError as e:
+            print(e)
+
+        print "Saved to: ", path
+        cv2.cvtColor(cv_image0, cv2.COLOR_BGR2RGB, cv_image0)
+        cv2.cvtColor(cv_image1, cv2.COLOR_BGR2RGB, cv_image1)
+        cv2.cvtColor(cv_image2, cv2.COLOR_BGR2RGB, cv_image2)
+        cv2.imwrite(join(path,"Image0", "frame{:06d}.jpg".format(self.im_num)), cv_image0)#*255)
+        cv2.imwrite(join(path,"Image1", "frame{:06d}.jpg".format(self.im_num)), cv_image1)#*255)
+        cv2.imwrite(join(path,"Image2", "frame{:06d}.jpg".format(self.im_num)), cv_image2)#*255)
+
+        self.im_num = self.im_num + 1
+
+        if(self.im_num>30):
+            self.traj_num = self.traj_num +1
+            self.im_num = 0
+
+        print("image number saved:", self.im_num)
+
+        ### **************************************************** ####################
+
         obs['finger_sensors'] = force_sensor
 
         self._last_obs = copy.deepcopy(obs)
@@ -216,6 +280,7 @@ class BaseRobotEnv(BaseEnv):
     def _move_to_state(self, target_xyz, target_zangle, duration = None):
         target_quat = self._controller.euler_2_quat(target_zangle)
         self._controller.move_to_eep(np.concatenate((target_xyz, target_quat)))
+        
 
     def _reset_previous_qpos(self):
         xyz, quat = self._controller.get_xyz_quat()
@@ -251,6 +316,7 @@ class BaseRobotEnv(BaseEnv):
 
     def _goto_closest_neutral(self):
         self._controller.move_to_neutral()
+        # self.traj_num = self.traj_num +1
         closest_netural = self._get_state()
 
         closest_netural[:3] = np.clip(closest_netural[:3], [0., 0., 0.], self._hp.start_box)
@@ -285,7 +351,7 @@ class BaseRobotEnv(BaseEnv):
             self._controller.move_to_neutral()
 
         if self._cleanup_rate == 0 or (self._cleanup_rate > 0 and self._reset_counter % self._cleanup_rate == 0 and self._reset_counter > 0):
-            # self._controller.redistribute_objects()
+            self._controller.redistribute_objects()
             self._goto_closest_neutral()
 
         self._controller.move_to_neutral()
@@ -344,16 +410,18 @@ class BaseRobotEnv(BaseEnv):
 
         for recorder in self._cameras:
             stamp, image = recorder.get_image()
+            print("stamp:", stamp)
+            # logging.getLogger('robot_logger').error("Checking for time difference:  Current time {} camera time {}".format(cur_time, stamp))
             if abs(stamp - cur_time) > 10 * self._obs_tol:    # no camera ping in half second => camera failure
-                logging.getLogger('robot_logger').error("DeSYNC!")
+                logging.getLogger('robot_logger').error("DeSYNC! Camera not synced with robot. Current time {} camera time {}".format(cur_time, stamp))
                 raise Image_Exception
             time_stamps.append(stamp)
             cam_imgs.append(image)
-
         for index, i in enumerate(time_stamps[:-1]):
             for j in time_stamps[index + 1:]:
+                # logging.getLogger('robot_logger').error('Camera time differences are :  Timestamps {} and {}'.format(i, j))
                 if abs(i - j) > self._obs_tol * 10:
-                    logging.getLogger('robot_logger').error('DeSYNC!')
+                    logging.getLogger('robot_logger').error('DeSYNC! Cameras not synced with each other. Timestamps {} and {}'.format(i, j))
                     raise Image_Exception
 
         images = np.zeros((self.ncam, self._height, self._width, 3), dtype=np.uint8)
