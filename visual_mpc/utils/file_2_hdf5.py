@@ -93,7 +93,7 @@ def save_worker(traj_data, cntr):
     t, meta_data = traj_data
 
     try:
-        env_obs = pkl.load(open('{}/obs_dict.pkl'.format(t), 'rb'), encoding='latin1')
+        env_obs = pkl.load(open('{}/obs_dict.pkl'.format(t), 'rb'))#, encoding='latin1')
         if meta_data['contains_annotation']:
             env_obs['bbox_annotations'] = pkl.load(open('{}/annotation_array.pkl'.format(t), 'rb'), encoding='latin1')
         n_cams = len(glob.glob('{}/images*'.format(t)))
@@ -106,8 +106,8 @@ def save_worker(traj_data, cntr):
                 for time in range(T):
                     env_obs['images'][time, n] = cv2.imread('{}/images{}/im_{}.jpg'.format(t, n, time))
 
-        policy_out = pkl.load(open('{}/policy_out.pkl'.format(t), 'rb'), encoding='latin1')
-        agent_data = pkl.load(open('{}/agent_data.pkl'.format(t), 'rb'), encoding='latin1')
+        policy_out = pkl.load(open('{}/policy_out.pkl'.format(t), 'rb'))#, encoding='latin1')
+        agent_data = pkl.load(open('{}/agent_data.pkl'.format(t), 'rb'))#, encoding='latin1')
 
         def store_in_metadata_if_exists(key):  
             if key in agent_data:
@@ -117,7 +117,7 @@ def save_worker(traj_data, cntr):
         c = cntr.ret_increment
         save_hdf5('{}/traj{}.hdf5'.format(args.output_folder, c), env_obs, policy_out, agent_data, meta_data, video_encoding, t_index)
         return True
-    except FileNotFoundError:
+    except:
         return False
 
 
@@ -174,8 +174,10 @@ if __name__ == '__main__':
             else:
                 traj_meta_data['contains_annotation'] = False
             
-            if isinstance(traj_meta_data['object_classes'], str):
-                traj_meta_data['object_classes'] = traj_meta_data['object_classes'].split("+")
+            # if isinstance(traj_meta_data['object_classes'], str):
+            #     traj_meta_data['object_classes'] = traj_meta_data['object_classes'].split("+")
+            # print(type(traj_meta_data['object_classes']))
+            traj_meta_data['object_classes'] = ['toys']
             
             assert all([k in traj_meta_data for k in MANDATORY_KEYS]), 'metadata for {} is missing keys!'.format(t)
             assert isinstance(traj_meta_data['object_classes'], list), "did not split object classes!"

@@ -9,5 +9,8 @@ def get_controller_class(robot_type):
     elif robot_type == 'widowx':
         from .widowx.widowx_controller import WidowXController
         return WidowXController
+    elif robot_type == 'franka':
+        from .franka.franka_impedance import FrankaImpedanceController
+        return FrankaImpedanceController
     else:
         raise NotImplementedError

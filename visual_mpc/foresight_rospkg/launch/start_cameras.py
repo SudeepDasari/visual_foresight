@@ -6,10 +6,10 @@ import time
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="orders and launches cameras")
-    parser.add_argument("--cam_order", type=int, nargs='+', default=[i for i in range(5)],
+    parser.add_argument("--cam_order", type=int, nargs='+', default=[i for i in range(3)],
                         help="list of camera video stream providers")
     parser.add_argument("--topic_names", type=str, nargs='+',
-                        default=['front', 'left', 'right_side', 'left_side', 'right'],
+                        default=['front', 'left', 'right_side'],# 'left_side', 'right'],
                         help="list of camera topic names")
     parser.add_argument('--visualize', action='store_true', default=False, help="if flag supplied image_view will show")
     args = parser.parse_args()
