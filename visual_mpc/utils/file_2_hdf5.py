@@ -43,27 +43,30 @@ def serialize_video(imgs, temp_name_append):
 
 def save_dict(data_container, dict_group, video_encoding, t_index):
     for k, d in data_container.items():
-                    if 'images' == k:
-                        T, n_cams = d.shape[:2]
-                        dict_group.attrs['n_cams'] = n_cams
+        print(k)
+        if 'images' == k:
+            T, n_cams = d.shape[:2]
+            dict_group.attrs['n_cams'] = n_cams
 
-                        for n in range(n_cams):
-                            cam_group = dict_group.create_group("cam{}_video".format(n))
-                            if video_encoding == 'mp4':
-                                data = cam_group.create_dataset("frames", data=serialize_video(d[:, n], t_index))
-                                data.attrs['shape'] = d[0, n].shape
-                                data.attrs['T'] = d.shape[0]
-                            elif video_encoding == 'jpeg':
-                                for t in range(T):
-                                    data = cam_group.create_dataset("frame{}".format(t), data=serialize_image(d[t, n]))
-                                    data.attrs['shape'] = d[t, n].shape
-                            else:
-                                raise ValueError
-                    elif 'image' in k:
-                        data = dict_group.create_dataset(k, data=serialize_image(d))
-                        data.attrs['shape'] = d.shape
-                    else:
-                        dict_group.create_dataset(k, data=d)
+            for n in range(n_cams):
+                cam_group = dict_group.create_group("cam{}_video".format(n))
+                if video_encoding == 'mp4':
+                    data = cam_group.create_dataset("frames", data=serialize_video(d[:, n], t_index))
+                    data.attrs['shape'] = d[0, n].shape
+                    data.attrs['T'] = d.shape[0]
+                elif video_encoding == 'jpeg':
+                    for t in range(T):
+                        data = cam_group.create_dataset("frame{}".format(t), data=serialize_image(d[t, n]))
+                        data.attrs['shape'] = d[t, n].shape
+                else:
+                    data = cam_group.create_dataset("frames", data=d[:, n])
+        elif 'image' in k:
+            data = dict_group.create_dataset(k, data=serialize_image(d))
+            data.attrs['shape'] = d.shape
+        elif 'qpos' in k:
+            pass
+        else:
+            dict_group.create_dataset(k, data=d)
 
 
 def save_hdf5(filename, env_obs, policy_out, agent_data, meta_data, video_encoding='mp4', t_index=None):
@@ -140,7 +143,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="converts dataset from pkl format to hdf5")
     parser.add_argument('input_folder', type=str, help='where raw files are stored')
     parser.add_argument('output_folder', type=str, help='where to save')
-    parser.add_argument('--video_jpeg_encoding', action='store_true', default=False, help='uses jpeg encoding for video frames instead of mp4')
+    parser.add_argument('--video_jpeg_encoding', action='store_true', default=True, help='uses jpeg encoding for video frames instead of mp4')
     parser.add_argument('--counter', type=int, help='where to start counter', default=0)
     parser.add_argument('--n_workers', type=int, help='number of multi-threaded workers', default=1)
     args = parser.parse_args()
@@ -160,6 +163,7 @@ if __name__ == '__main__':
         if len(glob.glob('./temp*.mp4')) != 0:
             print("Please delete all temp*.mp4 files! (needed for saving)")
             raise EnvironmentError
+    video_encoding = 'raw'
     
     traj_groups = glob.glob(args.input_folder + "*/*/*/*")
     trajs, annotations_loaded = [], 0
