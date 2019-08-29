@@ -19,7 +19,7 @@ class CorrelatedNoiseSampler(CEMSampler):
         if self._hp.mean_bias is not None:
             mean_bias = self._hp.mean_bias
             print('mean bias', mean_bias)
-        else: mean_bias = 0.
+        else: mean_bias = np.zeros(self._adim)
 
         if cov is None:
             noise = noise * np.array(self._hp.initial_std).reshape((1, 1, -1)) + mean_bias[None, None]
@@ -70,7 +70,7 @@ class CorrelatedNoiseSampler(CEMSampler):
         hparams_dict = {
             'nactions': 15,
             'initial_std': [0.05, 0.05, 0.2, np.pi / 10],
-            'mean_bias': np.zeros(4),
+            'mean_bias': None,
             'kappa': 1,
             'beta_0': 0.5,
             'beta_1': 0.5,

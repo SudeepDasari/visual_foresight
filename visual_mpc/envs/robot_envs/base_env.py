@@ -75,7 +75,7 @@ class BaseRobotEnv(BaseEnv):
 
         self._start_pix, self._desig_pix, self._goal_pix = None, None, None
 
-        self._goto_closest_neutral(duration=5.)
+        self._goto_closest_neutral(duration=3)
 
     def _default_hparams(self):
         default_dict = {'robot_name': None,
@@ -465,6 +465,15 @@ class BaseRobotEnv(BaseEnv):
                                      save_dir, n_desig=ntasks)
             self._desig_pix = copy.deepcopy(self._start_pix)
             return copy.deepcopy(self._goal_pix)
+
+    def get_goal_image(self):
+        raw_input("hit enter when ready to take goal image")
+        self._goto_closest_neutral()
+        self._controller.open_gripper(True)
+        goal_img = self.render()
+        import scipy.misc
+        scipy.misc.imsave('goal_image.jpg', goal_img[0])
+        return goal_img
 
     def get_goal_pix(self, target_width):
         return pix_resize(self._goal_pix, target_width, self._width)

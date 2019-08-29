@@ -96,10 +96,10 @@ class ClassifierController(CEMBaseController):
         raw_scores = np.zeros((self._n_cam, actions.shape[0], self._n_pred))
         for c in range(self._n_cam):
             input_images = gen_images[:, :, c].reshape((-1, self._img_height, self._img_width, 3)) / 255
-            logits = self._scoring_func(input_images)['logits']
-            logits = logits.reshape((actions.shape[0], self._n_pred, 2))
-            import pdb; pdb.set_trace()
-            raw_scores[c] = -np.log(logits[:, :, 1] + LOG_SHIFT)
+            post_softmax_logits = self._scoring_func(input_images)['logits']
+            post_softmax_logits = post_softmax_logits.reshape((actions.shape[0], self._n_pred, 2))
+
+            raw_scores[c] = -np.log(post_softmax_logits[:, :, 1] + LOG_SHIFT)
 
         raw_scores = np.sum(raw_scores, axis=0)
         scores = self._weight_scores(raw_scores)

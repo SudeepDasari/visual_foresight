@@ -15,8 +15,8 @@ current_dir = os.path.dirname(os.path.realpath(__file__))
 env_params = {
     'email_login_creds': '.email_cred',
     'camera_topics': [
-                      IMTopic('/front/image_raw', flip=True),
-                      IMTopic('/left/image_raw'),
+                      IMTopic('/front/image_raw'),
+                      IMTopic('/left/image_raw', flip=True),
                       IMTopic('/right_side/image_raw'),
                       IMTopic('/left_side/image_raw'),
                       IMTopic('/right/image_raw')
@@ -37,7 +37,7 @@ agent = {
 
 policy = {
     'type': SamplerPolicy,
-    'mean_bias': np.array([0.,0.,-0.03, 0.])
+    'mean_bias': np.array([0.,0.,-0.04, 0.])
 }
 
 

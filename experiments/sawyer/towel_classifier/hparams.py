@@ -3,7 +3,7 @@ import os
 from visual_mpc.agent.benchmarking_agent import BenchmarkAgent
 from visual_mpc.envs.robot_envs.autograsp_env import AutograspEnv
 from visual_mpc.policy.cem_controllers.samplers.folding_sampler import FoldingCEMSampler
-from visual_mpc.policy.cem_controllers.variants.classifier_cost import ClassifierController
+from visual_mpc.policy.cem_controllers.variants.classifier_controller import ClassifierController
 BASE_DIR = '/'.join(str.split(__file__, '/')[:-1])
 current_dir = os.path.dirname(os.path.realpath(__file__))
 from visual_mpc.envs.robot_envs.util.topic_utils import IMTopic
@@ -30,7 +30,7 @@ agent = {'type' : BenchmarkAgent,
 policy = {
     'type': ClassifierController,
     'replan_interval': 15,
-    'num_samples': 600,
+    'num_samples': 18, # 600,
     'selection_frac': 0.05,
     'sampler': FoldingCEMSampler,
     # 'predictor_propagation': True,   # use the model get the designated pixel for the next step!
@@ -38,7 +38,7 @@ policy = {
     'initial_std_lift': 0.05,  # std dev. in xy
     'classifier_conf_path': '/home/sudeep/Documents/control_embedding/experiments/towel_exp/base.json',
     'classifier_restore_path': '/home/sudeep/Documents/control_embedding/experiments/towel_exp/base_model/model-10000',
-    'classifier_batch_size': 50,
+    'classifier_batch_size': 18, # 50,
     'verbose_every_iter': True,
     'state_append': [0.41, 0.25, 0.166]
     
