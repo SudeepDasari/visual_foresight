@@ -27,11 +27,8 @@ class PixelCostController(CEMBaseController):
         """
         CEMBaseController.__init__(self, ag_params, policyparams)
         predictor_hparams = {}
-        predictor_hparams['adim'] = self._adim
-        predictor_hparams['sdim'] = self._sdim
         predictor_hparams['designated_pixel_count'] = self._hp.designated_pixel_count
         predictor_hparams['run_batch_size'] = min(self._hp.vpred_batch_size, self._hp.num_samples)
-        predictor_hparams['img_dims'] = [ag_params['image_height'], ag_params['image_width']]
 
         self.predictor = self._hp.predictor_class(self._hp.model_params_path, predictor_hparams, n_gpus=ngpu, first_gpu=gpu_id)
         self.predictor.restore(self._hp.model_restore_path)
