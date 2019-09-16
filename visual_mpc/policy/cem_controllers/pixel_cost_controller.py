@@ -30,8 +30,8 @@ class PixelCostController(CEMBaseController):
         predictor_hparams['designated_pixel_count'] = self._hp.designated_pixel_count
         predictor_hparams['run_batch_size'] = min(self._hp.vpred_batch_size, self._hp.num_samples)
 
-        self.predictor = self._hp.predictor_class(self._hp.model_params_path, predictor_hparams, n_gpus=ngpu, first_gpu=gpu_id)
-        self.predictor.restore(self._hp.model_restore_path)
+        self.predictor = self._hp.predictor_class(self._hp.model_path, predictor_hparams, n_gpus=ngpu, first_gpu=gpu_id)
+        self.predictor.restore()
 
         self._net_context = self.predictor.n_context
         if self._hp.start_planning < self._net_context - 1:
@@ -52,8 +52,7 @@ class PixelCostController(CEMBaseController):
     def _default_hparams(self):
         default_dict = {
             'predictor_class': DefaultPredClass,
-            'model_params_path': '',
-            'model_restore_path': '',
+            'model_path': '',
             'vpred_batch_size': 200,
             'designated_pixel_count': 1,
 

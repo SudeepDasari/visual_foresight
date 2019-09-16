@@ -34,9 +34,7 @@ policy = {
     'nactions': 13,
     'repeat': 1,
 
-    "model_params_path": "~/models/sawyer_only/experiment_state-2019-06-26_01-33-31.json",
-    "model_restore_path": "~/models/sawyer_only/checkpoint_210000/model-210000",
-
+    "model_path": "~/models/sawyer_only/checkpoint_210000",
 }
 
 config = {
