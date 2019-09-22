@@ -38,12 +38,7 @@ policy = {
     'predictor_propagation': True,   # use the model get the designated pixel for the next step!
     'nactions': 13,
 
-
-    "model_params_path": "~/models/train_baxterout_baxter_finetune/experiment_state-2019-07-06_22-06-06.json",
-    "model_restore_path": "~/models/train_baxterout_baxter_finetune/household/checkpoint_70000/model-260000",
-
-    # "model_params_path": "~/models/baxterheldout_cloth/experiment_state-2019-07-06_02-46-20.json",
-    # "model_restore_path": "~/models/baxterheldout_cloth/checkpoint_160000/checkpoint_60000/model-250000",
+    "model_path": "~/models/train_baxterout_baxter_finetune/household/checkpoint_70000/",
 
     "sampler": CorrelatedNoiseSampler
 }
