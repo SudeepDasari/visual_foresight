@@ -37,12 +37,16 @@ class CEMBaseController(Policy):
         self._best_indices, self._best_actions = None, None
 
         self._state = None
+        assert self._hp.minimum_selection > 0, "must take at least 1 sample for refitting"
 
     def _default_hparams(self):
         default_dict = {
+            'append_action': None,
             'verbose': True,
             'verbose_every_iter': False,
             'logging_dir': '',
+            'hard_coded_start_action': None,
+            'context_action_weight': [0.5, 0.5, 0.05, 1],
             'zeros_for_start_frames': True,
             'replan_interval': 0,
             'sampler': GaussianCEMSampler,
@@ -51,7 +55,7 @@ class CEMBaseController(Policy):
             'num_samples': 200,
             'selection_frac': 0., # specifcy which fraction of best samples to use to compute mean and var for next CEM iteration
             'start_planning': 0,
-            'default_k': 10
+            'minimum_selection': 10
         }
 
         parent_params = super(CEMBaseController, self)._default_hparams()
@@ -82,11 +86,15 @@ class CEMBaseController(Policy):
         self._logger.log('starting cem at t{}...'.format(self._t))
         self._logger.log('------------------------------------------------')
 
-        K = self._hp.default_k
+        K = self._hp.minimum_selection
         if self._hp.selection_frac:
-            K = max(int(self._hp.selection_frac * self._hp.num_samples), self._hp.default_k)
+            K = max(int(self._hp.selection_frac * self._hp.num_samples), self._hp.minimum_selection)
         actions = self._sampler.sample_initial_actions(self._t, self._hp.num_samples, state[-1])
         for itr in range(self._n_iter):
+            if self._hp.append_action:
+                act_append = np.tile(np.array(self._hp.append_action)[None, None], [self._hp.num_samples, actions.shape[1], 1])
+                actions = np.concatenate((actions, act_append), axis=-1)
+            
             self._logger.log('------------')
             self._logger.log('iteration: ', itr)
 
@@ -98,8 +106,13 @@ class CEMBaseController(Policy):
 
             self.plan_stat['scores_itr{}'.format(itr)] = scores
             if itr < self._n_iter - 1:
-                actions = self._sampler.sample_next_actions(self._hp.num_samples, self._best_actions)
+                re_sample_act = self._best_actions.copy()
+                if self._hp.append_action:
+                    re_sample_act = re_sample_act[:, :, :-len(self._hp.append_action)]
+                
+                actions = self._sampler.sample_next_actions(self._hp.num_samples, re_sample_act, scores[self._best_indices].copy())
 
+      
         self._t_since_replan = 0
 
     def evaluate_rollouts(self, actions, cem_itr):
@@ -123,10 +136,16 @@ class CEMBaseController(Policy):
 
         if t < self._hp.start_planning:
             if self._hp.zeros_for_start_frames:
+                assert self._hp.hard_coded_start_action is None
                 action = np.zeros(self.agentparams['adim'])
+            elif self._hp.hard_coded_start_action:
+                action = np.array(self._hp.hard_coded_start_action)
             else:
                 initial_sampler = self._hp.sampler(self._hp, self._adim, self._sdim)
-                action = initial_sampler.sample_initial_actions(t, 1, state[-1])[0, 0]
+                action = initial_sampler.sample_initial_actions(t, 1, state[-1])[0, 0] * self._hp.context_action_weight
+                if self._hp.append_action:
+                    action = np.concatenate((action, self._hp.append_action), axis=0)
+                
         else:
             if self._hp.replan_interval:
                 if self._t_since_replan is None or self._t_since_replan + 1 >= self._hp.replan_interval:
@@ -140,7 +159,7 @@ class CEMBaseController(Policy):
         assert action.shape == (self.agentparams['adim'],), "action shape does not match adim!"
 
         self._logger.log('time {}, action - {}'.format(t, action))
-
+        
         if self._best_actions is not None:
             action_plan_slice = self._best_actions[:, min(self._t_since_replan + 1, self._hp.T - 1):]
             self._sampler.log_best_action(action, action_plan_slice)

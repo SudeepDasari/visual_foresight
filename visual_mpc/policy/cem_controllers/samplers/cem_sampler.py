@@ -1,11 +1,13 @@
 """
 Implements a custom sampler for the CEM controller
 """
+import numpy as np
+
 
 class CEMSampler(object):
     def __init__(self, hp, adim, sdim, **kwargs):
         self._hp = hp
-        self._adim, self._sdim = adim, sdim
+        self._adim, self.b_sdim = adim, sdim
         self._chosen_actions = []
         self._best_action_plans = []
 
@@ -19,7 +21,7 @@ class CEMSampler(object):
 
         raise NotImplementedError
 
-    def sample_next_actions(self, n_samples, best_actions):
+    def sample_next_actions(self, n_samples, best_actions, scores):
         """
         Samples actions for CEM iterations, given BEST last actions
         :param nsamples: number of samples
@@ -44,7 +46,7 @@ class CEMSampler(object):
         """
         :return: actions chosen by policy thus far
         """
-        return self._chosen_actions
+        return np.array(self._chosen_actions)
 
     @staticmethod
     def get_default_hparams():

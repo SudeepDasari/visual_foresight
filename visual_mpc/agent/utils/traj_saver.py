@@ -1,4 +1,4 @@
-from visual_mpc.datasets.save_util.record_saver import RecordSaver, float_feature, bytes_feature, int64_feature
+from visual_mpc.agent.utils.record_saver import RecordSaver, float_feature, bytes_feature, int64_feature
 import numpy as np
 import os
 

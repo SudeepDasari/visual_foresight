@@ -14,6 +14,7 @@ from std_msgs.msg import String
 from visual_mpc.envs.robot_envs import GripperInterface
 from sensor_msgs.msg import JointState
 import cPickle as pkl
+import requests
 # from actionlib_msgs.msg import GoalID
 # import intera_interface
 import os
@@ -27,11 +28,8 @@ import time
 
 class FrankaHand(GripperInterface):
     def __init__(self):
-        self.grippergrasppub = rospy.Publisher('/franka_gripper/grasp/goal', \
-                GraspActionGoal ,queue_size=1)
-        self.grippermovepub = rospy.Publisher('/franka_gripper/move/goal', \
-                MoveActionGoal ,queue_size=1)
         self.currpos = 0.1
+        self.lastsent = time.time()
     
     def get_gripper_state(self, integrate_force=False):
         # returns gripper joint angle, force reading (none if no force)
@@ -39,25 +37,17 @@ class FrankaHand(GripperInterface):
 
     def set_gripper(self, position, wait=False):
         print("CALLED GRIPPER", position)
-        if (position == 0.03):# and (self.currpos != position):
-            print(position)
-            msg = franka_gripper.msg.GraspActionGoal();
-            msg.header.stamp = rospy.Time.now()
-            msg.header.frame_id="0"
-            msg.goal.width = position
-            msg.goal.speed = 0.05
-            msg.goal.epsilon.inner = 1
-            msg.goal.epsilon.outer = 1
-            msg.goal.force = 0.01
-            self.grippergrasppub.publish(msg)
-        elif position == 0.1:# and (self.currpos != position):
-            print(position)
-            msg = franka_gripper.msg.MoveActionGoal();
-            msg.header.stamp = rospy.Time.now()
-            msg.header.frame_id="0"
-            msg.goal.width = position
-            msg.goal.speed = 0.05
-            self.grippermovepub.publish(msg)
+        now = time.time()
+        if (position == 0.03) and (self.currpos != position):
+            delta = now - self.lastsent
+            time.sleep(max(0, 2 - delta))
+            requests.post('http://172.16.0.1:5000/close')
+            self.lastsent = time.time()
+        elif (position == 0.1) and (self.currpos != position):
+            delta = now - self.lastsent
+            time.sleep(max(0, 2 - delta))
+            requests.post('http://172.16.0.1:5000/open')
+            self.lastsent = time.time()
         else:
             pass
         self.currpos = position
@@ -79,16 +69,16 @@ class FrankaHand(GripperInterface):
 class FrankaImpedanceController(RobotController):
     def __init__(self, robot_name, print_debug, email_cred_file='', log_file='', control_rate=1000, gripper_attached='hand'):
         super(FrankaImpedanceController, self).__init__(robot_name, print_debug, email_cred_file, log_file, control_rate, gripper_attached)
-        self.eepub = rospy.Publisher('/equilibrium_pose',
-            geom_msg.PoseStamped ,queue_size=10)
-        self.jssub = rospy.Subscriber('/joint_states',
-            JointState ,self.setjoint)
+        # self.eepub = rospy.Publisher('/equilibrium_pose',
+        #     geom_msg.PoseStamped ,queue_size=10)
+        # self.jssub = rospy.Subscriber('/joint_states',
+        #     JointState ,self.setjoint)
         # self.errsub = rospy.Subscriber('/franka_state_controller/franka_states',
         #     FrankaState ,self.saveerr)
-        self.resetpub = rospy.Publisher('/franka_control/error_recovery/goal',
-            ErrorRecoveryActionGoal ,queue_size=1)
-        self.gripperesetpub = rospy.Publisher('/franka_gripper/stop/goal', \
-                StopActionGoal ,queue_size=1)
+        # self.resetpub = rospy.Publisher('/franka_control/error_recovery/goal',
+        #     ErrorRecoveryActionGoal ,queue_size=1)
+        # self.gripperesetpub = rospy.Publisher('/franka_gripper/stop/goal', \
+        #         StopActionGoal ,queue_size=1)
         self.currpos = [0.5, 0.0, 0.15, 0.0, 0.0, 1.0, 0.0]
         self.trialcount = 0
         self.jp = None
@@ -114,13 +104,12 @@ class FrankaImpedanceController(RobotController):
         print("AAAA")
 
     def recover(self):
-        msg = ErrorRecoveryActionGoal()
-        self.resetpub.publish(msg)
+        requests.post('http://172.16.0.1:5000/clearerr')
 
-    def recover_gripper(self):
-        msg = StopActionGoal()
-        for i in range(10):
-            self.gripperesetpub.publish(msg)
+    # def recover_gripper(self):
+    #     msg = StopActionGoal()
+    #     for i in range(10):
+    #         self.gripperesetpub.publish(msg)
 
 
 
@@ -140,8 +129,25 @@ class FrankaImpedanceController(RobotController):
     
     def move_to_neutral(self, duration=2):
         i = 0
-        if (self.trialcount % 20 == 0) and (self.trialcount > 0):
+        if (self.trialcount % 50 == 0) and (self.trialcount > 0):
             self.redistribute_objects()
+
+        if (self.trialcount % 20 == 0) or (self.trialcount % 20 == 1):
+            self._send_pos_command([0.5, 0.0, 0.20, 0.0, 0.0, 1.0, 0.0])
+            time.sleep(5)
+            print("TO NEUTRAL")
+            requests.post('http://172.16.0.1:5000/stopimp')
+            print("Stopping Impedence")
+            requests.post('http://172.16.0.1:5000/jointreset')
+            print("Joint being reset")
+            requests.post('http://172.16.0.1:5000/startimp')
+            print("Starting Impedence")
+            
+            # self._send_pos_command([0.2, 0.0, 0.50, 0.0, 0.0, 1.0, 0.0])
+            # time.sleep(5)
+            # self._send_pos_command([0.2, 0.0, 0.20, 0.0, 0.0, 1.0, 0.0])
+            # time.sleep(5)
+            # self._send_pos_command([0.3, 0.0, 0.20, 0.0, 0.0, 1.0, 0.0])
         self.recover()
         # self.recover_gripper()
         # self.redistribute_objects()
@@ -150,13 +156,13 @@ class FrankaImpedanceController(RobotController):
         start_time = rospy.get_time()
         t = rospy.get_time()
         while t - start_time < duration:
-            self._send_pos_command([0.5, 0.0, 0.15, 0.0, 0.0, 1.0, 0.0])
+            self._send_pos_command([0.5, 0.0, 0.10, 0.0, 0.0, 1.0, 0.0])
             i += 1
             self._control_rate.sleep()
             t = rospy.get_time()
         self.trialcount += 1
 
-    def move_to_eep(self, target_pose, duration=1.5):
+    def move_to_eep(self, target_pose, duration=1.5, interpolate=False):
         """
         :param target_pose: Cartesian pose (x,y,z, quat). 
         :param duration: Total time trajectory will take before ending
@@ -175,17 +181,21 @@ class FrankaImpedanceController(RobotController):
         print(el)
         # print("*"*50)
         # print("*"*50)
+        if interpolate:
+            cp = np.array(self.currpos)
+            tp = np.array(target_pose)
+            duration = 5
         i = 0
         self._control_rate.sleep()
         start_time = rospy.get_time()
         self.currpos = target_pose
         t = rospy.get_time()
         while t - start_time < duration:
-            # target_pose[3] = 1.0
-            # target_pose[4] = 0.0
-            # target_pose[5] = 0.0
-            # target_pose[6] = 0.0
-            self._send_pos_command(target_pose)
+            if interpolate:
+                p = ((1.0*(t - start_time) / duration) * (tp - cp)) + cp
+                self._send_pos_command(p)
+            else:
+                self._send_pos_command(target_pose)
             i += 1
             self._control_rate.sleep()
             t = rospy.get_time()
@@ -232,48 +242,46 @@ class FrankaImpedanceController(RobotController):
     #         self._control_rate.sleep()
 
     def _send_pos_command(self, pos):
-        msg = geom_msg.PoseStamped();
-        msg.header.frame_id = "0"
-        msg.header.stamp = rospy.Time.now()    
-        msg.pose.position = geom_msg.Point(pos[0], pos[1], pos[2])
-        msg.pose.orientation = geom_msg.Quaternion(pos[5], pos[4], pos[3], pos[6])
-        self.eepub.publish(msg)
+        arr = np.array(pos).astype(np.float32)
+        data = {"arr": arr.tolist()}
+        requests.post('http://172.16.0.1:5000/pose', json=data)
 
     def redistribute_objects(self):
         """
         Play pre-recorded trajectory that sweeps objects into center of bin
         """
         logging.getLogger('robot_logger').info('redistribute...')
+        self.move_to_eep([0.5, 0.0, 0.15, 0.0, 0.0, 1.0, 0.0], interpolate=True)
+        self.move_to_eep([0.8, 0.2, 0.15, 0.0, 0.0, 1.0, 0.0], interpolate=True)
+        self.move_to_eep([0.8, 0.2, 0.00, 0.0, 0.0, 1.0, 0.0], interpolate=True)
+        self.move_to_eep([0.5, 0.0, 0.00, 0.0, 0.0, 1.0, 0.0], interpolate=True)
+        
+        self.move_to_eep([0.5, 0.0, 0.15, 0.0, 0.0, 1.0, 0.0], interpolate=True)
+        self.move_to_eep([0.8, -0.2, 0.15, 0.0, 0.0, 1.0, 0.0], interpolate=True)
+        self.move_to_eep([0.8, -0.2, 0.00, 0.0, 0.0, 1.0, 0.0], interpolate=True)
+        self.move_to_eep([0.5, 0.0, 0.00, 0.0, 0.0, 1.0, 0.0], interpolate=True)
+        
+        self.move_to_eep([0.5, 0.0, 0.15, 0.0, 0.0, 1.0, 0.0], interpolate=True)
+        self.move_to_eep([0.25, 0.2, 0.15, 0.0, 0.0, 1.0, 0.0], interpolate=True)
+        self.move_to_eep([0.25, 0.2, 0.00, 0.0, 0.0, 1.0, 0.0], interpolate=True)
+        self.move_to_eep([0.5, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0], interpolate=True)
+        
+        self.move_to_eep([0.5, 0.0, 0.15, 0.0, 0.0, 1.0, 0.0], interpolate=True)
+        self.move_to_eep([0.25, -0.2, 0.15, 0.0, 0.0, 1.0, 0.0], interpolate=True)
+        self.move_to_eep([0.25, -0.2, 0.00, 0.0, 0.0, 1.0, 0.0], interpolate=True)
+        self.move_to_eep([0.5, 0.0, 0.00, 0.0, 0.0, 1.0, 0.0], interpolate=True)
 
-        self.move_to_eep([0.5, 0.0, 0.15, 0.0, 0.0, 1.0, 0.0])
-        self.move_to_eep([0.7, 0.2, 0.15, 0.0, 0.0, 1.0, 0.0])
-        self.move_to_eep([0.7, 0.2, 0.08, 0.0, 0.0, 1.0, 0.0])
-        self.move_to_eep([0.5, 0.0, 0.08, 0.0, 0.0, 1.0, 0.0])
-        
-        self.move_to_eep([0.5, 0.0, 0.15, 0.0, 0.0, 1.0, 0.0])
-        self.move_to_eep([0.7, -0.2, 0.15, 0.0, 0.0, 1.0, 0.0])
-        self.move_to_eep([0.7, -0.2, 0.08, 0.0, 0.0, 1.0, 0.0])
-        self.move_to_eep([0.5, 0.0, 0.08, 0.0, 0.0, 1.0, 0.0])
-        
-        self.move_to_eep([0.5, 0.0, 0.15, 0.0, 0.0, 1.0, 0.0])
-        self.move_to_eep([0.35, 0.2, 0.15, 0.0, 0.0, 1.0, 0.0])
-        self.move_to_eep([0.35, 0.2, 0.08, 0.0, 0.0, 1.0, 0.0])
-        self.move_to_eep([0.5, 0.0, 0.08, 0.0, 0.0, 1.0, 0.0])
-        
-        self.move_to_eep([0.5, 0.0, 0.15, 0.0, 0.0, 1.0, 0.0])
-        self.move_to_eep([0.35, -0.2, 0.15, 0.0, 0.0, 1.0, 0.0])
-        self.move_to_eep([0.35, -0.2, 0.08, 0.0, 0.0, 1.0, 0.0])
-        self.move_to_eep([0.5, 0.0, 0.08, 0.0, 0.0, 1.0, 0.0])
+        # self.move_to_eep([0.5, 0.0, 0.15, 0.0, 0.0, 1.0, 0.0])
+        # self.move_to_eep([0.5, 0.0, 0.25, 0.0, 0.0, 1.0, 0.0])
+        # self.move_to_eep([0.5, 0.0, 0.35, 0.0, 0.0, 1.0, 0.0])
+        # self.move_to_eep([0.5, 0.0, 0.50, 0.0, 0.0, 1.0, 0.0])
+        # self.move_to_eep([0.5, 0.0, 0.60, 0.0, 0.0, 1.0, 0.0])
+        # self.move_to_eep([0.5, 0.0, 0.50, 0.0, 0.0, 1.0, 0.0])
+        # self.move_to_eep([0.5, 0.0, 0.35, 0.0, 0.0, 1.0, 0.0])
+        # self.move_to_eep([0.5, 0.0, 0.25, 0.0, 0.0, 1.0, 0.0])
+        # self.move_to_eep([0.5, 0.0, 0.15, 0.0, 0.0, 1.0, 0.0])
+        # self.move_to_eep([0.5, 0.0, 0.1, 0.0, 0.0, 1.0, 0.0])
 
-        self.move_to_eep([0.5, 0.0, 0.15, 0.0, 0.0, 1.0, 0.0])
-        self.move_to_eep([0.5, 0.0, 0.25, 0.0, 0.0, 1.0, 0.0])
-        self.move_to_eep([0.5, 0.0, 0.35, 0.0, 0.0, 1.0, 0.0])
-        self.move_to_eep([0.5, 0.0, 0.50, 0.0, 0.0, 1.0, 0.0])
-        self.move_to_eep([0.5, 0.0, 0.60, 0.0, 0.0, 1.0, 0.0])
-        self.move_to_eep([0.5, 0.0, 0.50, 0.0, 0.0, 1.0, 0.0])
-        self.move_to_eep([0.5, 0.0, 0.35, 0.0, 0.0, 1.0, 0.0])
-        self.move_to_eep([0.5, 0.0, 0.25, 0.0, 0.0, 1.0, 0.0])
-        self.move_to_eep([0.5, 0.0, 0.15, 0.0, 0.0, 1.0, 0.0])
 
 
     def get_joint_angles(self):

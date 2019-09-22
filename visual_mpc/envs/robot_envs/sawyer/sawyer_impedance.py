@@ -15,7 +15,7 @@ import visual_mpc.envs.robot_envs as robot_envs
 
 
 class SawyerImpedanceController(RobotController):
-    def __init__(self, robot_name, print_debug, email_cred_file='', log_file='', control_rate=800, gripper_attached='wsg-50'):
+    def __init__(self, robot_name='sawyer', print_debug=False, email_cred_file='', log_file='', control_rate=800, gripper_attached='wsg-50'):
         super(SawyerImpedanceController, self).__init__(robot_name, print_debug, email_cred_file, log_file, control_rate, gripper_attached)
         self._rs = intera_interface.RobotEnable(intera_interface.CHECK_VERSION)
         self._limb = intera_interface.Limb("right")

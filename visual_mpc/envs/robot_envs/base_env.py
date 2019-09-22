@@ -2,7 +2,7 @@ from visual_mpc.envs.robot_envs import get_controller_class
 from visual_mpc.envs.base_env import BaseEnv
 import numpy as np
 import random
-from visual_mpc.agent.general_agent import Image_Exception
+from visual_mpc.agent import Image_Exception
 from .util.camera_recorder import CameraRecorder
 import copy
 import rospy
@@ -46,7 +46,7 @@ class BaseRobotEnv(BaseEnv):
         for name, value in self._hp.values().items():
             logging.getLogger('robot_logger').info('{}= {}'.format(name, value))
         logging.getLogger('robot_logger').info('---------------------------------------------------------------------------')
-
+    
         self._save_video = self._hp.save_video
         self._cameras = [CameraRecorder(t, self._hp.opencv_tracking, self._save_video) for t in self._hp.camera_topics]
 
@@ -75,7 +75,7 @@ class BaseRobotEnv(BaseEnv):
 
         self._start_pix, self._desig_pix, self._goal_pix = None, None, None
 
-        self._goto_closest_neutral()
+        self._goto_closest_neutral(duration=5.)
 
     def _default_hparams(self):
         default_dict = {'robot_name': None,
@@ -224,9 +224,9 @@ class BaseRobotEnv(BaseEnv):
             obs['obj_image_locations'] = copy.deepcopy(self._desig_pix)
         return obs
 
-    def _move_to_state(self, target_xyz, target_zangle, duration = None):
+    def _move_to_state(self, target_xyz, target_zangle, duration=1.5):
         target_quat = self._controller.euler_2_quat(target_zangle)
-        self._controller.move_to_eep(np.concatenate((target_xyz, target_quat)))
+        self._controller.move_to_eep(np.concatenate((target_xyz, target_quat)), duration)
 
     def _reset_previous_qpos(self):
         xyz, quat = self._controller.get_xyz_quat()
@@ -260,15 +260,15 @@ class BaseRobotEnv(BaseEnv):
         self._reset_counter += 1
         return self._get_obs(), None
 
-    def _goto_closest_neutral(self):
-        self._controller.move_to_neutral()
-        closest_netural = self._get_state()
+    def _goto_closest_neutral(self, duration=1.0):
+        self._controller.move_to_neutral(duration)
+        closest_neutral = self._get_state()
 
-        closest_netural[:3] = np.clip(closest_netural[:3], [0., 0., 0.], self._hp.start_box)
-        closest_netural[:3] *= self._high_bound[:3] - self._low_bound[:3]
-        closest_netural[:3] += self._low_bound[:3]
+        closest_neutral[:3] = np.clip(closest_neutral[:3], [0., 0., 0.], self._hp.start_box)
+        closest_neutral[:3] *= self._high_bound[:3] - self._low_bound[:3]
+        closest_neutral[:3] += self._low_bound[:3]
 
-        self._move_to_state(closest_netural[:3], closest_netural[3], 1.)
+        self._move_to_state(closest_neutral[:3], closest_neutral[3])
 
     def reset(self):
         """
@@ -296,7 +296,7 @@ class BaseRobotEnv(BaseEnv):
             self._controller.move_to_neutral()
 
         if self._cleanup_rate == 0 or (self._cleanup_rate > 0 and self._reset_counter % self._cleanup_rate == 0 and self._reset_counter > 0):
-            self._controller.redistribute_objects()
+            # self._controller.redistribute_objects()
             self._goto_closest_neutral()
 
         self._controller.move_to_neutral()

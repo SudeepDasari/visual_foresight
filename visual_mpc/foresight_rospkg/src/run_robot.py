@@ -14,7 +14,7 @@ import json
 
 # TODO simplify this class
 class RobotEnvironment:
-    def __init__(self, robot_name, conf, resume=False, ngpu=1, gpu_id=0, is_bench=False, env_metadata=None):
+    def __init__(self, exp_path, robot_name, conf, resume=False, ngpu=1, gpu_id=0, is_bench=False, env_metadata=None):
         self._env_metadata, self._saved_metadata = env_metadata, False
         self._start_time = datetime.datetime.now()
         if 'override_{}'.format(robot_name) in conf:
@@ -28,7 +28,7 @@ class RobotEnvironment:
             conf['agent']['imax'] = 5
 
         if 'RESULT_DIR' in os.environ:
-            exp_path = conf['agent']['data_save_dir'].split('/')
+            exp_path = exp_path.split('/')
             exp_index = min(max([i for i, v in enumerate(exp_path) if v == 'experiments'] + [0]) + 1, len(exp_path) - 1)
             exp_name = '/'.join(exp_path[exp_index:])
             conf['agent']['data_save_dir'] = '{}/{}'.format(os.environ['RESULT_DIR'], exp_name)
@@ -39,7 +39,7 @@ class RobotEnvironment:
         self.envparams['robot_name'] = self.agentparams['robot_name'] = robot_name
         self._is_bench = is_bench
         if is_bench:
-            self.task_mode = '{}/exp'.format(robot_name)
+            self.task_mode = '{}/{}'.format(robot_name, conf.get('experiment_name', 'exp'))
             self.agentparams['env'][1]['start_at_neutral'] = True     # robot should start at neutral during benchmarks
         else:
             self.task_mode = '{}/{}'.format(robot_name, conf.get('mode', 'train'))
@@ -120,6 +120,8 @@ class RobotEnvironment:
         print("CHECKPOINTED")
 
     def _save_raw_images(self, traj_folder, agent_data, obs_dict, policy_outputs):
+
+
         if not self._is_bench:
             if os.path.exists(traj_folder):
                 shutil.rmtree(traj_folder)
@@ -134,6 +136,7 @@ class RobotEnvironment:
             json.dump(self._env_metadata, open(save_path, 'w'))
             self._saved_metadata = True
 
+        print('saving data to ', traj_folder)
         if 'images' in obs_dict:
             images = obs_dict.pop('images')
             T, n_cams = images.shape[:2]
@@ -184,5 +187,5 @@ if __name__ == '__main__':
         import time
         time.sleep(3.0)           # add annoying warning
     
-    env = RobotEnvironment(args.robot_name, conf, args.resume, args.ngpu, args.gpu_id, args.benchmark, env_data)
+    env = RobotEnvironment(args.experiment, args.robot_name, conf, args.resume, args.ngpu, args.gpu_id, args.benchmark, env_data)
     env.run()

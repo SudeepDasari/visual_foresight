@@ -1,4 +1,5 @@
 """ This file defines an agent for the MuJoCo simulator environment. """
+import pdb
 import copy
 import numpy as np
 from visual_mpc.policy import get_policy_args
@@ -71,7 +72,7 @@ class GeneralAgent(object):
             try:
                 agent_data, obs_dict, policy_outs = self.rollout(policy, i_trial, i_traj)
                 traj_ok = agent_data['traj_ok']
-            except Image_Exception:
+            except Image_Exception, Environment_Exception:
                 traj_ok = False
 
         if not traj_ok:
@@ -148,6 +149,7 @@ class GeneralAgent(object):
         if self._reset_state is not None:
             agent_data['reset_state'] = self._reset_state
             obs['reset_state'] = self._reset_state
+
         return obs
 
     def _required_rollout_metadata(self, agent_data, traj_ok, t, i_traj, i_tr, reset_state):
@@ -204,11 +206,7 @@ class GeneralAgent(object):
             pi_t = policy.act(**get_policy_args(policy, obs, t, i_traj, agent_data))
             policy_outputs.append(pi_t)
 
-            try:
-                obs = self._post_process_obs(self.env.step(copy.deepcopy(pi_t['actions'])), agent_data)
-            except Environment_Exception as e:
-                print(e)
-                return {'traj_ok': False}, None, None
+            obs = self._post_process_obs(self.env.step(copy.deepcopy(pi_t['actions'])), agent_data)
 
             if 'rejection_sample' in self._hyperparams and 'rejection_end_early' in self._hyperparams:
                 print('traj rejected!')
