@@ -28,9 +28,10 @@ class InvModelBaseController(Policy):
         self._adim = self.agentparams['adim']
         self._sdim = self.agentparams['sdim']                             # state dimension
 
-        predictor_hparams = {'load_T':self._hp.load_T}
+        #predictor_hparams = {'load_T':self._hp.load_T}
+	predictor_hparams = {}
         self.predictor = self._hp.predictor_class(self._hp.model_params_path, predictor_hparams, n_gpus=ngpu, first_gpu=gpu_id)
-        self.predictor.restore(self._hp.model_restore_path)
+        self.predictor.restore()
 
         self.action_counter = 0
         self.actions = None
@@ -54,7 +55,8 @@ class InvModelBaseController(Policy):
         self.plan_stat = {} #planning statistics
 
     def act(self, t=None, i_tr=None, images=None, goal_image=None):
-        if t % (self._hp.load_T - 1) == 0:
+        #if t % (self._hp.load_T - 1) == 0:
+        if t == 0:
             self.actions = self.predictor(convert_to_float(images[-1,0]), goal_image[-1, 0])  # select last-image and 0-th camera
             self.action_counter = 0
         print('t {} action counter {}'.format(t, self.action_counter))

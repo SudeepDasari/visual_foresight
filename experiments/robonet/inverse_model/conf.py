@@ -10,31 +10,32 @@ from visual_mpc.policy.inverse_models.inverse_model_base_controller import InvMo
 env_params = {
     'camera_topics': [IMTopic('/front/image_raw', flip=True)],                  #, IMTopic('/bot/image_raw'), IMTopic('/bot2/image_raw')],
     'cleanup_rate': -1,
-    'save_video': True
+    'save_video': True,
+    'gripper_attached': 'none'
 
 }
 
 agent = {'type' : BenchmarkAgent,
          'env': (AutograspEnv, env_params),
-         'T': 30, #14,  #number of commands per episodes (issued at control_rate / substeps HZ)
-         'image_height': 48,
-         'image_width': 64,
+         'T': 10, #14,  #number of commands per episodes (issued at control_rate / substeps HZ)
+         'image_height': 192,
+         'image_width': 256,
          'make_final_recording': '',
-         # 'goal_image_only':'',
-         'load_goal_image':'/home/sudeep/goal_images/side_noinsert.jpg',
-         'no_goal_def':''
+         'goal_image_only':'',
+         #'load_goal_image':'/home/sudeep/goal_images/side_noinsert.jpg',
+         'no_goal_def':'',
+	     'data_save_dir': 'outputs/'
 }
 
 policy = {
     'type': InvModelBaseController,
-    "model_params_path": "/home/sudeep/models/inverse_model/sudeep_training/experiment_state-2019-08-17_21-54-50.json",
+    "model_params_path": "/home/stephen/models/InverseTrainable_0_534e53f2_2019-09-22_02-07-585pwzvrv_/checkpoint_130000",
     # "model_restore_path": "~/models/inverse_model/sudeep_training/InverseTrainable_2_load_T=7_4f3b737c_2019-08-18_08-15-55u3mucwsl/checkpoint_95000/model-95000",
-    "model_restore_path": "~/models/inverse_model/sudeep_training/InverseTrainable_0_load_T=3_4f3abdb0_2019-08-17_21-54-50nq_e9ql8/checkpoint_95000/model-95000",
-    "load_T":3
+    "model_restore_path": "/home/stephen/models/InverseTrainable_0_534e53f2_2019-09-22_02-07-585pwzvrv_/checkpoint_130000",
 }
 
 config = {
-    "experiment_name": "all_views_heldout",
+    "experiment_name": "inverse-model-black-gripper",
     'traj_per_file':128,
     'save_data': True,
     'save_raw_images' : True,

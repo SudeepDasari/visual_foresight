@@ -28,7 +28,7 @@ class BaseRobotEnv(BaseEnv):
                 self._hp.start_state = value
             else:
                 self._hp.set_hparam(name, value)
-
+        self.savedir = None
         assert self._hp.action_space == 'xyz_yaw_gripper', "environment only supports xyz_yaw_gripper action spaces at the moment"
         logging.info('initializing environment for {}'.format(self._hp.robot_name))
         self._robot_name = self._hp.robot_name
@@ -246,6 +246,37 @@ class BaseRobotEnv(BaseEnv):
                 save_worker.put(('mov', 'recording{}/{}_clip.mp4'.format(i_traj, name), b, 30))
 
     def _end_reset(self):
+
+        eep = self._get_state()
+        eep[:3] = np.clip(eep[:3], [0., 0., 0.], self._hp.start_box)
+        eep[:3] *= self._high_bound[:3] - self._low_bound[:3]
+        eep[:3] += self._low_bound[:3]
+        print(eep)
+        # POS 0
+        #eep[0] += 0.125
+        #eep[1] += 0.05
+        # POS 1
+        #eep[0] += 0.125
+        #eep[1] += 0.05
+        #eep[2] -= 0.075
+        # POS 2
+        #eep[0] += 0.1
+        #eep[1] += 0.05
+        #eep[2] -= 0.05
+        # POS 3
+        eep[0] += np.random.uniform(0.05, 0.125)
+        eep[1] += np.random.uniform(-0.05, 0.05)
+        eep[2] -= np.random.uniform(0.03, 0.075)
+
+        print('ADJUSTING')
+        print(eep)
+        self._move_to_state(eep[:3], eep[3], duration=2.)
+
+        print('ADJUSTING')
+        import scipy.misc
+        start_image = self.render()
+        if self.savedir is not None:
+            scipy.misc.imsave('{}/initial_image.jpg'.format(self.savedir), start_image[0])
         logging.getLogger('robot_logger').info('Finishing reset {}'.format(self._reset_counter))
         if self._hp.wait_during_resetend:
             _ = raw_input("PRESS ENTER TO CONINUE")
@@ -466,13 +497,17 @@ class BaseRobotEnv(BaseEnv):
             self._desig_pix = copy.deepcopy(self._start_pix)
             return copy.deepcopy(self._goal_pix)
 
-    def get_goal_image(self):
-        raw_input("hit enter when ready to take goal image")
+    def get_goal_image(self, savedir):
+        self.savedir = savedir
         self._goto_closest_neutral()
         self._controller.open_gripper(True)
+        raw_input("hit enter when ready to take goal image")
         goal_img = self.render()
+        self._goto_closest_neutral()
+        self._controller.open_gripper(True)
+        raw_input("hit enter when objects put back")
         import scipy.misc
-        scipy.misc.imsave('goal_image.jpg', goal_img[0])
+        scipy.misc.imsave('{}/goal_image.jpg'.format(savedir), goal_img[0])
         return goal_img
 
     def get_goal_pix(self, target_width):
