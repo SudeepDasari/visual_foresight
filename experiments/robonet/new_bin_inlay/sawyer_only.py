@@ -1,17 +1,17 @@
-
 import numpy as np
 import os
 from visual_mpc.agent.benchmarking_agent import BenchmarkAgent
 from visual_mpc.envs.robot_envs.autograsp_env import AutograspEnv
 from visual_mpc.policy.cem_controllers.pixel_cost_controller import PixelCostController
 from visual_mpc.envs.robot_envs.util.topic_utils import IMTopic
+from visual_mpc.policy.cem_controllers.samplers import CorrelatedNoiseSampler
 
 
 env_params = {
     'camera_topics': [IMTopic('/front/image_raw', flip=True)],                  #, IMTopic('/bot/image_raw'), IMTopic('/bot2/image_raw')],
-    'gripper_attached': 'none',
     'cleanup_rate': -1,
-    'duration': 2.5
+    'save_video': True
+
 }
 
 agent = {'type' : BenchmarkAgent,
@@ -25,22 +25,22 @@ agent = {'type' : BenchmarkAgent,
 policy = {
     'type': PixelCostController,
     'replan_interval': 13,
+    'verbose_every_iter': True,
+    'zeros_for_start_frames': False,
     'num_samples': 600,
-    'selection_frac': 0.05,
+    'selection_frac': 2./3,
     'predictor_propagation': True,   # use the model get the designated pixel for the next step!
-    'initial_std_lift': 0.2,  # std dev. in xy
-    'initial_std_rot': np.pi / 10,
-    'rejection_sampling': False,
     'nactions': 13,
-    'repeat': 1,
-
-    "model_params_path": "~/robotiq_models/just_robotiq/experiment_state-2019-07-06_23-42-31.json",
-    "model_restore_path": "~/robotiq_models/just_robotiq/robotiq/checkpoint_70000/model-70000",
-
+    "sampler": CorrelatedNoiseSampler,
+    'context_action_weight': [2, 2, 0.05, 2],
+    # 'initial_std': [0.05, 0.05, 0.2, np.pi / 10, 1],
+    # 'initial_std': [0.05, 0.05, 0.2, np.pi / 10],
+    "model_params_path": "~/models/sawyer_only/experiment_state-2019-06-26_01-33-31.json",
+    "model_restore_path": "~/models/sawyer_only/checkpoint_210000/model-210000",
 }
 
 config = {
-    "experiment_name": "scratch",
+    "experiment_name": "all_views_heldout",
     'traj_per_file':128,
     'save_data': True,
     'save_raw_images' : True,
