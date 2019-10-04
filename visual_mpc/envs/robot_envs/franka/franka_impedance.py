@@ -132,16 +132,16 @@ class FrankaImpedanceController(RobotController):
         if (self.trialcount % 50 == 0) and (self.trialcount > 0):
             self.redistribute_objects()
 
-        if (self.trialcount % 20 == 0) or (self.trialcount % 20 == 1):
-            self._send_pos_command([0.5, 0.0, 0.20, 0.0, 0.0, 1.0, 0.0])
-            time.sleep(5)
-            print("TO NEUTRAL")
-            requests.post('http://172.16.0.1:5000/stopimp')
-            print("Stopping Impedence")
-            requests.post('http://172.16.0.1:5000/jointreset')
-            print("Joint being reset")
-            requests.post('http://172.16.0.1:5000/startimp')
-            print("Starting Impedence")
+        # if (self.trialcount % 20 == 0) or (self.trialcount % 20 == 1):
+        #     self._send_pos_command([0.5, 0.0, 0.20, 0.0, 0.0, 1.0, 0.0])
+        #     time.sleep(5)
+        #     print("TO NEUTRAL")
+        #     requests.post('http://172.16.0.1:5000/stopimp')
+        #     print("Stopping Impedence")
+        #     requests.post('http://172.16.0.1:5000/jointreset')
+        #     print("Joint being reset")
+        #     requests.post('http://172.16.0.1:5000/startimp')
+        #     print("Starting Impedence")
             
             # self._send_pos_command([0.2, 0.0, 0.50, 0.0, 0.0, 1.0, 0.0])
             # time.sleep(5)
