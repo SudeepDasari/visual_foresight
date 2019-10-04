@@ -264,9 +264,10 @@ class BaseRobotEnv(BaseEnv):
         #eep[1] += 0.05
         #eep[2] -= 0.05
         # POS 3
-        eep[0] += np.random.uniform(0.05, 0.125)
-        eep[1] += np.random.uniform(-0.05, 0.05)
-        eep[2] -= np.random.uniform(0.03, 0.075)
+        #eep[0] += np.random.uniform(0.05, 0.125)
+        #eep[1] += np.random.uniform(-0.05, 0.05)
+        #eep[2] -= np.random.uniform(0.03, 0.075)
+        eep[2] -= 0.05
 
         print('ADJUSTING')
         print(eep)

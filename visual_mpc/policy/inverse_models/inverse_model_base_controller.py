@@ -35,6 +35,8 @@ class InvModelBaseController(Policy):
 
         self.action_counter = 0
         self.actions = None
+        self.context_actions = [None] * self._hp.num_context
+        self.context_frames = [None] * self._hp.num_context
 
     def _default_hparams(self):
         default_dict = {
@@ -43,7 +45,8 @@ class InvModelBaseController(Policy):
             'model_params_path': '',
             'model_restore_path': '',
             'logging_dir':'',
-            'load_T':7
+            'load_T':7,
+            'num_context': 2,
         }
 
         parent_params = super(InvModelBaseController, self)._default_hparams()
@@ -56,12 +59,30 @@ class InvModelBaseController(Policy):
 
     def act(self, t=None, i_tr=None, images=None, goal_image=None):
         #if t % (self._hp.load_T - 1) == 0:
-        if t == 0:
-            self.actions = self.predictor(convert_to_float(images[-1,0]), goal_image[-1, 0])  # select last-image and 0-th camera
+        if t < self._hp.num_context:
+            self.context_frames[t] = convert_to_float(np.copy(images[-1, 0]))
+            action = np.array([
+                        np.random.uniform(-0.025, 0.025),
+                        np.random.uniform(-0.025, 0.025),
+                        np.random.uniform(-0.025, 0.025),
+                        0
+                    ])
+            self.context_actions[t] = action
+        elif t >= self._hp.num_context:
+            float_ctx = [frame[None, None] for frame in self.context_frames] 
+            prepped_ctx = np.concatenate(float_ctx, axis=1)
+            self.actions = self.predictor(convert_to_float(images[-1,0]), goal_image[-1, 0],
+                                          np.array(self.context_actions)[None], prepped_ctx)  # select last-image and 0-th camera
             self.action_counter = 0
-        print('t {} action counter {}'.format(t, self.action_counter))
-        action = self.actions[0, self.action_counter]
-        self.action_counter += 1
+            print('t {} action counter {}'.format(t, self.action_counter))
+            action = self.actions[0, self.action_counter]
+            self.action_counter += 1
+            self.context_frames.append(convert_to_float(np.copy(images[-1, 0])))
+            self.context_frames.pop()
+            self.context_actions.append(action)
+            self.context_actions.pop()
+        else:
+            action = np.zeros(4)
         print('action ', action)
         return {'actions': action, 'plan_stat':self.plan_stat}
 

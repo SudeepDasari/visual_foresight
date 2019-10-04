@@ -29,13 +29,15 @@ agent = {'type' : BenchmarkAgent,
 
 policy = {
     'type': InvModelBaseController,
-    "model_params_path": "/home/stephen/models/InverseTrainable_0_534e53f2_2019-09-22_02-07-585pwzvrv_/checkpoint_130000",
+    #"model_params_path": "/home/stephen/models/InverseTrainable_0_534e53f2_2019-09-22_02-07-585pwzvrv_/checkpoint_130000",
+
+    "model_params_path": "/home/stephen/models/onestep_context/checkpoint_170000",
     # "model_restore_path": "~/models/inverse_model/sudeep_training/InverseTrainable_2_load_T=7_4f3b737c_2019-08-18_08-15-55u3mucwsl/checkpoint_95000/model-95000",
-    "model_restore_path": "/home/stephen/models/InverseTrainable_0_534e53f2_2019-09-22_02-07-585pwzvrv_/checkpoint_130000",
+    "model_restore_path": "/home/stephen/models/onestep_context/checkpoint_170000"
 }
 
 config = {
-    "experiment_name": "inverse-model-black-gripper",
+    "experiment_name": "inverse-model-onestep-replan-10",
     'traj_per_file':128,
     'save_data': True,
     'save_raw_images' : True,
