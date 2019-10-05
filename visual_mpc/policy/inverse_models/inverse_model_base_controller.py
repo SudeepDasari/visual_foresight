@@ -26,10 +26,9 @@ class InvModelBaseController(Policy):
 
         #action dimensions:
         self._adim = self.agentparams['adim']
-        self._sdim = self.agentparams['sdim']                             # state dimension
-
+        self._sdim = self.agentparams['sdim']
         #predictor_hparams = {'load_T':self._hp.load_T}
-	predictor_hparams = {}
+        predictor_hparams = {}
         self.predictor = self._hp.predictor_class(self._hp.model_params_path, predictor_hparams, n_gpus=ngpu, first_gpu=gpu_id)
         self.predictor.restore()
 
@@ -47,6 +46,7 @@ class InvModelBaseController(Policy):
             'logging_dir':'',
             'load_T':7,
             'num_context': 2,
+            'replan_every': 2,
         }
 
         parent_params = super(InvModelBaseController, self)._default_hparams()
@@ -69,11 +69,12 @@ class InvModelBaseController(Policy):
                     ])
             self.context_actions[t] = action
         elif t >= self._hp.num_context:
-            float_ctx = [frame[None, None] for frame in self.context_frames] 
-            prepped_ctx = np.concatenate(float_ctx, axis=1)
-            self.actions = self.predictor(convert_to_float(images[-1,0]), goal_image[-1, 0],
-                                          np.array(self.context_actions)[None], prepped_ctx)  # select last-image and 0-th camera
-            self.action_counter = 0
+            if ((t - self._hp.num_context) % self._hp.replan_every == 0):
+                float_ctx = [frame[None, None] for frame in self.context_frames] 
+                prepped_ctx = np.concatenate(float_ctx, axis=1)
+                self.actions = self.predictor(convert_to_float(images[-1,0]), goal_image[-1, 0],
+                                              np.array(self.context_actions)[None], prepped_ctx)  # select last-image and 0-th camera
+                self.action_counter = 0
             print('t {} action counter {}'.format(t, self.action_counter))
             action = self.actions[0, self.action_counter]
             self.action_counter += 1
