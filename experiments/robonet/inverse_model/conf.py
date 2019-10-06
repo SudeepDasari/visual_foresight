@@ -11,7 +11,7 @@ env_params = {
     'camera_topics': [IMTopic('/front/image_raw', flip=True)],                  #, IMTopic('/bot/image_raw'), IMTopic('/bot2/image_raw')],
     'cleanup_rate': -1,
     'save_video': True,
-    'gripper_attached': 'none'
+    #'gripper_attached': 'none'
 
 }
 
@@ -33,11 +33,12 @@ policy = {
 
     "model_params_path": "/home/stephen/models/onestep_context/checkpoint_170000",
     # "model_restore_path": "~/models/inverse_model/sudeep_training/InverseTrainable_2_load_T=7_4f3b737c_2019-08-18_08-15-55u3mucwsl/checkpoint_95000/model-95000",
-    "model_restore_path": "/home/stephen/models/onestep_context/checkpoint_170000"
+    "model_restore_path": "/home/stephen/models/onestep_context/checkpoint_170000",
+    "replan_every": 1,
 }
 
 config = {
-    "experiment_name": "inverse-model-onestep-replan-10",
+    "experiment_name": "inverse-model-onestep-BENCH",
     'traj_per_file':128,
     'save_data': True,
     'save_raw_images' : True,
