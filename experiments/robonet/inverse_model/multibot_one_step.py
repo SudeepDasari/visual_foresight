@@ -8,7 +8,7 @@ from visual_mpc.policy.cem_controllers.samplers import CorrelatedNoiseSampler
 from visual_mpc.policy.inverse_models.inverse_model_base_controller import InvModelBaseController
 
 env_params = {
-    'camera_topics': [IMTopic('/front/image_raw', flip=True)],                  #, IMTopic('/bot/image_raw'), IMTopic('/bot2/image_raw')],
+    'camera_topics': [IMTopic('/front/image_raw', flip=False)],                  #, IMTopic('/bot/image_raw'), IMTopic('/bot2/image_raw')],
     'cleanup_rate': -1,
     'save_video': True,
     'gripper_attached': 'none'
@@ -28,8 +28,9 @@ agent = {'type' : BenchmarkAgent,
 
 policy = {
     'type': InvModelBaseController,
-    "model_params_path":"",
-    "model_restore_path": ""
+    "model_params_path":"~/models/multibot_disc_bigger_nf/InverseTrainable_0_fe2f43ee_2019-10-04_08-52-392ofutdfh/checkpoint_140000",
+    "model_restore_path": "~/models/multibot_disc_bigger_nf/InverseTrainable_0_fe2f43ee_2019-10-04_08-52-392ofutdfh/checkpoint_140000",
+    "replan_every": 1,
 }
 
 config = {

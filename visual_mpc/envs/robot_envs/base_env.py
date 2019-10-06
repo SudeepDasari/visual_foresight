@@ -267,11 +267,11 @@ class BaseRobotEnv(BaseEnv):
         #eep[0] += np.random.uniform(0.05, 0.125)
         #eep[1] += np.random.uniform(-0.05, 0.05)
         #eep[2] -= np.random.uniform(0.03, 0.075)
-        eep[2] -= 0.05
+        # eep[2] -= 0.05
 
         print('ADJUSTING')
         print(eep)
-        self._move_to_state(eep[:3], eep[3], duration=2.)
+        #self._move_to_state(eep[:3], eep[3], duration=2.)
 
         print('ADJUSTING')
         import scipy.misc
