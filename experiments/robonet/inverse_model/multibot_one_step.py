@@ -14,15 +14,16 @@ env_params = {
     'gripper_attached': 'wsg-50'
 }
 
-agent = {'type' : BenchmarkAgent,
-         'env': (AutograspEnv, env_params),
-         'T': 10, #14,  #number of commands per episodes (issued at control_rate / substeps HZ)
-         'image_height': 192,
-         'image_width': 256,
-         'make_final_recording': '',
-         'goal_image_only':'',
-         'no_goal_def':'',
-	     'data_save_dir': 'outputs/'
+agent = {
+    'type' : BenchmarkAgent,
+    'env': (AutograspEnv, env_params),
+    'T': 10, #number of commands per episodes (issued at control_rate / substeps HZ)
+    'image_height': 192,
+    'image_width': 256,
+    'make_final_recording': '',
+    'goal_image_only':'',
+    'no_goal_def':'',
+    'data_save_dir': 'outputs/'
 }
 
 policy = {
@@ -34,7 +35,7 @@ policy = {
 }
 
 config = {
-    "experiment_name": "inverse-model-multibot-sawyer-franka-BENCH",
+    "experiment_name": "sawyer_franka_one_step",
     'traj_per_file':128,
     'save_data': True,
     'save_raw_images' : True,

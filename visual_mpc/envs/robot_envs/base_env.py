@@ -10,6 +10,7 @@ from .util.user_interface import select_points
 from .util.topic_utils import IMTopic
 import logging
 import json
+import scipy.misc
 
 
 def pix_resize(pix, target_width, original_width):
@@ -246,35 +247,6 @@ class BaseRobotEnv(BaseEnv):
                 save_worker.put(('mov', 'recording{}/{}_clip.mp4'.format(i_traj, name), b, 30))
 
     def _end_reset(self):
-
-        eep = self._get_state()
-        eep[:3] = np.clip(eep[:3], [0., 0., 0.], self._hp.start_box)
-        eep[:3] *= self._high_bound[:3] - self._low_bound[:3]
-        eep[:3] += self._low_bound[:3]
-        print(eep)
-        # POS 0
-        #eep[0] += 0.125
-        #eep[1] += 0.05
-        # POS 1
-        #eep[0] += 0.125
-        #eep[1] += 0.05
-        #eep[2] -= 0.075
-        # POS 2
-        #eep[0] += 0.1
-        #eep[1] += 0.05
-        #eep[2] -= 0.05
-        # POS 3
-        #eep[0] += np.random.uniform(0.05, 0.125)
-        #eep[1] += np.random.uniform(-0.05, 0.05)
-        #eep[2] -= np.random.uniform(0.03, 0.075)
-        # eep[2] -= 0.05
-
-        print('ADJUSTING')
-        print(eep)
-        #self._move_to_state(eep[:3], eep[3], duration=2.)
-
-        print('ADJUSTING')
-        import scipy.misc
         start_image = self.render()
         if self.savedir is not None:
             scipy.misc.imsave('{}/initial_image.jpg'.format(self.savedir), start_image[0])
@@ -507,7 +479,6 @@ class BaseRobotEnv(BaseEnv):
         self._goto_closest_neutral()
         self._controller.open_gripper(True)
         raw_input("hit enter when objects put back")
-        import scipy.misc
         scipy.misc.imsave('{}/goal_image.jpg'.format(savedir), goal_img[0])
         return goal_img
 
