@@ -21,27 +21,27 @@ agent = {
     'image_height': 192,
     'image_width': 256,
     'make_final_recording': '',
-    'goal_image_only':'',
-    'no_goal_def':'',
+    'goal_image_only': '',
+    'no_goal_def': '',
     'data_save_dir': 'outputs/'
 }
 
 policy = {
     'type': InvModelBaseController,
-    "model_params_path": "/home/stephen/models/onestep_context/checkpoint_170000",
-    "model_restore_path": "/home/stephen/models/onestep_context/checkpoint_170000",
-    "replan_every": 1,
+    'model_params_path': '/home/stephen/models/onestep_context/checkpoint_170000',
+    'model_restore_path': '/home/stephen/models/onestep_context/checkpoint_170000',
+    'replan_every': 1,
 }
 
 config = {
-    "experiment_name": "sawyer_one_step",
+    'experiment_name': 'sawyer_one_step',
     'traj_per_file':128,
     'save_data': True,
-    'save_raw_images' : True,
+    'save_raw_images': True,
     'start_index':0,
     'end_index': 30000,
     'agent': agent,
     'policy': policy,
     'ngroup': 1000,
-    'nshuffle' : 200
+    'nshuffle': 200
 }
