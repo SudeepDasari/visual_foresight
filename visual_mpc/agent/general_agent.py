@@ -150,7 +150,6 @@ class GeneralAgent(object):
             agent_data['reset_state'] = self._reset_state
             obs['reset_state'] = self._reset_state
 
-        pdb.set_trace()
         return obs
 
     def _required_rollout_metadata(self, agent_data, traj_ok, t, i_traj, i_tr, reset_state):

@@ -2,7 +2,7 @@ from visual_mpc.envs.robot_envs import get_controller_class
 from visual_mpc.envs.base_env import BaseEnv
 import numpy as np
 import random
-from visual_mpc.agent import Image_Exception
+from visual_mpc.agent.general_agent import Image_Exception
 from .util.camera_recorder import CameraRecorder
 import copy
 import rospy
@@ -10,6 +10,7 @@ from .util.user_interface import select_points
 from .util.topic_utils import IMTopic
 import logging
 import json
+import scipy.misc
 
 
 def pix_resize(pix, target_width, original_width):
@@ -28,7 +29,7 @@ class BaseRobotEnv(BaseEnv):
                 self._hp.start_state = value
             else:
                 self._hp.set_hparam(name, value)
-
+        self.savedir = None
         assert self._hp.action_space == 'xyz_yaw_gripper', "environment only supports xyz_yaw_gripper action spaces at the moment"
         logging.info('initializing environment for {}'.format(self._hp.robot_name))
         self._robot_name = self._hp.robot_name
@@ -46,7 +47,7 @@ class BaseRobotEnv(BaseEnv):
         for name, value in self._hp.values().items():
             logging.getLogger('robot_logger').info('{}= {}'.format(name, value))
         logging.getLogger('robot_logger').info('---------------------------------------------------------------------------')
-    
+
         self._save_video = self._hp.save_video
         self._cameras = [CameraRecorder(t, self._hp.opencv_tracking, self._save_video) for t in self._hp.camera_topics]
 
@@ -75,7 +76,7 @@ class BaseRobotEnv(BaseEnv):
 
         self._start_pix, self._desig_pix, self._goal_pix = None, None, None
 
-        self._goto_closest_neutral(duration=5.)
+        self._goto_closest_neutral(duration=3)
 
     def _default_hparams(self):
         default_dict = {'robot_name': None,
@@ -246,6 +247,9 @@ class BaseRobotEnv(BaseEnv):
                 save_worker.put(('mov', 'recording{}/{}_clip.mp4'.format(i_traj, name), b, 30))
 
     def _end_reset(self):
+        start_image = self.render()
+        if self.savedir is not None:
+            scipy.misc.imsave('{}/initial_image.jpg'.format(self.savedir), start_image[0])
         logging.getLogger('robot_logger').info('Finishing reset {}'.format(self._reset_counter))
         if self._hp.wait_during_resetend:
             _ = raw_input("PRESS ENTER TO CONINUE")
@@ -260,7 +264,7 @@ class BaseRobotEnv(BaseEnv):
         self._reset_counter += 1
         return self._get_obs(), None
 
-    def _goto_closest_neutral(self, duration=1.0):
+    def _goto_closest_neutral(self, duration=2.):
         self._controller.move_to_neutral(duration)
         closest_neutral = self._get_state()
 
@@ -296,8 +300,8 @@ class BaseRobotEnv(BaseEnv):
             self._controller.move_to_neutral()
 
         if self._cleanup_rate == 0 or (self._cleanup_rate > 0 and self._reset_counter % self._cleanup_rate == 0 and self._reset_counter > 0):
-            # self._controller.redistribute_objects()
-            self._goto_closest_neutral()
+            self._controller.redistribute_objects()
+            self._goto_closest_neutral(5.)
 
         self._controller.move_to_neutral()
         self._controller.open_gripper(False)
@@ -465,6 +469,18 @@ class BaseRobotEnv(BaseEnv):
                                      save_dir, n_desig=ntasks)
             self._desig_pix = copy.deepcopy(self._start_pix)
             return copy.deepcopy(self._goal_pix)
+
+    def get_goal_image(self, savedir):
+        self.savedir = savedir
+        self._goto_closest_neutral()
+        self._controller.open_gripper(True)
+        raw_input("hit enter when ready to take goal image")
+        goal_img = self.render()
+        self._goto_closest_neutral()
+        self._controller.open_gripper(True)
+        raw_input("hit enter when objects put back")
+        scipy.misc.imsave('{}/goal_image.jpg'.format(savedir), goal_img[0])
+        return goal_img
 
     def get_goal_pix(self, target_width):
         return pix_resize(self._goal_pix, target_width, self._width)

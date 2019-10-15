@@ -180,3 +180,17 @@ class CameraRecorder:
     @property
     def img_height(self):
         return self._cam_height
+
+
+
+if __name__ == '__main__':
+    from visual_mpc.envs.robot_envs.util.topic_utils import IMTopic
+    rospy.init_node("camera_rec_test")
+    imtopic = IMTopic('/front/image_raw', flip=True)
+    rec = CameraRecorder(imtopic)
+    rospy.sleep(1)
+    tstamp, im = rec.get_image()
+    import scipy.misc
+    # import pdb; pdb.set_trace()
+    im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+    scipy.misc.imsave('/home/sudeep/goal_images/goal_image.jpg', im)

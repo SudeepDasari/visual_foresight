@@ -67,9 +67,24 @@ class BenchmarkAgent(GeneralAgent):
                         self._goal_image = np.zeros(goal_dims, dtype=np.uint8)
                         resize_store(0, self._goal_image, raw_goal_image)
                         self._goal_image = self._goal_image.astype(np.float32) / 255.
-
                     else:
                         self._goal_obj_pose = self.env.get_obj_desig_goal(self._hyperparams['_bench_save'], ntasks=ntasks)
+                else:
+                    if 'goal_image_only' in self._hyperparams:
+                        raw_goal_image = self.env.get_goal_image(self._hyperparams['_bench_save'])
+                        goal_dims = (1, self.ncam, self._hyperparams['image_height'], self._hyperparams['image_width'], 3)
+                        self._goal_image = np.zeros(goal_dims, dtype=np.uint8)
+                        resize_store(0, self._goal_image, raw_goal_image)
+                        self._goal_image = self._goal_image.astype(np.float32) / 255.
+                    elif 'load_goal_image' in self._hyperparams:
+                        import scipy
+                        im = scipy.misc.imread(self._hyperparams['load_goal_image'])
+                        goal_dims = (1, self.ncam, self._hyperparams['image_height'], self._hyperparams['image_width'], 3)
+                        self._goal_image = np.zeros(goal_dims, dtype=np.uint8)
+                        resize_store(0, self._goal_image, im[None])
+                        self._goal_image = self._goal_image.astype(np.float32) / 255.
+                    else:
+                        raise NotImplementedError
 
                 if 'no_goal_def' in self._hyperparams or 'y' in raw_input('Is definition okay? (y/n):'):
                     done = True
