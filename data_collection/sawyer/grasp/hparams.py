@@ -11,15 +11,14 @@ current_dir = os.path.dirname(os.path.realpath(__file__))
 
 
 env_params = {
-    'email_login_creds': '/home/server/catkin_ws/src/private_visual_foresight/visual_mpc/envs/robot_envs/email_cred_baxter.json',
-    'camera_topics': [IMTopic('/camera1/usb_cam/image_raw'),IMTopic('/camera2/usb_cam/image_raw'),IMTopic('/camera3/usb_cam/image_raw')],
-    # 'camera_topics': [IMTopic('/camera2/pg_16466237/image_raw')],
-    'robot_type': 'baxter',
-    'gripper_attached': 'baxter_gripper',
-    'print_debug': True,
-    'OFFSET_TOL': 0.5
-
+    'email_login_creds':'/home/server/catkin_ws/src/private_visual_foresight/visual_mpc/envs/robot_envs/email_cred_sawyer.json',
+    'camera_topics': [IMTopic('/front/image_raw', flip=True),
+                      IMTopic('/left/image_raw'),
+                      IMTopic('/right_side/image_raw'),
+                      IMTopic('/left_side/image_raw'),
+                      IMTopic('/right/image_raw')],
 }
+
 
 agent = {
     'type': GeneralAgent,

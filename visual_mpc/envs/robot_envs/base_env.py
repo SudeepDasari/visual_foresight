@@ -20,6 +20,11 @@ def pix_resize(pix, target_width, original_width):
 
 class BaseRobotEnv(BaseEnv):
     def __init__(self, env_params):
+        self.traj_num = 0
+        self.im_num = 0
+        self.curr_date = time.strftime("%d-%m-%Y")
+        self.curr_time = time.strftime("%I:%M:%S")
+        self.bridge = CvBridge()
         self._hp = self._default_hparams()
         self._hp.start_state = []
         for name, value in env_params.items():
@@ -136,6 +141,10 @@ class BaseRobotEnv(BaseEnv):
 
         target_qpos = np.clip(self._next_qpos(action), self._low_bound, self._high_bound)
 
+        # logging.getLogger('robot_logger').debug('Target position: {}'.format(target_qpos))
+
+
+
         if np.linalg.norm(target_qpos - self._previous_target_qpos) < 1e-3:
             return self._get_obs()
 
@@ -198,13 +207,13 @@ class BaseRobotEnv(BaseEnv):
         if j_vel is not None:
             obs['qvel'] = j_vel
 
-        if self._previous_target_qpos is not None:
-            logging.getLogger('robot_logger').debug('xy delta: {}'.format(np.linalg.norm(eep[:2] - self._previous_target_qpos[:2])))
-            logging.getLogger('robot_logger').debug('target z: {}       real z: {}'.format(self._previous_target_qpos[2], eep[2]))   
-            logging.getLogger('robot_logger').debug('z dif {}'.format(abs(eep[2] - self._previous_target_qpos[2])))
-            logging.getLogger('robot_logger').debug('angle dif (degrees): {}'.format(abs(z_angle - self._previous_target_qpos[3]) * 180 / np.pi))
-            logging.getLogger('robot_logger').debug('angle degree target {} vs real {}'.format(np.rad2deg(z_angle),
-                                                             np.rad2deg(self._previous_target_qpos[3])))
+        # if self._previous_target_qpos is not None:
+            # logging.getLogger('robot_logger').debug('xy delta: {}'.format(np.linalg.norm(eep[:2] - self._previous_target_qpos[:2])))
+            # logging.getLogger('robot_logger').debug('target z: {}       real z: {}'.format(self._previous_target_qpos[2], eep[2]))   
+            # logging.getLogger('robot_logger').debug('z dif {}'.format(abs(eep[2] - self._previous_target_qpos[2])))
+            # logging.getLogger('robot_logger').debug('angle dif (degrees): {}'.format(abs(z_angle - self._previous_target_qpos[3]) * 180 / np.pi))
+            # logging.getLogger('robot_logger').debug('angle degree target {} vs real {}'.format(np.rad2deg(z_angle),
+                                                             # np.rad2deg(self._previous_target_qpos[3])))
 
         obs['state'] = self._get_state()
         if force_sensor is not None:
@@ -359,6 +368,8 @@ class BaseRobotEnv(BaseEnv):
 
         for recorder in self._cameras:
             stamp, image = recorder.get_image()
+            print("stamp:", stamp)
+            # logging.getLogger('robot_logger').error("Checking for time difference:  Current time {} camera time {}".format(cur_time, stamp))
             if abs(stamp - cur_time) > 10 * self._obs_tol:    # no camera ping in half second => camera failure
                 logging.getLogger('robot_logger').error("DeSYNC - no ping in more than {} seconds!".format(10 * self._obs_tol))
                 raise Image_Exception
