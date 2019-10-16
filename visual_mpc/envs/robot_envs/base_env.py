@@ -10,12 +10,7 @@ from .util.user_interface import select_points
 from .util.topic_utils import IMTopic
 import logging
 import json
-from sensor_msgs.msg import Image
-import cv2
-from cv_bridge import CvBridge, CvBridgeError
-from os.path import join
-import os 
-import time
+import scipy.misc
 
 
 def pix_resize(pix, target_width, original_width):
@@ -186,10 +181,9 @@ class BaseRobotEnv(BaseEnv):
         eep = self._controller.get_cartesian_pose()
         gripper_state = self._controller.get_gripper_state()[0]
         logging.getLogger('robot_logger').debug('Current Cartesian position: {}'.format(eep))
-        
-        
-        # print(eep)
-
+        GRIPPER_LOW, GRIPPER_HIGH = self._controller.get_gripper_limits()
+        if GRIPPER_HIGH - GRIPPER_LOW > 0:
+            gripper_state = (gripper_state - GRIPPER_LOW) / (GRIPPER_HIGH - GRIPPER_LOW)
         state = np.zeros(self._base_sdim)
         state[:3] = (eep[:3] - self._low_bound[:3]) / (self._high_bound[:3] - self._low_bound[:3])
         state[3] = self._controller.quat_2_euler(eep[3:])[0]
@@ -217,50 +211,8 @@ class BaseRobotEnv(BaseEnv):
         obs['state'] = self._get_state()
         # logging.getLogger('robot_logger').debug('Current Cartesian position normalized is : {}'.format(obs['state']))
 
-        ##**************************** Saving images *****************########################
-
-        
-        path = "/home/server/Desktop/traj_images/" +self.curr_date+ "__" + self.curr_time +"/traj" + str(self.traj_num)
-        folders = ['Image0','Image1','Image2']
-        for folder in folders:
-            base_path = os.path.join(path,folder)
-            if not os.path.exists(base_path):
-                os.makedirs(base_path)
-
-        
-        data0 = rospy.wait_for_message('/camera1/usb_cam/image_raw', Image)
-        data1 = rospy.wait_for_message('/camera2/usb_cam/image_raw', Image)
-        data2 = rospy.wait_for_message('/camera3/usb_cam/image_raw', Image)
-        # print("wait_for_message stamp of camera 1:", data0.header.stamp,"\n")
-        # print("wait_for_message stamp of camera 2:", data1.header.stamp,"\n")
-        # print("wait_for_message stamp of camera 3:", data2.header.stamp,"\n")
-
-        try:
-            cv_image0 = self.bridge.imgmsg_to_cv2(data0, "passthrough")
-            cv_image1 = self.bridge.imgmsg_to_cv2(data1, "passthrough")
-            cv_image2 = self.bridge.imgmsg_to_cv2(data2, "passthrough")
-        except CvBridgeError as e:
-            print(e)
-
-        print "Saved to: ", path
-        cv2.cvtColor(cv_image0, cv2.COLOR_BGR2RGB, cv_image0)
-        cv2.cvtColor(cv_image1, cv2.COLOR_BGR2RGB, cv_image1)
-        cv2.cvtColor(cv_image2, cv2.COLOR_BGR2RGB, cv_image2)
-        cv2.imwrite(join(path,"Image0", "frame{:06d}.jpg".format(self.im_num)), cv_image0)#*255)
-        cv2.imwrite(join(path,"Image1", "frame{:06d}.jpg".format(self.im_num)), cv_image1)#*255)
-        cv2.imwrite(join(path,"Image2", "frame{:06d}.jpg".format(self.im_num)), cv_image2)#*255)
-
-        self.im_num = self.im_num + 1
-
-        if(self.im_num>30):
-            self.traj_num = self.traj_num +1
-            self.im_num = 0
-
-        print("image number saved:", self.im_num)
-
-        ### **************************************************** ####################
-
-        obs['finger_sensors'] = force_sensor
+        if force_sensor is not None:
+            obs['finger_sensors'] = force_sensor
 
         self._last_obs = copy.deepcopy(obs)
         obs['images'] = self.render()
@@ -279,7 +231,7 @@ class BaseRobotEnv(BaseEnv):
 
     def _move_to_state(self, target_xyz, target_zangle, duration = None):
         target_quat = self._controller.euler_2_quat(target_zangle)
-        self._controller.move_to_eep(np.concatenate((target_xyz, target_quat)))
+        self._controller.move_to_eep(np.concatenate((target_xyz, target_quat)),duration)
         
 
     def _reset_previous_qpos(self):
@@ -314,11 +266,9 @@ class BaseRobotEnv(BaseEnv):
         self._reset_counter += 1
         return self._get_obs(), None
 
-    def _goto_closest_neutral(self):
-        self._controller.move_to_neutral()
-        # self.traj_num = self.traj_num +1
-        closest_netural = self._get_state()
-
+    def _goto_closest_neutral(self, duration=2.):
+        self._controller.move_to_neutral(duration)
+        closest_neutral = self._get_state()
         closest_netural[:3] = np.clip(closest_netural[:3], [0., 0., 0.], self._hp.start_box)
         closest_netural[:3] *= self._high_bound[:3] - self._low_bound[:3]
         closest_netural[:3] += self._low_bound[:3]
@@ -352,7 +302,7 @@ class BaseRobotEnv(BaseEnv):
 
         if self._cleanup_rate == 0 or (self._cleanup_rate > 0 and self._reset_counter % self._cleanup_rate == 0 and self._reset_counter > 0):
             self._controller.redistribute_objects()
-            self._goto_closest_neutral()
+            self._goto_closest_neutral(5.)
 
         self._controller.move_to_neutral()
         self._controller.open_gripper(False)
@@ -413,16 +363,17 @@ class BaseRobotEnv(BaseEnv):
             print("stamp:", stamp)
             # logging.getLogger('robot_logger').error("Checking for time difference:  Current time {} camera time {}".format(cur_time, stamp))
             if abs(stamp - cur_time) > 10 * self._obs_tol:    # no camera ping in half second => camera failure
-                logging.getLogger('robot_logger').error("DeSYNC! Camera not synced with robot. Current time {} camera time {}".format(cur_time, stamp))
+                logging.getLogger('robot_logger').error("DeSYNC - no ping in more than {} seconds!".format(10 * self._obs_tol))
                 raise Image_Exception
             time_stamps.append(stamp)
             cam_imgs.append(image)
-        for index, i in enumerate(time_stamps[:-1]):
-            for j in time_stamps[index + 1:]:
-                # logging.getLogger('robot_logger').error('Camera time differences are :  Timestamps {} and {}'.format(i, j))
-                if abs(i - j) > self._obs_tol * 10:
-                    logging.getLogger('robot_logger').error('DeSYNC! Cameras not synced with each other. Timestamps {} and {}'.format(i, j))
-                    raise Image_Exception
+
+        if self.ncam > 1:
+            for index, i in enumerate(time_stamps[:-1]):
+                for j in time_stamps[index + 1:]:
+                    if abs(i - j) > self._obs_tol:
+                        logging.getLogger('robot_logger').error('DeSYNC- Cameras are out of sync!')
+                        raise Image_Exception
 
         images = np.zeros((self.ncam, self._height, self._width, 3), dtype=np.uint8)
         for c, img in enumerate(cam_imgs):
