@@ -97,7 +97,7 @@ def save_worker(traj_data, cntr, group_name=''):
     t, meta_data = traj_data
 
     try:
-        env_obs = pkl.load(open('{}/obs_dict.pkl'.format(t), 'rb')), encoding='latin1')
+        env_obs = pkl.load(open('{}/obs_dict.pkl'.format(t), 'rb'), encoding='latin1')
         if meta_data['contains_annotation']:
             env_obs['bbox_annotations'] = pkl.load(open('{}/annotation_array.pkl'.format(t), 'rb'), encoding='latin1')
         n_cams = len(glob.glob('{}/images*'.format(t)))
@@ -110,8 +110,8 @@ def save_worker(traj_data, cntr, group_name=''):
                 for time in range(T):
                     env_obs['images'][time, n] = cv2.imread('{}/images{}/im_{}.jpg'.format(t, n, time))
 
-        policy_out = pkl.load(open('{}/policy_out.pkl'.format(t), 'rb')), encoding='latin1')
-        agent_data = pkl.load(open('{}/agent_data.pkl'.format(t), 'rb')), encoding='latin1')
+        policy_out = pkl.load(open('{}/policy_out.pkl'.format(t), 'rb'), encoding='latin1')
+        agent_data = pkl.load(open('{}/agent_data.pkl'.format(t), 'rb'), encoding='latin1')
 
         def store_in_metadata_if_exists(key):  
             if key in agent_data:
