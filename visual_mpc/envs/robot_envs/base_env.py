@@ -181,8 +181,10 @@ class BaseRobotEnv(BaseEnv):
         eep = self._controller.get_cartesian_pose()
         gripper_state = self._controller.get_gripper_state()[0]
         GRIPPER_LOW, GRIPPER_HIGH = self._controller.get_gripper_limits()
+
         if GRIPPER_HIGH - GRIPPER_LOW > 0:
             gripper_state = (gripper_state - GRIPPER_LOW) / (GRIPPER_HIGH - GRIPPER_LOW)
+            
         state = np.zeros(self._base_sdim)
         state[:3] = (eep[:3] - self._low_bound[:3]) / (self._high_bound[:3] - self._low_bound[:3])
         state[3] = self._controller.quat_2_euler(eep[3:])[0]
