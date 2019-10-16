@@ -502,6 +502,12 @@ class BaseRobotEnv(BaseEnv):
         self.savedir = savedir
         self._goto_closest_neutral()
         self._controller.open_gripper(True)
+        # Randomly Generate Goal Position for Inverse Model (Franka)
+        # dx = np.random.uniform(-0.2, 0.2)
+        # dy = np.random.uniform(-0.2, 0.2)
+        # dx = 0.2
+        # dy = 0.2
+        # self._controller._send_pos_command([0.5+dx, 0.0+dy, 0.10, 0.0, 0.0, 1.0, 0.0])
         raw_input("hit enter when ready to take goal image")
         goal_img = self.render()
         self._goto_closest_neutral()
