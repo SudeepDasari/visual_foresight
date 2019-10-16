@@ -69,7 +69,6 @@ def save_dict(data_container, dict_group, video_encoding, t_index):
                         dict_group.create_dataset(k, data=d)
 
 
-
 def save_hdf5(filename, env_obs, policy_out, agent_data, meta_data, video_encoding='mp4', t_index=None):
     if t_index is None:
         t_index = random.randint(0, 9999999)
@@ -98,7 +97,7 @@ def save_worker(traj_data, cntr, group_name=''):
     t, meta_data = traj_data
 
     try:
-        env_obs = pkl.load(open('{}/obs_dict.pkl'.format(t), 'rb'))#, encoding='latin1')
+        env_obs = pkl.load(open('{}/obs_dict.pkl'.format(t), 'rb')), encoding='latin1')
         if meta_data['contains_annotation']:
             env_obs['bbox_annotations'] = pkl.load(open('{}/annotation_array.pkl'.format(t), 'rb'), encoding='latin1')
         n_cams = len(glob.glob('{}/images*'.format(t)))
@@ -111,8 +110,8 @@ def save_worker(traj_data, cntr, group_name=''):
                 for time in range(T):
                     env_obs['images'][time, n] = cv2.imread('{}/images{}/im_{}.jpg'.format(t, n, time))
 
-        policy_out = pkl.load(open('{}/policy_out.pkl'.format(t), 'rb'))#, encoding='latin1')
-        agent_data = pkl.load(open('{}/agent_data.pkl'.format(t), 'rb'))#, encoding='latin1')
+        policy_out = pkl.load(open('{}/policy_out.pkl'.format(t), 'rb')), encoding='latin1')
+        agent_data = pkl.load(open('{}/agent_data.pkl'.format(t), 'rb')), encoding='latin1')
 
         def store_in_metadata_if_exists(key):  
             if key in agent_data:
@@ -122,7 +121,7 @@ def save_worker(traj_data, cntr, group_name=''):
         c = cntr.ret_increment
         save_hdf5('{}/{}traj{}.hdf5'.format(args.output_folder, group_name, c), env_obs, policy_out, agent_data, meta_data, video_encoding, t_index)
         return True
-    except:
+    except (FileNotFoundError, NotADirectoryError):
         return False
 
 if __name__ == '__main__':
@@ -144,7 +143,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="converts dataset from pkl format to hdf5")
     parser.add_argument('input_folder', type=str, help='where raw files are stored')
     parser.add_argument('output_folder', type=str, help='where to save')
-    parser.add_argument('--output_group_name', type=str, default='', help='name to prepend in front of traj')
+    parser.add_argument('--output_group_name', type=str, default='', help='name to prepend in front of trajs')
     parser.add_argument('--video_jpeg_encoding', action='store_true', default=False, help='uses jpeg encoding for video frames instead of mp4')
     parser.add_argument('--counter', type=int, help='where to start counter', default=0)
     parser.add_argument('--n_workers', type=int, help='number of multi-threaded workers', default=1)
@@ -165,7 +164,6 @@ if __name__ == '__main__':
         if len(glob.glob('./temp*.mp4')) != 0:
             print("Please delete all temp*.mp4 files! (needed for saving)")
             raise EnvironmentError
-    # video_encoding = 'raw'
     
     traj_groups = glob.glob(args.input_folder + "/*")
     print('found {} traj groups!'.format(len(traj_groups)))
@@ -183,10 +181,8 @@ if __name__ == '__main__':
             else:
                 traj_meta_data['contains_annotation'] = False
             
-            # if isinstance(traj_meta_data['object_classes'], str):
-            #     traj_meta_data['object_classes'] = traj_meta_data['object_classes'].split("+")
-            # print(type(traj_meta_data['object_classes']))
-            traj_meta_data['object_classes'] = ['toys']
+            if isinstance(traj_meta_data['object_classes'], str):
+                traj_meta_data['object_classes'] = traj_meta_data['object_classes'].split("+")
             
             assert all([k in traj_meta_data for k in MANDATORY_KEYS]), 'metadata for {} is missing keys!'.format(t)
             assert isinstance(traj_meta_data['object_classes'], list), "did not split object classes!"
