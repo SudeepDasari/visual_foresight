@@ -8,10 +8,12 @@ import matplotlib.pyplot as plt
 from collections import OrderedDict
 from visual_mpc.video_prediction.pred_util import get_context, rollout_predictions
 
-
-from robonet.video_prediction.testing import VPredEvaluation
-DefaultPredClass = VPredEvaluation
-
+try:
+    from robonet.video_prediction.testing import VPredEvaluation
+    DefaultPredClass = VPredEvaluation
+except ImportError:
+    DefaultPredClass = None
+    
 class PixelCostController(CEMBaseController):
     """
     Cross Entropy Method Stochastic Optimizer
