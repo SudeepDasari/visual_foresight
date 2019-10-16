@@ -53,6 +53,7 @@ def save_dict(data_container, dict_group, video_encoding, t_index):
                                 data = cam_group.create_dataset("frames", data=serialize_video(d[:, n], t_index))
                                 data.attrs['shape'] = d[0, n].shape
                                 data.attrs['T'] = d.shape[0]
+                                data.attrs['image_format'] = 'RGB'
                             elif video_encoding == 'jpeg':
                                 for t in range(T):
                                     data = cam_group.create_dataset("frame{}".format(t), data=serialize_image(d[t, n]))

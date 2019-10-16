@@ -34,7 +34,8 @@ class BaseRobotEnv(BaseEnv):
                 self._hp.start_state = value
             else:
                 self._hp.set_hparam(name, value)
-
+        self.savedir = None
+        assert self._hp.action_space == 'xyz_yaw_gripper', "environment only supports xyz_yaw_gripper action spaces at the moment"
         logging.info('initializing environment for {}'.format(self._hp.robot_name))
         self._robot_name = self._hp.robot_name
         self._setup_robot()
@@ -79,7 +80,8 @@ class BaseRobotEnv(BaseEnv):
         self._reset_counter, self._previous_target_qpos = 0, None
 
         self._start_pix, self._desig_pix, self._goal_pix = None, None, None
-        self._goto_closest_neutral()
+
+        self._goto_closest_neutral(duration=3)
 
     def _default_hparams(self):
         default_dict = {'robot_name': None,
@@ -102,6 +104,7 @@ class BaseRobotEnv(BaseEnv):
                         'rand_drop_reset': True,
                         'normalize_actions': False,
                         'reset_before_eval': False,
+                        'action_space': 'xyz_yaw_gripper',
                         'wait_during_resetend': False}
 
         parent_params = BaseEnv._default_hparams(self)
@@ -145,12 +148,13 @@ class BaseRobotEnv(BaseEnv):
         if np.linalg.norm(target_qpos - self._previous_target_qpos) < 1e-3:
             return self._get_obs()
 
-        wait_change = (target_qpos[-1] > 0) != (self._previous_target_qpos[-1] > 0)
+        gripper_midpoint = (self._low_bound[-1] + self._high_bound[-1]) / 2.0
+        wait_change = (target_qpos[-1] > gripper_midpoint) != (self._previous_target_qpos[-1] > gripper_midpoint)
 
         if self._save_video:
             [c.start_recording() for c in self._cameras]
 
-        if target_qpos[-1] > 0:
+        if target_qpos[-1] > gripper_midpoint:
             self._controller.close_gripper(wait_change)
         else:
             self._controller.open_gripper(wait_change)
@@ -199,7 +203,9 @@ class BaseRobotEnv(BaseEnv):
         z_angle = self._controller.quat_2_euler(eep[3:])[0]
 
         obs['qpos'] = j_angles
-        obs['qvel'] = j_vel
+        # add support for widow_x which does not have velocity readings on ja
+        if j_vel is not None:
+            obs['qvel'] = j_vel
 
         # if self._previous_target_qpos is not None:
             # logging.getLogger('robot_logger').debug('xy delta: {}'.format(np.linalg.norm(eep[:2] - self._previous_target_qpos[:2])))
@@ -228,7 +234,7 @@ class BaseRobotEnv(BaseEnv):
             obs['obj_image_locations'] = copy.deepcopy(self._desig_pix)
         return obs
 
-    def _move_to_state(self, target_xyz, target_zangle, duration = None):
+    def _move_to_state(self, target_xyz, target_zangle, duration=1.5):
         target_quat = self._controller.euler_2_quat(target_zangle)
         self._controller.move_to_eep(np.concatenate((target_xyz, target_quat)), duration)
 
@@ -250,6 +256,9 @@ class BaseRobotEnv(BaseEnv):
                 save_worker.put(('mov', 'recording{}/{}_clip.mp4'.format(i_traj, name), b, 30))
 
     def _end_reset(self):
+        start_image = self.render()
+        if self.savedir is not None:
+            scipy.misc.imsave('{}/initial_image.jpg'.format(self.savedir), start_image[0])
         logging.getLogger('robot_logger').info('Finishing reset {}'.format(self._reset_counter))
         if self._hp.wait_during_resetend:
             _ = raw_input("PRESS ENTER TO CONINUE")
@@ -471,6 +480,18 @@ class BaseRobotEnv(BaseEnv):
                                      save_dir, n_desig=ntasks)
             self._desig_pix = copy.deepcopy(self._start_pix)
             return copy.deepcopy(self._goal_pix)
+
+    def get_goal_image(self, savedir):
+        self.savedir = savedir
+        self._goto_closest_neutral()
+        self._controller.open_gripper(True)
+        raw_input("hit enter when ready to take goal image")
+        goal_img = self.render()
+        self._goto_closest_neutral()
+        self._controller.open_gripper(True)
+        raw_input("hit enter when objects put back")
+        scipy.misc.imsave('{}/goal_image.jpg'.format(savedir), goal_img[0])
+        return goal_img
 
     def get_goal_pix(self, target_width):
         return pix_resize(self._goal_pix, target_width, self._width)

@@ -1,6 +1,7 @@
 <launch>
     <node name="wsg_50_driver"  pkg="wsg_50_driver" type="wsg_50_ip">
-        <param name="ip" type="string" value="insert_ip"/>  <!--used in network setting!! -->
+    <param name="ip" type="string" value="128.32.156.182"/>  <!--used in network setting!! -->
+
         <param name="port" type="int" value="1000"/>
         <param name="rate" type="double" value="1"/>
         <param name="com_mode" type="string" value="auto_update"/>

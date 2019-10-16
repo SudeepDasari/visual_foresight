@@ -24,7 +24,24 @@ class Pushback_Recorder(object):
             # Navigator Rethink button press
             self._navigator = intera_interface.Navigator()
             self.start_callid = self._navigator.register_callback(self.start_recording, 'right_button_ok')
+            self._control_rate = rospy.Rate(800)
             self.stop_callid = self._navigator.register_callback(self.stop_recording, 'right_button_square')
+        elif robot_type == 'widowx':
+            import threading
+            from visual_mpc.envs.robot_envs.widowx.widowx_controller import WidowXController
+            from keyboard.msg import Key
+            self._controller = WidowXController('recorder_bot', False)
+            self._control_rate = rospy.Rate(50)
+            self._controller.move_to_neutral()
+
+            def keyboard_listener(msg):
+                if msg.code == 115:
+                    rec_thread = threading.Thread(target=self.start_recording, args=(1,))
+                    rec_thread.start()
+                else:
+                    self.stop_recording(1)
+                
+            rospy.Subscriber("/keyboard/keydown", Key, keyboard_listener)
 
         elif robot_type == 'baxter':
             from pynput import mouse
@@ -44,7 +61,7 @@ class Pushback_Recorder(object):
         else:
             raise NotImplementedError
         
-        self._control_rate = rospy.Rate(800)
+        
         self._collect_active = False
         self._joint_pos = []
         self._file = file_name
@@ -82,6 +99,9 @@ class Pushback_Recorder(object):
         
         logging.getLogger('robot_logger').info('Saving {} joing angles'.format(len(self._joint_pos)))
         with open(self._file, 'wb') as f:
+            for p in self._joint_pos:
+                print(p)
+            
             pkl.dump(self._joint_pos, f)
 
         logging.getLogger('robot_logger').info('saved file to {}'.format(self._file))

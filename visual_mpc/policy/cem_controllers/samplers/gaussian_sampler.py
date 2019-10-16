@@ -43,7 +43,7 @@ class GaussianCEMSampler(CEMSampler):
         self._last_reduce = reduce_samp
         return self._sample(nsamples, reduce_samp)
 
-    def sample_next_actions(self, n_samples, best_actions):
+    def sample_next_actions(self, n_samples, best_actions, scores):
         self._fit_gaussians(best_actions)
         return self._sample(n_samples, self._last_reduce)
 

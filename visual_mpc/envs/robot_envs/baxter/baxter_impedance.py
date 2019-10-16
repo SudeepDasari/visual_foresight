@@ -15,8 +15,8 @@ import visual_mpc.envs.robot_envs as robot_envs
 
 class BaxterImpedanceController(RobotController):
     def __init__(self,
-                 robot_name,
-                 print_debug,
+                 robot_name='baxter',
+                 print_debug=False,
                  email_cred_file='',
                  log_file='',
                  control_rate=800,
@@ -71,7 +71,7 @@ class BaxterImpedanceController(RobotController):
             logging.getLogger('robot_logger').error("Robot was disabled, please manually re-enable!")
             self.clean_shutdown()
     
-    def move_to_neutral(self, duration=2):
+    def move_to_neutral(self, duration=4):
         waypoints = [NEUTRAL_JOINT_ANGLES]
         self.move_to_ja(waypoints, duration)
 
