@@ -267,6 +267,7 @@ class BaseRobotEnv(BaseEnv):
     def _goto_closest_neutral(self, duration=2.):
         self._controller.move_to_neutral(duration)
         closest_neutral = self._get_state()
+        
         closest_netural[:3] = np.clip(closest_netural[:3], [0., 0., 0.], self._hp.start_box)
         closest_netural[:3] *= self._high_bound[:3] - self._low_bound[:3]
         closest_netural[:3] += self._low_bound[:3]
