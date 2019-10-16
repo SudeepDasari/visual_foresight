@@ -15,7 +15,6 @@ if __name__ == '__main__':
                         help="list of camera video stream providers")
     parser.add_argument("--topic_names", type=str, nargs='+',
                         default=['left', 'right'],
-
                         help="list of camera topic names")
     parser.add_argument('--visualize', action='store_true', default=False, help="if flag supplied image_view will show")
     args = parser.parse_args()
