@@ -6,7 +6,7 @@ import numpy as np
 
 
 def main_sawyer():
-    # import intera_interface
+    import intera_interface
     from visual_mpc.envs.robot_envs.sawyer.sawyer_impedance import SawyerImpedanceController
     
     controller = SawyerImpedanceController('sawyer', True, gripper_attached='none')       # doesn't initial gripper object even if gripper is attached
