@@ -43,30 +43,30 @@ def serialize_video(imgs, temp_name_append):
 
 def save_dict(data_container, dict_group, video_encoding, t_index):
     for k, d in data_container.items():
-        print(k)
-        if 'images' == k:
-            T, n_cams = d.shape[:2]
-            dict_group.attrs['n_cams'] = n_cams
+                            if 'images' == k:
+                        T, n_cams = d.shape[:2]
+                        dict_group.attrs['n_cams'] = n_cams
 
-            for n in range(n_cams):
-                cam_group = dict_group.create_group("cam{}_video".format(n))
-                if video_encoding == 'mp4':
-                    data = cam_group.create_dataset("frames", data=serialize_video(d[:, n], t_index))
-                    data.attrs['shape'] = d[0, n].shape
-                    data.attrs['T'] = d.shape[0]
-                elif video_encoding == 'jpeg':
-                    for t in range(T):
-                        data = cam_group.create_dataset("frame{}".format(t), data=serialize_image(d[t, n]))
-                        data.attrs['shape'] = d[t, n].shape
-                else:
-                    data = cam_group.create_dataset("frames", data=d[:, n])
-        elif 'image' in k:
-            data = dict_group.create_dataset(k, data=serialize_image(d))
-            data.attrs['shape'] = d.shape
-        elif 'qpos' in k:
-            pass
-        else:
-            dict_group.create_dataset(k, data=d)
+                        for n in range(n_cams):
+                            dict_group.attrs['cam_encoding'] = video_encoding
+                            cam_group = dict_group.create_group("cam{}_video".format(n))
+                            if video_encoding == 'mp4':
+                                data = cam_group.create_dataset("frames", data=serialize_video(d[:, n], t_index))
+                                data.attrs['shape'] = d[0, n].shape
+                                data.attrs['T'] = d.shape[0]
+                                data.attrs['image_format'] = 'RGB'
+                            elif video_encoding == 'jpeg':
+                                for t in range(T):
+                                    data = cam_group.create_dataset("frame{}".format(t), data=serialize_image(d[t, n]))
+                                    data.attrs['shape'] = d[t, n].shape
+                                    data.attrs['image_format'] = 'RGB'
+                            else:
+                                raise ValueError
+                    elif 'image' in k:
+                        data = dict_group.create_dataset(k, data=serialize_image(d))
+                        data.attrs['shape'] = d.shape
+                    else:
+                        dict_group.create_dataset(k, data=d)
 
 
 
