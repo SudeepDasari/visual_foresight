@@ -43,7 +43,7 @@ def serialize_video(imgs, temp_name_append):
 
 def save_dict(data_container, dict_group, video_encoding, t_index):
     for k, d in data_container.items():
-                            if 'images' == k:
+                    if 'images' == k:
                         T, n_cams = d.shape[:2]
                         dict_group.attrs['n_cams'] = n_cams
 
