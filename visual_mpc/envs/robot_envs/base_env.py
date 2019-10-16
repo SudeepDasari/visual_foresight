@@ -180,7 +180,6 @@ class BaseRobotEnv(BaseEnv):
     def _get_state(self):
         eep = self._controller.get_cartesian_pose()
         gripper_state = self._controller.get_gripper_state()[0]
-        logging.getLogger('robot_logger').debug('Current Cartesian position: {}'.format(eep))
         GRIPPER_LOW, GRIPPER_HIGH = self._controller.get_gripper_limits()
         if GRIPPER_HIGH - GRIPPER_LOW > 0:
             gripper_state = (gripper_state - GRIPPER_LOW) / (GRIPPER_HIGH - GRIPPER_LOW)
@@ -209,8 +208,6 @@ class BaseRobotEnv(BaseEnv):
                                                              # np.rad2deg(self._previous_target_qpos[3])))
 
         obs['state'] = self._get_state()
-        # logging.getLogger('robot_logger').debug('Current Cartesian position normalized is : {}'.format(obs['state']))
-
         if force_sensor is not None:
             obs['finger_sensors'] = force_sensor
 
