@@ -124,6 +124,7 @@ def save_worker(traj_data, cntr, group_name=''):
     except (FileNotFoundError, NotADirectoryError):
         return False
 
+
 if __name__ == '__main__':
     import argparse
     import glob
