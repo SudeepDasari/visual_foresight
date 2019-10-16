@@ -230,8 +230,7 @@ class BaseRobotEnv(BaseEnv):
 
     def _move_to_state(self, target_xyz, target_zangle, duration = None):
         target_quat = self._controller.euler_2_quat(target_zangle)
-        self._controller.move_to_eep(np.concatenate((target_xyz, target_quat)),duration)
-        
+        self._controller.move_to_eep(np.concatenate((target_xyz, target_quat)), duration)
 
     def _reset_previous_qpos(self):
         xyz, quat = self._controller.get_xyz_quat()
