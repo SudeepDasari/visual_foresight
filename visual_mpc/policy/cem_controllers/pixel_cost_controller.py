@@ -8,11 +8,11 @@ import matplotlib.pyplot as plt
 from collections import OrderedDict
 from visual_mpc.video_prediction.pred_util import get_context, rollout_predictions
 
-try:
-    from robonet.video_prediction.testing import VPredEvaluation
-    DefaultPredClass = VPredEvaluation
-except ImportError:
-    DefaultPredClass = None
+# try:
+from robonet.video_prediction.testing import VPredEvaluation
+DefaultPredClass = VPredEvaluation
+# except ImportError:
+#     DefaultPredClass = None
     
 class PixelCostController(CEMBaseController):
     """
