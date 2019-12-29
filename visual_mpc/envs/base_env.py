@@ -107,3 +107,6 @@ class BaseEnv:
         :return: default n_cam (usually 2)
         """
         return 2
+
+    def save_recording(self, save_worker, i_traj):
+        raise NotImplementedError

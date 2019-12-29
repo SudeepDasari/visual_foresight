@@ -15,26 +15,12 @@ import os
 from visual_mpc.sim.util.combine_score import combine_scores
 import ray
 import pdb
+import shutil
+import datetime
+from visual_mpc.utils.sync import ManagedSyncCounter
 
 
-class SynchCounter:
-    def __init__(self, manager):
-        self._lock, self._value = manager.Lock(), manager.Value('i', 0)
-
-    def ret_increment(self):
-        with self._lock:
-            ret_val = self._value.value
-            self._value.value += 1
-        return ret_val
-
-    @property
-    def value(self):
-        with self._lock:
-            ret_val = self._value.value
-        return ret_val
-
-
-def worker(conf, iex=-1, ngpu=1):
+def use_worker(conf, iex=-1, ngpu=1):
     print('started process with PID:', os.getpid())
     print('making trajectories {0} to {1}'.format(
         conf['start_index'],
@@ -47,12 +33,6 @@ def worker(conf, iex=-1, ngpu=1):
     s = Sim(conf)
     s.run()
 
-def bench_worker(conf, iex=-1, ngpu=1):
-    print('started process with PID:', os.getpid())
-    random.seed(None)
-    np.random.seed(None)
-    perform_benchmark(conf, iex, gpu_id=conf['gpu_id'], ngpu=ngpu)
-
 
 def check_and_pop(dict, key):
     if dict.pop(key, None) is not None:
@@ -60,23 +40,22 @@ def check_and_pop(dict, key):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='run parllel data collection')
+    parser = argparse.ArgumentParser(description='run simulation experiments')
     parser.add_argument('experiment', type=str, help='experiment name')
     parser.add_argument('--nworkers', type=int, help='use multiple threads or not', default=1)
     parser.add_argument('--gpu_id', type=int, help='the starting gpu_id', default=0)
     parser.add_argument('--ngpu', type=int, help='the number of gpus to use', default=1)
-
     parser.add_argument('--nsplit', type=int, help='number of splits', default=-1)
     parser.add_argument('--isplit', type=int, help='split id', default=-1)
     parser.add_argument('--cloud', dest='cloud', action='store_true', default=False)
-    parser.add_argument('--benchmark', dest='do_benchmark', action='store_true', default=False)
-
+    parser.add_argument('--benchmark', dest='do_benchmark', action='store_true', default=False)    # look into removing this
     parser.add_argument('--iex', type=int, help='if different from -1 use only do example', default=-1)
 
     args = parser.parse_args()
     hyperparams_file = args.experiment
-    gpu_id = args.gpu_id
+    assert os.path.exists(hyperparams_file) and os.path.isfile(hyperparams_file), "hyperparams file does not exist!"
 
+    gpu_id = args.gpu_id
     n_worker = args.nworkers
     if args.nworkers == 1:
         parallel = False
@@ -108,20 +87,27 @@ def main():
             os.system("rm {}".format('/'.join(str.split(hyperparams['agent']['filename'], '/')[:-1]) + '/auto_gen/*'))
         except: pass
 
-    if args.do_benchmark:
-        use_worker = bench_worker
-    else: use_worker = worker
-
     if 'RESULT_DIR' in os.environ:
         if 'exp_name' in hyperparams:
             exp_name = hyperparams['exp_name']
+        elif 'data_save_dir' in hyperparams['agent']:
+            exp_path = hyperparams['agent']['data_save_dir'].split('/')
+            exp_index = min(max([i for i, v in enumerate(exp_path) if v == 'experiments'] + [0]) + 1, len(exp_path) - 1)
+            exp_name = '/'.join(exp_path[exp_index:])
         elif 'record' in hyperparams['agent']:
             exp_name = [f for f in hyperparams['agent']['record'].split('/') if f != 'record' and len(f) > 0][-1]
-        elif 'data_save_dir' in hyperparams['agent']:
-            exp_name = hyperparams['agent']['data_save_dir'].split('/')[-1]
         else:
             raise NotImplementedError("can't find exp name")
-        result_dir = '{}/{}'.format(os.environ['RESULT_DIR'], exp_name)
+        now = datetime.datetime.now()
+
+        mode = 'traj_data'
+        if args.do_benchmark:
+            mode = 'experiments'
+
+        result_dir = '{}/{}/{}/exp_{}_{}_{}_{}_{}'.format(os.environ['RESULT_DIR'], mode, exp_name, now.year, now.month,
+                                                       now.day, now.hour, now.minute)
+        os.makedirs(result_dir)
+        shutil.copyfile(hyperparams_file, '{}/hparams.py'.format(result_dir))
 
         if 'verbose' in hyperparams['policy'] and not os.path.exists(result_dir + '/verbose'):
             os.makedirs(result_dir + '/verbose')
@@ -184,7 +170,7 @@ def main():
 
 def prepare_saver(hyperparams):
     m = Manager()
-    record_queue, synch_counter = m.Queue(), SynchCounter(m)
+    record_queue, synch_counter = m.Queue(), ManagedSyncCounter(m)
     save_dir, T = hyperparams['agent']['data_save_dir'] + '/records', hyperparams['agent']['T']
     if hyperparams.get('save_data', True) and not hyperparams.get('save_raw_images', False):
         seperate_good, traj_per_file = hyperparams.get('seperate_good', False), hyperparams.get('traj_per_file', 16)

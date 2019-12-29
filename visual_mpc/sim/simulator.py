@@ -1,6 +1,5 @@
 import cv2
 import shutil
-from visual_mpc.utils.logger import Logger
 import pickle as pkl
 import os
 import os.path
@@ -11,15 +10,12 @@ sys.path.append('/'.join(str.split(__file__, '/')[:-2]))
 class Sim(object):
     """ Main class to run algorithms and experiments. """
 
-    def __init__(self, config, gpu_id=0, ngpu=1, logger=None):
+    def __init__(self, config, gpu_id=0, ngpu=1, logger=None, task_mode='train'):
         self._hyperparams = config
         self.agent = config['agent']['type'](config['agent'])
         self.agentparams = config['agent']
         self.policyparams = config['policy']
-        if logger == None:
-            self.logger = Logger(printout=True)
-        else: self.logger = logger
-        self.logger.log('started sim')
+
         self.agentparams['gpu_id'] = gpu_id
 
         self.policy = config['policy']['type'](self.agent._hyperparams, config['policy'], gpu_id, ngpu)
@@ -33,7 +29,7 @@ class Sim(object):
             os.remove(self._hyperparams['agent']['image_dir'])
         except:
             pass
-        self.task_mode = 'train'
+        self.task_mode = task_mode
 
     def run(self):
         if self._counter is None:
@@ -45,6 +41,7 @@ class Sim(object):
                 print('taking sample {} of {}'.format(itr, self._hyperparams['ntraj']))
                 self.take_sample(itr)
                 itr = self._counter.ret_increment()
+        self.agent.cleanup()
 
     def take_sample(self, sample_index):
         self.policy.reset()

@@ -3,9 +3,10 @@ import os
 from visual_mpc.agent.benchmarking_agent import BenchmarkAgent
 from visual_mpc.envs.sawyer_robot.autograsp_sawyer_env import AutograspSawyerEnv
 from visual_mpc.policy.cem_controllers.samplers.folding_sampler import FoldingSampler
-from visual_mpc.policy.cem_controllers.cem_controller_vidpred import CEM_Controller_Vidpred
+from visual_mpc.policy.cem_controllers.pixel_cost_controller import PixelCostController
 BASE_DIR = '/'.join(str.split(__file__, '/')[:-1])
 current_dir = os.path.dirname(os.path.realpath(__file__))
+from visual_mpc.envs.sawyer_robot.util.topic_utils import IMTopic
 
 
 env_params = {
@@ -16,8 +17,9 @@ env_params = {
     'rand_drop_reset': False,
     'start_box': [1, 1, 0.7],
     'reset_before_eval': True,
-    'video_save_dir':  '',   # doesn't matter what you put here (should make this more elegant)
     'zthresh': 0.05   # gripper only closes very close to ground
+    'camera_topics': [IMTopic('/front/image_raw', flip=True),
+                      IMTopic('/left/image_raw')]
 }
 
 agent = {'type' : BenchmarkAgent,
@@ -31,8 +33,7 @@ agent = {'type' : BenchmarkAgent,
          }
 
 policy = {
-    'verbose': True,
-    'type': CEM_Controller_Vidpred,
+    'type': PixelCostController,
     'replan_interval': 15,
     'num_samples': [600, 300],
     'custom_sampler': FoldingSampler,

@@ -5,11 +5,12 @@ import numpy as np
 class CartgripperXZGrasp(BaseCartgripperEnv):
     def __init__(self, env_params, reset_state = None):
         super().__init__(env_params, reset_state)
-        self.low_bound = np.array([-0.4, -0.08, -1])
-        self.high_bound = np.array([0.4, 0.15, 1])
+        self.low_bound = np.array([-0.4, -0.075, 0])
+        self.high_bound = np.array([0.4, 0.15, 0.1])
         self._base_adim, self._base_sdim = 3, 6
         self._adim, self._sdim = 3, 3      # x z grasp
         self._gripper_dim = 2
+        self._n_joints = 6
 
     def _default_hparams(self):
         default_dict = {
@@ -17,7 +18,8 @@ class CartgripperXZGrasp(BaseCartgripperEnv):
             'default_y': 0.,
             'default_theta': 0.,
             'gripper_open': 0.06438482934440347,
-            'gripper_close': 0
+            'gripper_close': 0,
+            'gripper_thresh': 0.
         }
 
         parent_params = super()._default_hparams()
@@ -41,10 +43,17 @@ class CartgripperXZGrasp(BaseCartgripperEnv):
     def _init_dynamics(self):
         self._previous_target_qpos = self._get_state()
         self._goal_reached = False
-        self._object_floors = self._last_obs['object_poses_full']
+        self._object_floors = self._last_obs['object_poses_full'].copy()
 
     def _next_qpos(self, action):
         assert action.shape[0] == self._adim
+        action = action.copy()
+
+        grip_action = -1
+        if action[-1] > self._hp.gripper_thresh:
+            grip_action = 1
+        action[-1] = grip_action
+
         return self._previous_target_qpos * self.mode_rel + action
 
     def _get_obs(self, finger_sensors):
@@ -92,7 +101,7 @@ class CartgripperXZGrasp(BaseCartgripperEnv):
     def goal_reached(self):
         return self._goal_reached
 
-    def move_arm(self):
+    def _move_arm(self):
         """
         Moves arm to random position
         :return: None
@@ -101,7 +110,7 @@ class CartgripperXZGrasp(BaseCartgripperEnv):
         target_dy = np.random.uniform(0.12, self.high_bound[2]) - self._previous_target_qpos[1]
         self.step(np.array([target_dx, target_dy, -1]))
 
-    def move_objects(self):
+    def _move_objects(self):
         """
         Creates a lifting task by randomly placing block in gripper until it grasps
             - Randomness needed since there is no "expert" to correctly place object into hand
@@ -134,6 +143,10 @@ class CartgripperXZGrasp(BaseCartgripperEnv):
                 for _ in range(self.substeps):
                     self.sim.data.ctrl[:] = target_cmd
                     self.sim.step()
+
+    def generate_task(self):
+        self._move_arm()
+        self._move_objects()
 
     @staticmethod
     def default_ncam():

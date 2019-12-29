@@ -15,7 +15,7 @@ current_dir = os.path.dirname(os.path.realpath(__file__))
 
 agent = {
     'type': GeneralAgent,
-    'env': (AutograspSawyerEnv, {}),
+    'env': (AutograspSawyerEnv, {'upper_bound_delta': [0.07, 0., 0., 0., 0.]}),
     'data_save_dir': BASE_DIR,
     'T': 30,
     'image_height' : 240,

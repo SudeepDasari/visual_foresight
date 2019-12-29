@@ -2,6 +2,9 @@
 import abc, six
 from funcsigs import signature, Parameter
 from tensorflow.contrib.training import HParams
+import numpy as np
+import pdb
+
 
 def get_policy_args(policy, obs, t, i_tr, step_data=None):
     """
@@ -45,22 +48,13 @@ def get_policy_args(policy, obs, t, i_tr, step_data=None):
 
 @six.add_metaclass(abc.ABCMeta)
 class Policy(object):
-
-    def override_defaults(self, policyparams):
-        if 'custom_sampler' in policyparams:
-            for name, value in policyparams['custom_sampler'].get_default_hparams().items():
-                if name in self._hp:
-                    print('Warning default value for {} already set!'.format(name))
-                    self._hp.set_hparam(name, value)
-                else:
-                    self._hp.add_hparam(name, value)
-
+    def _override_defaults(self, policyparams):
         for name, value in policyparams.items():
             if name == 'type':
                 continue      # type corresponds to policy class
 
             print('overriding param {} to value {}'.format(name, value))
-            if value == getattr(self._hp, name):
+            if np.all(value == getattr(self._hp, name)):
                 raise ValueError("attribute is {} is identical to default value!!".format(name))
 
             if name in self._hp and self._hp.get(name) is None:   # don't do a type check for None default values
@@ -106,6 +100,19 @@ class NullPolicy(Policy):
     """
     def __init__(self,  ag_params, policyparams, gpu_id, ngpu):
         self._adim = ag_params['adim']
+        self._hp = self._default_hparams()
+        self._override_defaults(policyparams)
+
+    def _default_hparams(self):
+        default_dict = {
+            'wait_for_user': False
+        }
+        parent_params = super(NullPolicy, self)._default_hparams()
+        for k in default_dict.keys():
+            parent_params.add_hparam(k, default_dict[k])
+        return parent_params
 
     def act(self):
-        return np.zeros(self._adim)
+        if self._hp.wait_for_user:
+            pdb.set_trace()
+        return {'actions': np.zeros(self._adim)}

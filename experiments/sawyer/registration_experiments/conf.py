@@ -5,7 +5,7 @@ import video_prediction
 
 base_dir = video_prediction.__file__
 base_dir = '/'.join(str.split(base_dir, '/')[:-2])
-modeldir = base_dir + '/pretrained_models/sawyer_robot/autograsp_env_long/'
+modeldir = base_dir + '/pretrained_models/sawyer_newenv/autograsp_env_long/'
 
 configuration = {
 'pred_model': VPred_Model_Interface,

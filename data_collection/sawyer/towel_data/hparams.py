@@ -5,6 +5,7 @@ import numpy as np
 from visual_mpc.policy.random.random_fold_policy import RandomFoldPolicy
 from visual_mpc.agent.general_agent import GeneralAgent
 from visual_mpc.envs.sawyer_robot.autograsp_sawyer_env import AutograspSawyerEnv
+from visual_mpc.envs.sawyer_robot.util.topic_utils import IMTopic
 
 
 if 'VMPC_DATA_DIR' in os.environ:
@@ -19,6 +20,11 @@ env_params = {
     'normalize_actions': True,
     'gripper_joint_thresh': 0.999856,
     'rand_drop_reset': False,
+    'camera_topics': [IMTopic('/front/image_raw', flip=True),
+                      IMTopic('/left/image_raw'),
+                      IMTopic('/right_side/image_raw'),
+                      IMTopic('/left_side/image_raw'),
+                      IMTopic('/right/image_raw')],
     'zthresh':0.05   # gripper only closes very close to ground
 }
 agent = {

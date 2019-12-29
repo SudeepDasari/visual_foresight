@@ -78,13 +78,6 @@ def setup_predictor(hyperparams, conf, gpu_id=0, ngpu=1, logger=None):
     else:
         ncam = 1
 
-    # start_id = gpu_id
-    # indexlist = [str(i_gpu) for i_gpu in range(start_id, start_id + ngpu)]
-    # var = ','.join(indexlist)
-    # logger.log('using CUDA_VISIBLE_DEVICES=', var)
-    # os.environ["CUDA_VISIBLE_DEVICES"] = var
-    # from tensorflow.python.client import device_lib
-    # logger.log(device_lib.list_local_devices())
 
     logger.log('making graph')
     gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.7)
@@ -114,7 +107,7 @@ def setup_predictor(hyperparams, conf, gpu_id=0, ngpu=1, logger=None):
             states_pl = tf.placeholder(use_dtype, name='states',
                                        shape=(1, conf['context_frames'], sdim))
 
-            if 'use_goal_image' in conf:
+            if 'use_goal_image' in conf or 'no_pix_distrib' in conf:
                 pix_distrib = None
             else:
                 pix_distrib = tf.placeholder(use_dtype, shape=(
@@ -185,7 +178,11 @@ def setup_predictor(hyperparams, conf, gpu_id=0, ngpu=1, logger=None):
                 feed_dict[actions_pl] = input_actions
 
                 if input_one_hot_images is None:
-                    gen_images, gen_states = sess.run([comb_gen_img,
+                    if comb_gen_states is None:
+                        gen_images = sess.run(comb_gen_img, feed_dict)
+                        gen_states = None
+                    else:
+                        gen_images, gen_states = sess.run([comb_gen_img,
                                                        comb_gen_states],
                                                       feed_dict)
                     gen_distrib = None
@@ -200,7 +197,7 @@ def setup_predictor(hyperparams, conf, gpu_id=0, ngpu=1, logger=None):
                                                                     comb_gen_states],
                                                                    feed_dict)
 
-                return gen_images, gen_distrib, gen_states, None
+                return gen_images, gen_distrib, gen_states
 
             return predictor_func
 

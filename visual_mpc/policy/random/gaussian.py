@@ -2,6 +2,7 @@
 import numpy as np
 from visual_mpc.policy.policy import Policy
 from visual_mpc.policy.utils.controller_utils import construct_initial_sigma, truncate_movement
+from visual_mpc.envs.util.action_util import autograsp_grip_logic
 
 
 class GaussianPolicy(Policy):
@@ -12,7 +13,7 @@ class GaussianPolicy(Policy):
     def __init__(self, agentparams, policyparams, gpu_id, npgu):
 
         self._hp = self._default_hparams()
-        self.override_defaults(policyparams)
+        self._override_defaults(policyparams)
         self.agentparams = agentparams
         self.adim = agentparams['adim']
 
@@ -21,7 +22,7 @@ class GaussianPolicy(Policy):
             'nactions': 5,
             'repeat': 3,
             'action_bound': True,
-            'action_order': [None],
+            'action_order': None,
             'initial_std': 0.05,  # std dev. in xy
             'initial_std_lift': 0.15,  # std dev. in xy
             'initial_std_rot': np.pi / 18,
@@ -75,3 +76,44 @@ def discretize_gripper(actions, gripper_ind):
         else:
             actions[a, gripper_ind] = -1
     return actions
+
+
+class GaussianAGEpsilonPolicy(GaussianPolicy):
+    def _default_hparams(self):
+        default_dict = {
+            'p_epsilon': 0.15,
+            'zthresh': 0.15,
+            'gripper_joint_thresh': -1.,
+            'reopen': True,
+            'grip_cmds': [1.0, -1.0]
+        }
+
+        parent_params = super(GaussianAGEpsilonPolicy, self)._default_hparams()
+        for k in default_dict.keys():
+            parent_params.add_hparam(k, default_dict[k])
+        return parent_params
+    
+    def act(self, t, state, finger_sensors):
+        parent_action = super(GaussianAGEpsilonPolicy, self).act(t)['actions']
+
+        if t == 0:
+            self._last_grip = None
+            self._prev_touch = False
+
+        if t % self._hp.repeat == 0:
+            joint_test = state[-1, -1] > 0 and np.abs(state[-1, -1]) < self._hp.gripper_joint_thresh
+            touch_test = joint_test or np.amax(finger_sensors[-1]) > 0
+
+            self._last_grip = autograsp_grip_logic(state[-1, 2], self._hp.zthresh, self._last_grip, 
+                                                   self._hp.reopen, touch_test or self._prev_touch)
+            self._prev_touch = touch_test
+        
+        bool_cast = lambda x: self._hp.grip_cmds[0] if x else self._hp.grip_cmds[1]
+        if np.random.uniform() < self._hp.p_epsilon:
+            print('flip')
+            grip_cmd = bool_cast(not self._last_grip)
+        else:
+            grip_cmd = bool_cast(self._last_grip)
+        
+        parent_action[-1] = grip_cmd
+        return {'actions': parent_action}

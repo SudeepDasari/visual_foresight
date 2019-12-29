@@ -114,8 +114,7 @@ class BaseCartgripperEnv(BaseMujocoEnv):
             parent_params.add_hparam(k, default_dict[k])
         return parent_params
 
-    def step(self, action):
-        target_qpos = np.clip(self._next_qpos(action), self.low_bound, self.high_bound)
+    def _step(self, target_qpos):
         assert target_qpos.shape[0] == self._base_adim
         finger_force = np.zeros(2)
 
@@ -134,6 +133,10 @@ class BaseCartgripperEnv(BaseMujocoEnv):
         self._post_step()
 
         return obs
+
+    def step(self, action):
+        target_qpos = np.clip(self._next_qpos(action), self.low_bound, self.high_bound)
+        return self._step(target_qpos)
 
     def _post_step(self):
         return
@@ -180,6 +183,8 @@ class BaseCartgripperEnv(BaseMujocoEnv):
         return poses
 
     def reset(self, reset_state=None):
+        super().reset()
+
         if reset_state is not None:
             self._read_reset_state = reset_state
 
@@ -220,7 +225,9 @@ class BaseCartgripperEnv(BaseMujocoEnv):
         self._previous_target_qpos = copy.deepcopy(self.sim.data.qpos[:self._base_adim].squeeze())
         self._previous_target_qpos[-1] = self.low_bound[-1]
         reset_obs = self._get_obs(finger_force / self.skip_first / self.substeps)
+
         self._init_dynamics()
+        self._reset_eval()
 
         return reset_obs, write_reset_state
 
@@ -242,6 +249,9 @@ class BaseCartgripperEnv(BaseMujocoEnv):
             xpos0[2] = 0.14
         # xpos0[-1] = low_bound[-1]  # start with gripper open
         return xpos0
+
+    def _append_save_buffer(self, img):
+        super()._append_save_buffer(img[::-1])
 
     def _get_obs(self, finger_sensors):
         obs, touch_offset = {}, 0

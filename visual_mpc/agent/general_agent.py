@@ -1,9 +1,16 @@
 """ This file defines an agent for the MuJoCo simulator environment. """
+import pdb
 import copy
 import numpy as np
-import cv2
-from visual_mpc.policy.policy import get_policy_args
-from visual_mpc.utils.im_utils import resize_store, npy_to_gif
+from visual_mpc.policy import get_policy_args
+from visual_mpc.utils.im_utils import resize_store
+from .utils.file_saver import start_file_worker
+
+
+class Bad_Traj_Exception(Exception):
+    def __init__(self):
+        pass
+
 
 class Image_Exception(Exception):
     def __init__(self):
@@ -27,6 +34,8 @@ class GeneralAgent(object):
         self._goal_obj_pose = None
         self._goal_image = None
         self._reset_state = None
+        self._is_robot = 'robot_name' in hyperparams['env'][1]
+        self._save_worker = start_file_worker()
         self._setup_world(0)
 
     def _setup_world(self, itr):
@@ -48,26 +57,28 @@ class GeneralAgent(object):
         Runs a trial and constructs a new sample containing information
         about the trial.
         """
-        if "gen_xml" in self._hyperparams:
-            if i_traj % self._hyperparams['gen_xml'] == 0 and i_traj > 0:
+        if not self._is_robot:
+            if "gen_xml" in self._hyperparams:
+                if i_traj % self._hyperparams['gen_xml'] == 0 and i_traj > 0:
+                    self._setup_world(i_traj)
+            elif i_traj > 0:
                 self._setup_world(i_traj)
 
         traj_ok, obs_dict, policy_outs, agent_data = False, None, None, None
         i_trial = 0
-        imax = 100
 
-        while not traj_ok and i_trial < imax:
+        while not traj_ok and i_trial < self._hyperparams.get('imax', 100):
             i_trial += 1
             try:
                 agent_data, obs_dict, policy_outs = self.rollout(policy, i_trial, i_traj)
                 traj_ok = agent_data['traj_ok']
-            except Image_Exception:
+            except Image_Exception, Environment_Exception:
                 traj_ok = False
 
-        print('needed {} trials'.format(i_trial))
+        if not traj_ok:
+            raise Bad_Traj_Exception
 
-        if 'make_final_gif' in self._hyperparams or 'make_final_gif_pointoverlay' in self._hyperparams:
-            self.save_gif(i_traj, 'make_final_gif_pointoverlay' in self._hyperparams)
+        print('needed {} trials'.format(i_trial))
 
         return agent_data, obs_dict, policy_outs
 
@@ -138,9 +149,10 @@ class GeneralAgent(object):
         if self._reset_state is not None:
             agent_data['reset_state'] = self._reset_state
             obs['reset_state'] = self._reset_state
+
         return obs
 
-    def _required_rollout_metadata(self, agent_data, traj_ok, t, i_tr):
+    def _required_rollout_metadata(self, agent_data, traj_ok, t, i_traj, i_tr, reset_state):
         """
         Adds meta_data into the agent dictionary that is MANDATORY for later parts of pipeline
         :param agent_data: Agent data dictionary
@@ -151,6 +163,13 @@ class GeneralAgent(object):
         if self.env.has_goal():
             agent_data['goal_reached'] = self.env.goal_reached()
         agent_data['traj_ok'] = traj_ok
+
+        if self._hyperparams.get('save_reset_data', False):
+            agent_data['reset_state'] = reset_state
+
+        if 'make_final_recording' in self._hyperparams:
+            self._save_worker.put(('path', self.record_path))
+            self.env.save_recording(self._save_worker, i_traj)
 
     def rollout(self, policy, i_trial, i_traj):
         """
@@ -169,7 +188,7 @@ class GeneralAgent(object):
         # Take the sample.
         t = 0
         done = self._hyperparams['T'] <= 0
-        initial_env_obs, _ = self.env.reset()
+        initial_env_obs, reset_state = self.env.reset()
         obs = self._post_process_obs(initial_env_obs, agent_data, True)
         policy.reset()
 
@@ -187,11 +206,7 @@ class GeneralAgent(object):
             pi_t = policy.act(**get_policy_args(policy, obs, t, i_traj, agent_data))
             policy_outputs.append(pi_t)
 
-            try:
-                obs = self._post_process_obs(self.env.step(copy.deepcopy(pi_t['actions'])), agent_data)
-            except Environment_Exception as e:
-                print(e)
-                return {'traj_ok': False}, None, None
+            obs = self._post_process_obs(self.env.step(copy.deepcopy(pi_t['actions'])), agent_data)
 
             if 'rejection_sample' in self._hyperparams and 'rejection_end_early' in self._hyperparams:
                 print('traj rejected!')
@@ -209,19 +224,8 @@ class GeneralAgent(object):
                 traj_ok = self.env.goal_reached()
             print('goal_reached', self.env.goal_reached())
 
-        self._required_rollout_metadata(agent_data, traj_ok, t, i_trial)
+        self._required_rollout_metadata(agent_data, traj_ok, t, i_traj, i_trial, reset_state)
         return agent_data, obs, policy_outputs
-
-    def save_gif(self, itr, overlay=False):
-        if self.traj_points is not None and overlay:
-            colors = [tuple([np.random.randint(0, 256) for _ in range(3)]) for __ in range(self.num_objects)]
-            for pnts, img in zip(self.traj_points, self.large_images_traj):
-                for i in range(self.num_objects):
-                    center = tuple([int(np.round(pnts[i, j])) for j in (1, 0)])
-                    cv2.circle(img, center, 4, colors[i], -1)
-
-        file_path = self._hyperparams['data_save_dir']
-        npy_to_gif(self.large_images_traj, file_path + '/record/video{}'.format(itr))
 
     def _init(self):
         """
@@ -229,4 +233,11 @@ class GeneralAgent(object):
         """
         self.large_images_traj, self.traj_points = [], None
 
+    def cleanup(self):
+        print('Cleaning up file saver....')
+        self._save_worker.put(None)
+        self._save_worker.join()
 
+    @property
+    def record_path(self):
+        return self._hyperparams['data_save_dir'] + '/record/'

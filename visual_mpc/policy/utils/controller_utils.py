@@ -1,31 +1,13 @@
 import numpy as np
 import copy
-import os
 import sys
-if sys.version_info[0] == 2:
-    import cPickle as pkl
-else:
-    import pickle as pkl
-
-
-def save_track_pkl(ctrl, t, cem_itr):
-    pix_pos_dict = {}
-    pix_pos_dict['desig_pix_t0'] = ctrl.desig_pix_t0
-    pix_pos_dict['goal_pix'] = ctrl.goal_pix
-    pix_pos_dict['desig'] = ctrl.desig_pix
-    if ctrl.reg_tradeoff is not None:
-        pix_pos_dict['reg_tradeoff'] = ctrl.reg_tradeoff
-    dir = ctrl.agentparams['record'] + '/plan'
-    if not os.path.exists(dir):
-        os.makedirs(dir)
-    pkl.dump(pix_pos_dict, open(dir + 'pix_pos_dict{}iter{}.pkl'.format(ctrl.t, cem_itr), 'wb'))
 
 
 def truncate_movement(actions, hp):
     maxshift = hp.initial_std * 2
 
     if len(actions.shape) == 3:
-        if hp.action_order[0] is not None:
+        if hp.action_order is not None:
             for i, a in enumerate(hp.action_order):
                 if a == 'x' or a == 'y':
                     maxshift = hp.initial_std * 2
@@ -42,7 +24,7 @@ def truncate_movement(actions, hp):
             actions[:, :, 3] = np.clip(actions[:, :, 3], -maxrot, maxrot)
 
     elif len(actions.shape) == 2:
-        if hp.action_order[0] is not None:
+        if hp.action_order is not None:
             for i, a in enumerate(hp.action_order):
                 if a == 'x' or a == 'y':
                     maxshift = hp.initial_std * 2
@@ -66,7 +48,7 @@ def construct_initial_sigma(hp, adim, t=None):
     xy_std = hp.initial_std
     diag = [xy_std**2, xy_std**2]
 
-    if hp.action_order[0] is not None:
+    if hp.action_order is not None:
         diag = []
         for a in hp.action_order:
             if a == 'x' or a == 'y':
@@ -112,14 +94,6 @@ def reuse_cov(sigma, adim, hp):
                              construct_initial_sigma(hp, adim)[:-adim, :-adim] * hp.reuse_cov
     sigma[-adim:, -adim:] = construct_initial_sigma(hp, adim)[:adim, :adim]
     return sigma
-
-
-def reuse_action(prev_action, hp):
-    assert hp.replan_interval == 3
-    print('reusing mean form last MPC step...')
-    action = np.zeros_like(prev_action)
-    action[:-1] = prev_action[1:]
-    return action.flatten()
 
 
 def make_blockdiagonal(cov, nactions, adim):

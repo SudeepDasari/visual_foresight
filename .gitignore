@@ -1,7 +1,14 @@
 *.pyc
+.vscode/
+*.mp4
+*.pkl
 *.gif
 .idea
 *.data
 *.index
 *.out
 *.meta
+*.egg-info/
+.email_cred
+*_log.txt
+__pycache__/*
