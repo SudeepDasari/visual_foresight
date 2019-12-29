@@ -30,6 +30,7 @@ nvidia-docker build -t foresight/sim:latest .
 ```
 Now to create a new bash in this environment run: `nvidia-docker run -it foresight/sim: bash`
 
+
 ## Robot
 ### Hardware Setup
 All experiments are conducted on a [Sawyer robot](https://www.rethinkrobotics.com/sawyer/) with an attached [WSG-50 gripper](https://www.weiss-robotics.com/en/produkte/gripping-systems/performance-line-en/wsg-50-en/). The robot is filmed from two orthogonal viewing angles using [consumer webcams](https://www.amazon.com/Logitech-Widescreen-Calling-Recording-Desktop/dp/B006JH8T3S). Refer to the paper for further details.
@@ -80,8 +81,8 @@ Again pass in the python config file to the corresponding entry point. This time
 ### Robot
 * For Registration Experiments: `rosrun foresight_rospkg run_robot.py <robot name/id> experiments/sawyer/registration_experiments/hparams.py --benchmark`
 * For Mixed Object Experiments (one model which handles both deformable and rigid objects)
-  - Rigid: `rosrun foresight_rospkg run_robot.py <robot name/id> experiments/sawyer/mixed_objects/hparams_deformable_objects.py --benchmark`
-  - Deformable: `rosrun foresight_rospkg run_robot.py <robot name/id> experiments/sawyer/mixed_objects/hparams_hardobjects.py --benchmark`
+  - Rigid: `rosrun foresight_rospkg run_robot.py <robot name/id> experiments/sawyer/mixed_objects/hparams_hardobjects.py --benchmark`
+  - Deformable: `rosrun foresight_rospkg run_robot.py <robot name/id> experiments/sawyer/mixed_objects/hparams_deformable_objects.py --benchmark`
 * **Meta-classifier experiments are coming soon**
 ### Sim
 **Coming soon!**
