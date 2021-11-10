@@ -15,7 +15,7 @@ scikit-image==0.14.0
 scipy==1.1.0
 six==1.11.0
 tensorboard==1.6.0
-tensorflow-gpu==1.6.0
+tensorflow-gpu==2.5.2
 mujoco_py==1.50.1.56
 requests==2.20.0
 seaborn
