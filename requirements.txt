@@ -8,7 +8,7 @@ moviepy==0.2.3.5
 numpy==1.14.5
 numpy-stl==2.8.0
 opencv-python==3.4.1.15
-Pillow==5.2.0
+Pillow==9.3.0
 pyquaternion==0.9.2
 ray==0.5.0
 scikit-image==0.14.0
